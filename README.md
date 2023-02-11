@@ -1,4 +1,4 @@
-# CARLanguage
+# Carl
 
 A work in progress (experimental) language combining features I like from other languages.
 
