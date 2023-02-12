@@ -11,7 +11,7 @@ FORWARD_DECLS = ["class AstNodeVisitor;"]
 REPLACEMENTS = {"@spr": "std::shared_ptr"}
 
 ASTNODE = """class AstNode {
-    public:
+   public:
     virtual ~AstNode() = default;
     virtual void accept(AstNodeVisitor* visitor) = 0;
 };"""

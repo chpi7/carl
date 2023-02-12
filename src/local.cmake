@@ -3,6 +3,8 @@ set(SRC_CC
     src/print_visitor.cc
     src/parser.cc 
     src/scanner.cc 
+    src/vm.cc
+    src/instruction.cc
 )
 
 add_library(
