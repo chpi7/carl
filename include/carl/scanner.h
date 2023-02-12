@@ -29,6 +29,8 @@ enum TokenType {
     TOKEN_GREATER_EQUAL,
     TOKEN_LESS,
     TOKEN_LESS_EQUAL,
+    TOKEN_AND,
+    TOKEN_OR,
 
     // literals
     TOKEN_IDENTIFIER,

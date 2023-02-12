@@ -17,6 +17,12 @@ class AstNode {
     virtual void accept(AstNodeVisitor* visitor) { printf("test!"); }
 };
 
+class ExprStmt : public AstNode {
+    public:
+    std::shared_ptr<AstNode> expr;
+    ExprStmt(std::shared_ptr<AstNode> expr) : expr(expr) { }
+};
+
 class Binary : public AstNode {
    private:
     Token op;
@@ -55,6 +61,25 @@ class Variable : public AstNode {
     void accept(AstNodeVisitor* visitor);
 };
 
+class String : public AstNode {
+   private:
+    Token value;
+
+   public:
+    String(Token value) : value(value){};
+    Token* get_value() { return &this->value; }
+    void accept(AstNodeVisitor* visitor);
+};
+
+class Number : public AstNode {
+   private:
+    Token value;
+
+   public:
+    Number(Token value) : value(value){};
+    Token* get_value() { return &this->value; }
+    void accept(AstNodeVisitor* visitor);
+};
 class Literal : public AstNode {
    private:
     Token value;
@@ -71,19 +96,10 @@ class AstNodeVisitor {
     virtual void visit_unary(Unary* node) = 0;
     virtual void visit_variable(Variable* node) = 0;
     virtual void visit_literal(Literal* node) = 0;
+    virtual void visit_string(String* node) = 0;
+    virtual void visit_number(Number* node) = 0;
 };
 
-class PrintAstNodeVisitor : public AstNodeVisitor {
-   private:
-    std::ostringstream& os;
-
-   public:
-    PrintAstNodeVisitor(std::ostringstream& os) : os(os) {};
-    void visit_binary(Binary* node);
-    void visit_unary(Unary* node);
-    void visit_variable(Variable* node);
-    void visit_literal(Literal* node);
-};
 
 }  // namespace carl
 #endif

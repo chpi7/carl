@@ -2,10 +2,12 @@
 
 #include <unordered_map>
 
+#include "carl/common.h"
+
 namespace carl {
 
-const std::unordered_map<TokenType, ParseRule> parse_rules = {
-    {TOKEN_LEFT_PAREN, {PREC_NONE, nullptr, nullptr}},
+static const std::unordered_map<TokenType, ParseRule> parse_rules = {
+    {TOKEN_LEFT_PAREN, {PREC_NONE, &Parser::grouping, nullptr}},
     {TOKEN_RIGHT_PAREN, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_LEFT_BRACE, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_RIGHT_BRACE, {PREC_NONE, nullptr, nullptr}},
@@ -17,29 +19,51 @@ const std::unordered_map<TokenType, ParseRule> parse_rules = {
     {TOKEN_SLASH, {PREC_FACTOR, nullptr, &Parser::binary}},
     {TOKEN_STAR, {PREC_FACTOR, nullptr, &Parser::binary}},
     {TOKEN_PIPE, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_BANG, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_BANG_EQUAL, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_EQUAL, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_EQUAL_EQUAL, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_GREATER, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_GREATER_EQUAL, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_LESS, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_LESS_EQUAL, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_IDENTIFIER, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_STRING, {PREC_NONE, &Parser::primary, nullptr}},
-    {TOKEN_NUMBER, {PREC_NONE, &Parser::primary, nullptr}},
+    {TOKEN_BANG, {PREC_NONE, &Parser::unary, nullptr}},
+    {TOKEN_BANG_EQUAL, {PREC_EQ, nullptr, &Parser::binary}},
+    {TOKEN_EQUAL, {PREC_ASSIGNMENT, nullptr, &Parser::binary}},
+    {TOKEN_EQUAL_EQUAL, {PREC_EQ, nullptr, &Parser::binary}},
+    {TOKEN_GREATER, {PREC_COMP, nullptr, &Parser::binary}},
+    {TOKEN_GREATER_EQUAL, {PREC_COMP, nullptr, &Parser::binary}},
+    {TOKEN_LESS, {PREC_COMP, nullptr, &Parser::binary}},
+    {TOKEN_LESS_EQUAL, {PREC_COMP, nullptr, &Parser::binary}},
+    {TOKEN_AND, {PREC_AND, nullptr, &Parser::binary}},
+    {TOKEN_OR, {PREC_OR, nullptr, &Parser::binary}},
+    {TOKEN_IDENTIFIER, {PREC_NONE, &Parser::variable, nullptr}},
+    {TOKEN_STRING, {PREC_NONE, &Parser::string, nullptr}},
+    {TOKEN_NUMBER, {PREC_NONE, &Parser::number, nullptr}},
     {TOKEN_IF, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_ELSE, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_FOR, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_FN, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_TRUE, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_FALSE, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_NIL, {PREC_NONE, nullptr, nullptr}},
+    {TOKEN_TRUE, {PREC_NONE, &Parser::literal, nullptr}},
+    {TOKEN_FALSE, {PREC_NONE, &Parser::literal, nullptr}},
+    {TOKEN_NIL, {PREC_NONE, &Parser::literal, nullptr}},
     {TOKEN_RETURN, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_LET, {PREC_NONE, nullptr, nullptr}},
+    {TOKEN_LET, {PREC_NONE, &Parser::let_decl, nullptr}},
     {TOKEN_ERROR, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_EOF, {PREC_NONE, nullptr, nullptr}},
 };
+
+std::shared_ptr<AstNode> Parser::parse_precedence(Precedence precedence) {
+    auto prefix_rule = get_rule(current.type);
+    // assert(get_rule(current.type)->prefix != nullptr && "No prefix rule for token");
+    // so nice :)
+    std::shared_ptr<AstNode> expression = (this->*(prefix_rule->prefix))();
+
+    const ParseRule* infix_rule;
+    while (precedence <= (infix_rule = get_rule(current.type))->prec) {
+        assert(get_rule(current.type)->infix != nullptr && "No infix rule for token");
+
+        auto op_token = current;
+        advance();
+
+        auto rhs = (this->*(infix_rule)->infix)();
+        expression = std::make_shared<Binary>(op_token, expression, rhs);
+    }
+
+    return expression;
+}
 
 Parser::Parser(std::shared_ptr<Scanner> scanner) : scanner(scanner) {
     panic_mode = false;
@@ -55,26 +79,72 @@ const ParseRule* Parser::get_rule(TokenType tokenType) const {
     return c;
 }
 
+std::shared_ptr<AstNode> Parser::statement() {
+    return expr_stmt();
+}
+
+std::shared_ptr<AstNode> Parser::expr_stmt() {
+    auto expr = expression();
+    consume(TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
+    return std::make_shared<ExprStmt>(expr);
+}
+
+std::shared_ptr<AstNode> Parser::let_stmt() {
+    // TODO
+}
+
 std::shared_ptr<AstNode> Parser::expression() {
     return parse_precedence(PREC_ASSIGNMENT);
 }
 
-std::shared_ptr<AstNode> Parser::primary() {
-    if (match(TOKEN_NUMBER)) return std::make_shared<Literal>(previous);
-    if (match(TOKEN_STRING)) return std::make_shared<Literal>(previous);
-    // TODO: allow grouping here
-    error_at(current, "Expected number or string as primary expression.");
-    return std::make_shared<Literal>(current);
+std::shared_ptr<AstNode> Parser::literal() {
+    advance();
+    return std::make_shared<Literal>(previous);
+}
+
+std::shared_ptr<AstNode> Parser::number() {
+    advance();
+    return std::make_shared<Number>(previous);
+}
+
+std::shared_ptr<AstNode> Parser::string() {
+    advance();
+    return std::make_shared<String>(previous);
 }
 
 std::shared_ptr<AstNode> Parser::unary() {
     advance();  // Consume the unary operator.
-    return std::make_shared<Unary>( previous, primary());
+    auto op_token = previous;
+    return std::make_shared<Unary>(op_token, parse_precedence(PREC_UNARY));
+}
+
+std::shared_ptr<AstNode> Parser::variable() {
+    consume(TOKEN_IDENTIFIER, "Expected identifier as variable name.");
+    return std::make_shared<Variable>(previous);
+}
+
+std::shared_ptr<AstNode> Parser::let_decl() {
+    advance(); // consume 'let'
+    // TODO
+    return std::make_shared<Variable>(previous);
 }
 
 std::shared_ptr<AstNode> Parser::binary() {
     const ParseRule* current_rule = get_rule(previous.type);
-    return parse_precedence(static_cast<Precedence>(current_rule->prec + 1));
+
+    // small trick to make assignment right associative
+    int prec_offset = 0;
+    if (current_rule->prec != PREC_ASSIGNMENT) prec_offset++;
+
+    return parse_precedence(static_cast<Precedence>(current_rule->prec + prec_offset));
+}
+
+std::shared_ptr<AstNode> Parser::grouping() {
+    advance();
+    auto contained_expression = expression();
+    consume(TOKEN_RIGHT_PAREN,
+            "Expected closing paren after grouping expression.");
+    return contained_expression;
 }
 
 bool Parser::match(TokenType tokenType) {
@@ -90,23 +160,6 @@ void Parser::consume(TokenType type, const char* message) {
 void Parser::advance() {
     previous = current;
     current = scanner->scan_token();
-}
-
-std::shared_ptr<AstNode> Parser::parse_precedence(Precedence precedence) {
-    auto prefix_rule = get_rule(current.type);
-    // so nice :)
-    std::shared_ptr<AstNode> expression = (this->*(prefix_rule->prefix))();
-
-    const ParseRule* infix_rule;
-    while (precedence <= (infix_rule = get_rule(current.type))->prec) {
-        auto op_token = current;
-        advance();
-
-        auto rhs = (this->*(infix_rule)->infix)();
-        expression = std::make_shared<Binary>(op_token, expression, rhs);
-    }
-
-    return expression;
 }
 
 void Parser::error_at(Token token, const char* message) {

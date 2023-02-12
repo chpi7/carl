@@ -1,5 +1,6 @@
 set(SRC_CC
     src/ast.cc
+    src/print_visitor.cc
     src/parser.cc 
     src/scanner.cc 
 )

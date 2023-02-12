@@ -10,26 +10,25 @@ namespace {
 
 TEST(Scanner, scanSingle) {
     Scanner scanner;
-    auto test = "(){},.-+;/*|";
+    auto test = "(){},.-+;/*|||&&&";
     scanner.init(test);
 
-    std::vector<Token> tokens;
+    std::vector<TokenType> tokens;
     Token t;
     do {
         t = scanner.scan_token();
-        tokens.push_back(t);
+        tokens.push_back(t.type);
     } while (t.type != TOKEN_EOF);
 
     std::vector<TokenType> expected = {
         TOKEN_LEFT_PAREN,  TOKEN_RIGHT_PAREN, TOKEN_LEFT_BRACE,
         TOKEN_RIGHT_BRACE, TOKEN_COMMA,       TOKEN_DOT,
         TOKEN_MINUS,       TOKEN_PLUS,        TOKEN_SEMICOLON,
-        TOKEN_SLASH,       TOKEN_STAR,        TOKEN_PIPE, TOKEN_EOF};
+        TOKEN_SLASH,       TOKEN_STAR,        TOKEN_OR,
+        TOKEN_PIPE,        TOKEN_AND,         TOKEN_ERROR,
+        TOKEN_EOF};
 
-    ASSERT_EQ(tokens.size(), expected.size());
-    for (int i = 0; i < tokens.size(); ++i) {
-        ASSERT_EQ(tokens[i].type, expected[i]);
-    }
+    ASSERT_EQ(tokens, expected);
 }
 
 TEST(Scanner, scanManyTokens) {
