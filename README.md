@@ -8,13 +8,6 @@ struct Cat {
     age: int
 }
 
-fn createCat(name: string) : Cat {
-    Cat {
-        name: name,
-        age: 5 
-    }
-}
-
 fn changeName(cat: Cat, to: string) : Cat {
     Cat {
         name: to,
@@ -24,6 +17,9 @@ fn changeName(cat: Cat, to: string) : Cat {
 
 nameTom = changeName(_, to);
 
-anonymous = createCat("?");
-tom = tommy | nameTom;
+anonymous = Cat {
+        name: name,
+        age: 5 
+    };
+tom = anonymous | nameTom;
 ```
