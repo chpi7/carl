@@ -112,4 +112,21 @@ TEST(Parser, parse_expression_associativity) {
 
     ASSERT_EQ(ss.str(), expected_print);
 }
+
+TEST(Parser, parse_everything) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* expr_src = "1 + 2 * 3 < 4 && true || false";
+    std::string expected_print = "(|| (&& (< (+ 1 (* 2 3)) 4) true) false)";
+    scanner->init(expr_src);
+
+    Parser parser(scanner);
+
+    std::shared_ptr<AstNode> node = parser.expression();
+
+    std::ostringstream ss;
+    auto v = new PrintAstNodeVisitor(ss);
+    node->accept(v);
+
+    ASSERT_EQ(ss.str(), expected_print);
+}
 }  // namespace
