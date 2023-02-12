@@ -1,6 +1,11 @@
 # Carl
 
-A work in progress (experimental) language combining features I like from other languages.
+A work in progress (experimental) language that:
+- Has partial function application
+- Has nice chaining function applications via the `|` operator
+- Compiles to bytecode
+- Easly understandable handwritten table-driven operator precedence parser
+
 
 ```
 struct Cat {
