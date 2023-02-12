@@ -12,6 +12,7 @@ enum OpCode {
     OP_GTBASIC,
     OP_LOADC,
     OP_POP,
+    OP_DUP,
     OP_ADD,
     OP_SUB,
     OP_MUL,
@@ -35,9 +36,10 @@ class Chunk {
    public:
     Chunk(uint64_t size);
     ~Chunk();
-    void write_opcode(OpCode opcode);
+    void write_byte(OpCode opcode);
     void write_int_const(carl_int_t c);
     void print(std::ostream& os);
+    uint8_t* get_memory();
 
     // for testing only.
     uint64_t get_write_offset();
