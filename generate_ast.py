@@ -5,17 +5,10 @@ from pathlib import Path
 from argparse import ArgumentParser
 
 IFDEF_NAME = "carl_ast_h"
-INCLUDES = [
-    "<sstream>",
-    "<fstream>",
-    "<memory>",
-    '"carl/scanner.h"'
-]
+INCLUDES = ["<sstream>", "<fstream>", "<memory>", '"carl/scanner.h"']
 NAMESPACE = "carl"
 FORWARD_DECLS = ["class AstNodeVisitor;"]
-REPLACEMENTS = {
-    "@spr": "std::shared_ptr"
-}
+REPLACEMENTS = {"@spr": "std::shared_ptr"}
 
 ASTNODE = """class AstNode {
     public:
@@ -27,7 +20,6 @@ TYPES = [
     "Invalid() : AstNode",
     "ExprStmt(@spr<AstNode> expr) : AstNode",
     "LetStmt(Token name, @spr<AstNode> initializer) : AstNode",
-
     "Binary(Token op, @spr<AstNode> lhs, @spr<AstNode> rhs) : AstNode",
     "Unary(Token op, @spr<AstNode> operand) : AstNode",
     "Variable(Token name) : AstNode",
@@ -36,16 +28,19 @@ TYPES = [
     "Number(Token value) : AstNode",
 ]
 
+
 @dataclass
 class Class:
     name: str
     parent: str
-    members: list['ClassMember']
+    members: list["ClassMember"]
+
 
 @dataclass
 class ClassMember:
     typename: str
     name: str
+
 
 def parse_class_decl(decl: str) -> Class:
     rem, parent = decl.split(":")
@@ -53,21 +48,22 @@ def parse_class_decl(decl: str) -> Class:
 
     name, rem = rem.split("(")
     name.strip()
-    assert(rem[-1] == ")", "Expected variable list to have a ) at the end")
+    assert (rem[-1] == ")", "Expected variable list to have a ) at the end")
     rem = rem[:-2]
 
     members = rem.strip().split(",")
-    if members == ['']:
+    if members == [""]:
         members = list()
 
     def parse_member(m: str) -> ClassMember:
         return ClassMember(*m.strip().split(" "))
 
     return Class(name, parent, list(map(parse_member, members)))
-    
+
 
 def parse_classes(decls: list[str]) -> list[Class]:
     return list(map(parse_class_decl, decls))
+
 
 def generate_constructor(cls: Class):
     r = cls.name
@@ -80,6 +76,7 @@ def generate_constructor(cls: Class):
     r += " {}"
     return r
 
+
 def generate_member_decls(members: list[ClassMember]):
     ds = list()
     for m in members:
@@ -87,12 +84,14 @@ def generate_member_decls(members: list[ClassMember]):
         ds.append(d)
     return "\n".join(ds)
 
+
 def generate_member_getters(members: list[ClassMember]):
     ds = list()
     for m in members:
         d = f"    {m.typename} get_{m.name}() {{ return this->{m.name}; }}"
         ds.append(d)
     return "\n".join(ds)
+
 
 def generate_class_definition(cls: Class):
     template = f"""class {cls.name} : public {cls.parent} {{
@@ -106,6 +105,7 @@ def generate_class_definition(cls: Class):
 """
     return template
 
+
 def generate_ast_node_visitor_functions(classes: list[Class]):
     fs = list()
     for cls in classes:
@@ -113,31 +113,39 @@ def generate_ast_node_visitor_functions(classes: list[Class]):
         fs.append(f)
     return "\n".join(fs)
 
-def generate_ast_node_visitor(classes: list[Class], name = "AstNodeVisitor"):
+
+def generate_ast_node_visitor(classes: list[Class], name="AstNodeVisitor"):
     return f"""class {name} {{
    public:
 {generate_ast_node_visitor_functions(classes)}
 }};
 """
 
+
 def generate_ast_node_accept_impls(classes: list[Class]):
     l = list()
     for cls in classes:
-        l.append(f"void {cls.name}::accept(AstNodeVisitor* visitor) {{ visitor->visit_{cls.name.lower()}(this); }}")
+        l.append(
+            f"void {cls.name}::accept(AstNodeVisitor* visitor) {{ visitor->visit_{cls.name.lower()}(this); }}"
+        )
     return "\n".join(l)
+
 
 def gen_header_header(name: str):
     return f"""#ifndef {name}
 #define {name}
 """
 
+
 def gen_include(name: str):
     return f"#include {name}"
+
 
 def apply_replacements(s: str) -> str:
     for f, t in REPLACEMENTS.items():
         s = s.replace(f, t)
     return s
+
 
 def generate_header_file(classes: list[Class]):
     file_content = gen_header_header(IFDEF_NAME)
@@ -155,7 +163,7 @@ def generate_header_file(classes: list[Class]):
         impl = generate_class_definition(cls)
         file_content += apply_replacements(impl)
         file_content += "\n"
-    
+
     impl = generate_ast_node_visitor(classes)
     file_content += apply_replacements(impl)
     file_content += "\n"
@@ -164,6 +172,7 @@ def generate_header_file(classes: list[Class]):
     file_content += f"#endif"
 
     return file_content
+
 
 def generate_cc_file(classes: list[Class]):
     file_content = '#include "carl/ast/ast.h"\n\n'
@@ -176,12 +185,15 @@ def generate_cc_file(classes: list[Class]):
 
     return file_content
 
+
 def main():
     argparser = ArgumentParser()
-    argparser.add_argument("-oh", type=Path, default = Path(__file__, "../include/carl/ast/ast.h"))
-    argparser.add_argument("-occ", type=Path, default = Path(__file__, "../src/ast.cc"))
+    argparser.add_argument(
+        "-oh", type=Path, default=Path(__file__, "../include/carl/ast/ast.h")
+    )
+    argparser.add_argument("-occ", type=Path, default=Path(__file__, "../src/ast.cc"))
     args = argparser.parse_args()
-    
+
     header_path = args.oh.resolve()
     src_path = args.occ.resolve()
 
@@ -194,6 +206,7 @@ def main():
 
     with open(src_path, "wt") as hf:
         hf.write(cc_file)
+
 
 if __name__ == "__main__":
     main()
