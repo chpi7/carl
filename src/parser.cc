@@ -4,7 +4,26 @@
 
 #include "carl/common.h"
 
+/* Grammar Excerpt
+
+    program -> declaration*
+    declaration -> letDecl | fnDecl | statement
+
+    statement -> ifStatement | whileStatment | blockStatement | expressionStatement
+    ifStatement -> 'if' expression statement [else statement]
+    whileStatement -> 'while' expression statement
+    blockStatement -> { declaration* }
+    expressionStatement -> statement ';'
+
+    expression -> assignment    // maybe support if expression here
+    assignment -> ...           // according to operator precedence (= is right associative, left associative otherwise)
+*/
+
 namespace carl {
+
+static std::shared_ptr<AstNode> make_error_node() {
+    return std::make_shared<Invalid>();
+}
 
 static const std::unordered_map<TokenType, ParseRule> parse_rules = {
     {TOKEN_LEFT_PAREN, {PREC_NONE, &Parser::grouping, nullptr}},
@@ -40,7 +59,7 @@ static const std::unordered_map<TokenType, ParseRule> parse_rules = {
     {TOKEN_FALSE, {PREC_NONE, &Parser::literal, nullptr}},
     {TOKEN_NIL, {PREC_NONE, &Parser::literal, nullptr}},
     {TOKEN_RETURN, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_LET, {PREC_NONE, &Parser::let_decl, nullptr}},
+    {TOKEN_LET, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_ERROR, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_EOF, {PREC_NONE, nullptr, nullptr}},
 };
@@ -80,6 +99,7 @@ const ParseRule* Parser::get_rule(TokenType tokenType) const {
 }
 
 std::shared_ptr<AstNode> Parser::statement() {
+    if (match(TOKEN_LET)) return let_stmt();
     return expr_stmt();
 }
 
@@ -90,7 +110,16 @@ std::shared_ptr<AstNode> Parser::expr_stmt() {
 }
 
 std::shared_ptr<AstNode> Parser::let_stmt() {
-    // TODO
+    auto identifier = variable();
+    if (peek(TOKEN_SEMICOLON)) {
+        // no assignment, --> assign nil
+        // TODO
+    } if (peek(TOKEN_EQUAL)) {
+        // TODO
+    } else {
+        error_at(current, "Expected ';' or '=' after 'let _'.");
+        return make_error_node();
+    }
 }
 
 std::shared_ptr<AstNode> Parser::expression() {
@@ -123,12 +152,6 @@ std::shared_ptr<AstNode> Parser::variable() {
     return std::make_shared<Variable>(previous);
 }
 
-std::shared_ptr<AstNode> Parser::let_decl() {
-    advance(); // consume 'let'
-    // TODO
-    return std::make_shared<Variable>(previous);
-}
-
 std::shared_ptr<AstNode> Parser::binary() {
     const ParseRule* current_rule = get_rule(previous.type);
 
@@ -150,6 +173,11 @@ std::shared_ptr<AstNode> Parser::grouping() {
 bool Parser::match(TokenType tokenType) {
     if (current.type != tokenType) return false;
     advance();
+    return true;
+}
+
+bool Parser::peek(TokenType tokenType) {
+    if (current.type != tokenType) return false;
     return true;
 }
 

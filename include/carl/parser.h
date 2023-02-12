@@ -49,7 +49,6 @@ class Parser {
     std::shared_ptr<AstNode> unary();
     std::shared_ptr<AstNode> literal();
     std::shared_ptr<AstNode> variable();
-    std::shared_ptr<AstNode> let_decl();
     std::shared_ptr<AstNode> string();
     std::shared_ptr<AstNode> number();
     std::shared_ptr<AstNode> binary();
@@ -60,6 +59,7 @@ class Parser {
     void consume(TokenType type, const char* message);
     void advance();
     bool match(TokenType tokenType);
+    bool peek(TokenType tokenType);
     std::shared_ptr<AstNode> parse_precedence(Precedence precedence);
     const ParseRule* get_rule(TokenType tokenType) const;
 };

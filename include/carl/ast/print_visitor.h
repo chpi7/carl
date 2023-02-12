@@ -7,6 +7,9 @@ class PrintAstNodeVisitor : public AstNodeVisitor {
 
    public:
     PrintAstNodeVisitor(std::ostream& os) : os(os){};
+    void visit_invalid(Invalid* invalid);
+    void visit_letstmt(LetStmt* letstmt);
+    void visit_exprstmt(ExprStmt* exprstmt);
     void visit_binary(Binary* node);
     void visit_unary(Unary* node);
     void visit_variable(Variable* node);
