@@ -10,6 +10,7 @@ FetchContent_MakeAvailable(googletest)
 
 set(TEST_CC
     test/scanner_test.cc
+    test/parser_test.cc
 )
 
 add_executable(tester test/tester.cc ${TEST_CC} ${CARL_INCLUDE_H})

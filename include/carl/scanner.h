@@ -39,6 +39,7 @@ enum TokenType {
     TOKEN_IF,
     TOKEN_ELSE,
     TOKEN_FOR,
+    TOKEN_FN,
     TOKEN_TRUE,
     TOKEN_FALSE,
     TOKEN_NIL,

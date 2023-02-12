@@ -1,5 +1,7 @@
 set(SRC_CC
-   src/scanner.cc 
+    src/ast.cc
+    src/parser.cc 
+    src/scanner.cc 
 )
 
 add_library(
