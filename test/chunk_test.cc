@@ -1,4 +1,4 @@
-#include "carl/vm/instruction.h"
+#include "carl/vm/chunk.h"
 
 #include <gtest/gtest.h>
 

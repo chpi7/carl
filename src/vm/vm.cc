@@ -1,6 +1,6 @@
 #include "carl/vm/vm.h"
 
-#include "carl/vm/instruction.h"
+#include "carl/vm/chunk.h"
 #include "carl/vm/memory.h"
 
 using namespace carl;

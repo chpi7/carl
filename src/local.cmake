@@ -1,10 +1,11 @@
 set(SRC_CC
-    src/ast.cc
-    src/print_visitor.cc
+    src/vm/vm.cc
+    src/vm/chunk.cc
+    src/ast/ast.cc
+    src/ast/print_visitor.cc
     src/parser.cc 
     src/scanner.cc 
-    src/vm.cc
-    src/instruction.cc
+    src/codegen.cc 
 )
 
 add_library(

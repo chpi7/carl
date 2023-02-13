@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "carl/vm/instruction.h"
+#include "carl/vm/chunk.h"
 
 namespace carl {
 
