@@ -27,8 +27,8 @@ void VM::init_stack() {
     sp = stack;
 }
 
-void VM::load_chunk(std::shared_ptr<Chunk> chunk) {
-    this->chunk = chunk;
+void VM::load_chunk(std::unique_ptr<Chunk> chunk) {
+    this->chunk = std::move(chunk);
     ip = this->chunk->get_memory();
 }
 
@@ -50,6 +50,8 @@ InterpretResult VM::step() {
         case OP_ADD: BINOP(+); break;
         case OP_SUB: BINOP(-); break;
         case OP_MUL: BINOP(*); break;
+        case OP_DIV: BINOP(/); break;
+        case OP_REM: BINOP(/); break;
         case OP_NEG: push(-pop()); break;
         case OP_HALT: return STEP_HALT;
         default:

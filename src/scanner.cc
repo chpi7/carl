@@ -45,6 +45,8 @@ Token Scanner::scan_token() {
             return make_token(TOKEN_STAR);
         case '/':
             return make_token(TOKEN_SLASH);
+        case '%':
+            return make_token(TOKEN_PERC);
         case '&':
             return match('&') ? make_token(TOKEN_AND) : make_token(TOKEN_ERROR);
         case '|':

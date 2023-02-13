@@ -19,6 +19,7 @@ enum TokenType {
     TOKEN_SLASH,
     TOKEN_STAR,
     TOKEN_PIPE,
+    TOKEN_PERC,
 
     // single and double char tokens
     TOKEN_BANG,

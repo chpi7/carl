@@ -1,7 +1,6 @@
 #ifndef carl_memory_h
 #define carl_memory_h
 
-#include <fstream>
 #include <cstdint>
 
 namespace carl {
@@ -10,7 +9,8 @@ typedef int64_t carl_int_t;
 
 enum ValueType {
     Nil,
-    Int,  // Basic and Pointer
+    Bool,
+    Int,
     Function,
     Closure,
     Vector,
@@ -21,6 +21,10 @@ struct Value {
 };
 
 struct NilValue : public Value {};
+
+struct BoolValue : public Value {
+    bool value;
+};
 
 struct IntValue : public Value {
     carl_int_t value;

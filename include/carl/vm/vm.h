@@ -25,7 +25,7 @@ class VM {
 
     // Program Code
     uint8_t* ip;
-    std::shared_ptr<Chunk> chunk;
+    std::unique_ptr<Chunk> chunk;
 
     // Heap
     // use the cpp heap for now bc im lazy :)
@@ -33,7 +33,7 @@ class VM {
    public:
     VM(uint64_t stack_size);
     ~VM();
-    void load_chunk(std::shared_ptr<Chunk> chunk);
+    void load_chunk(std::unique_ptr<Chunk> chunk);
     InterpretResult step();
     InterpretResult run();
     carl_stackelem_t get_stack_top();

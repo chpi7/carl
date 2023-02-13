@@ -8,7 +8,7 @@ namespace {
 TEST(VM, add_two) {
     VM vm(1024);
 
-    auto chunk = std::make_shared<Chunk>(255);
+    auto chunk = std::make_unique<Chunk>(255);
     chunk->write_byte(OP_LOADC);
     chunk->write_int_const(1);
     chunk->write_byte(OP_LOADC);
@@ -16,7 +16,7 @@ TEST(VM, add_two) {
     chunk->write_byte(OP_ADD);
     chunk->write_byte(OP_HALT);
 
-    vm.load_chunk(chunk);
+    vm.load_chunk(std::move(chunk));
     vm.step();
     vm.step();
     vm.step();
@@ -28,7 +28,7 @@ TEST(VM, add_two) {
 TEST(VM, sub_add_three) {
     VM vm(1024);
 
-    auto chunk = std::make_shared<Chunk>(255);
+    auto chunk = std::make_unique<Chunk>(255);
     chunk->write_byte(OP_LOADC);
     chunk->write_int_const(1);
     chunk->write_byte(OP_LOADC);
@@ -40,7 +40,7 @@ TEST(VM, sub_add_three) {
     chunk->write_byte(OP_NEG);
     chunk->write_byte(OP_HALT);
 
-    vm.load_chunk(chunk);
+    vm.load_chunk(std::move(chunk));
     auto exit_code = vm.run();
     ASSERT_EQ(exit_code, STEP_HALT);
 

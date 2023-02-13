@@ -1,6 +1,7 @@
 #ifndef carl_instruction_h
 #define carl_instruction_h
 
+#include <fstream>
 #include <vector>
 
 #include "carl/vm/memory.h"
@@ -16,6 +17,8 @@ enum OpCode {
     OP_ADD,
     OP_SUB,
     OP_MUL,
+    OP_DIV,
+    OP_REM,
     OP_NEG,
     OP_EQ,
     OP_LE,

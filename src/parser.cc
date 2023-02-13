@@ -38,6 +38,7 @@ static const std::unordered_map<TokenType, ParseRule> parse_rules = {
     {TOKEN_SLASH, {PREC_FACTOR, nullptr, &Parser::binary}},
     {TOKEN_STAR, {PREC_FACTOR, nullptr, &Parser::binary}},
     {TOKEN_PIPE, {PREC_NONE, nullptr, nullptr}},
+    {TOKEN_PERC, {PREC_FACTOR, nullptr, &Parser::binary}},
     {TOKEN_BANG, {PREC_NONE, &Parser::unary, nullptr}},
     {TOKEN_BANG_EQUAL, {PREC_EQ, nullptr, &Parser::binary}},
     {TOKEN_EQUAL, {PREC_ASSIGNMENT, nullptr, &Parser::binary}},
