@@ -96,7 +96,7 @@ void Parser::set_scanner(std::shared_ptr<Scanner> scanner) {
 }
 
 std::shared_ptr<AstNode> Parser::parse() {
-    return expression();
+    return statement();
 }
 
 const ParseRule* Parser::get_rule(TokenType tokenType) const {
@@ -119,12 +119,18 @@ std::shared_ptr<AstNode> Parser::expr_stmt() {
 }
 
 std::shared_ptr<AstNode> Parser::let_stmt() {
-    auto identifier = variable();
+    consume(TOKEN_IDENTIFIER, "Expected identifier as variable name after let.");
+    auto identifier = previous;
     if (peek(TOKEN_SEMICOLON)) {
-        // no assignment, --> assign nil
-        // TODO
-    } if (peek(TOKEN_EQUAL)) {
-        // TODO
+        error_at(current, "Expected initialization after variable declaration.");
+        return make_error_node();
+    } if (match(TOKEN_EQUAL)) {
+        auto initializer = expression();
+        auto result = std::make_shared<LetStmt>(identifier, initializer);
+        if (!match(TOKEN_SEMICOLON)) {
+            error_at(current, "Expected ; after let initializer.");
+        }
+        return result;
     } else {
         error_at(current, "Expected ';' or '=' after 'let _'.");
         return make_error_node();

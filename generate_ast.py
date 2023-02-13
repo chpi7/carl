@@ -5,7 +5,7 @@ from pathlib import Path
 from argparse import ArgumentParser
 
 IFDEF_NAME = "carl_ast_h"
-INCLUDES = ["<sstream>", "<fstream>", "<memory>", '"carl/scanner.h"']
+INCLUDES = ["<sstream>", "<fstream>", "<memory>", '"carl/scanner.h"', '"carl/common.h"']
 NAMESPACE = "carl"
 FORWARD_DECLS = ["class AstNodeVisitor;"]
 REPLACEMENTS = {"@spr": "std::shared_ptr"}
@@ -109,7 +109,7 @@ def generate_class_definition(cls: Class):
 def generate_ast_node_visitor_functions(classes: list[Class]):
     fs = list()
     for cls in classes:
-        f = f"    virtual void visit_{cls.name.lower()}({cls.name}* {cls.name.lower()}) = 0;"
+        f = f"    virtual void visit_{cls.name.lower()}({cls.name}* {cls.name.lower()}) {{ assert(false && \"visit {cls.name.lower()} not overwritten\"); }};"
         fs.append(f)
     return "\n".join(fs)
 

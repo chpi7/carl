@@ -8,7 +8,7 @@ using namespace carl;
 
 static const std::unordered_map<TokenType, OpCode> opMap = {
     {TOKEN_PLUS, OP_ADD},  {TOKEN_MINUS, OP_SUB}, {TOKEN_STAR, OP_MUL},
-    {TOKEN_SLASH, OP_DIV}, {TOKEN_BANG, OP_NEG},
+    {TOKEN_SLASH, OP_DIV}, {TOKEN_BANG, OP_NEG}, {TOKEN_PERC, OP_REM},
 };
 
 static const std::unordered_map<TokenType, OpCode> unaryOpMap = {
@@ -17,6 +17,10 @@ static const std::unordered_map<TokenType, OpCode> unaryOpMap = {
 
 CodeGenerator::CodeGenerator() {
     chunk = std::make_unique<Chunk>(2048);
+}
+
+void CodeGenerator::generate(std::shared_ptr<AstNode> node) {
+    node->accept(this);
 }
 
 Chunk* CodeGenerator::get_chunk() {

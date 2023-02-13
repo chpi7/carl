@@ -58,7 +58,7 @@ InterpretResult VM::step() {
         case OP_SUB: BINOP(-); break;
         case OP_MUL: BINOP(*); break;
         case OP_DIV: BINOP(/); break;
-        case OP_REM: BINOP(/); break;
+        case OP_REM: BINOP(%); break;
         case OP_NEG: push(-pop()); break;
         case OP_HALT: return STEP_HALT;
         default:

@@ -12,8 +12,11 @@ class CodeGenerator : public AstNodeVisitor {
 
    public:
     CodeGenerator();
+    void generate(std::shared_ptr<AstNode> node);
     Chunk* get_chunk();
     std::unique_ptr<Chunk> take_chunk();
+
+   private:
     void visit_invalid(Invalid* invalid);
     void visit_binary(Binary* binary);
     void visit_unary(Unary* unary);

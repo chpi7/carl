@@ -4,5 +4,6 @@
 #include <cassert>
 
 #define CARL_VERSION "0.1"
+#define DEBUG
 
 #endif

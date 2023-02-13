@@ -12,11 +12,16 @@ void PrintAstNodeVisitor::visit_invalid(Invalid* invalid) {
 }
 
 void PrintAstNodeVisitor::visit_letstmt(LetStmt* letstmt) {
-    os << "<invalid>";
+    os << "let ";
+    stringify_token(stringify_buffer, letstmt->get_name());
+    os << stringify_buffer << " = ";
+    letstmt->get_initializer()->accept(this);
+    os << ";";
 }
 
 void PrintAstNodeVisitor::visit_exprstmt(ExprStmt* exprstmt) {
-    os << "<invalid>";
+    exprstmt->get_expr()->accept(this);
+    os << ";";
 }
 
 void PrintAstNodeVisitor::visit_binary(Binary* node) {

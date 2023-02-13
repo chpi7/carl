@@ -136,4 +136,40 @@ TEST(Parser, parse_everything) {
 
     ASSERT_EQ(ss.str(), expected_print);
 }
+
+TEST(Parser, parse_exprstmt) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* expr_src = "1 + 2;";
+    std::string expected_print = "(+ 1 2);";
+    scanner->init(expr_src);
+
+    Parser parser;
+    parser.set_scanner(scanner);
+
+    std::shared_ptr<AstNode> node = parser.statement();
+
+    std::ostringstream ss;
+    auto v = new PrintAstNodeVisitor(ss);
+    node->accept(v);
+
+    ASSERT_EQ(ss.str(), expected_print);
+}
+
+TEST(Parser, parse_letstmt) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* expr_src = "let x = 1 + 2;";
+    std::string expected_print = "let x = (+ 1 2);";
+    scanner->init(expr_src);
+
+    Parser parser;
+    parser.set_scanner(scanner);
+
+    std::shared_ptr<AstNode> node = parser.statement();
+
+    std::ostringstream ss;
+    auto v = new PrintAstNodeVisitor(ss);
+    node->accept(v);
+
+    ASSERT_EQ(ss.str(), expected_print);
+}
 }  // namespace

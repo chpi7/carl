@@ -5,13 +5,14 @@
 #include <fstream>
 #include <memory>
 #include "carl/scanner.h"
+#include "carl/common.h"
 
 namespace carl {
 
 class AstNodeVisitor;
 
 class AstNode {
-    public:
+   public:
     virtual ~AstNode() = default;
     virtual void accept(AstNodeVisitor* visitor) = 0;
 };
@@ -107,15 +108,15 @@ class Number : public AstNode {
 
 class AstNodeVisitor {
    public:
-    virtual void visit_invalid(Invalid* invalid) = 0;
-    virtual void visit_exprstmt(ExprStmt* exprstmt) = 0;
-    virtual void visit_letstmt(LetStmt* letstmt) = 0;
-    virtual void visit_binary(Binary* binary) = 0;
-    virtual void visit_unary(Unary* unary) = 0;
-    virtual void visit_variable(Variable* variable) = 0;
-    virtual void visit_literal(Literal* literal) = 0;
-    virtual void visit_string(String* string) = 0;
-    virtual void visit_number(Number* number) = 0;
+    virtual void visit_invalid(Invalid* invalid) { assert(false && "visit invalid not overwritten"); };
+    virtual void visit_exprstmt(ExprStmt* exprstmt) { assert(false && "visit exprstmt not overwritten"); };
+    virtual void visit_letstmt(LetStmt* letstmt) { assert(false && "visit letstmt not overwritten"); };
+    virtual void visit_binary(Binary* binary) { assert(false && "visit binary not overwritten"); };
+    virtual void visit_unary(Unary* unary) { assert(false && "visit unary not overwritten"); };
+    virtual void visit_variable(Variable* variable) { assert(false && "visit variable not overwritten"); };
+    virtual void visit_literal(Literal* literal) { assert(false && "visit literal not overwritten"); };
+    virtual void visit_string(String* string) { assert(false && "visit string not overwritten"); };
+    virtual void visit_number(Number* number) { assert(false && "visit number not overwritten"); };
 };
 
 } // namespace carl

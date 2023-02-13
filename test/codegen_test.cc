@@ -21,7 +21,7 @@ TEST(CodeGen, SimpleCalc) {
     parser.set_scanner(scanner);
     auto expression = parser.expression();
 
-    expression->accept(&generator);
+    generator.generate(expression);
     
     VM vm(256);
     vm.load_chunk(generator.take_chunk());

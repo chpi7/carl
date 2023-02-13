@@ -6,8 +6,6 @@
 #include "carl/vm/vm.h"
 #include "carl/ast/print_visitor.h"
 
-#define DEBUG
-
 using namespace carl;
 
 static void interpret(const char* line) {
@@ -22,8 +20,8 @@ static void interpret(const char* line) {
     scanner->init(line);
     parser.set_scanner(scanner);
 
-    auto expr = parser.expression();
-    expr->accept(&gen);
+    auto expr = parser.statement();
+    gen.generate(expr);
 #ifdef DEBUG
     expr->accept(&v);
     std::cout << std::endl;
