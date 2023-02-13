@@ -85,10 +85,18 @@ std::shared_ptr<AstNode> Parser::parse_precedence(Precedence precedence) {
     return expression;
 }
 
-Parser::Parser(std::shared_ptr<Scanner> scanner) : scanner(scanner) {
+Parser::Parser() : scanner(nullptr) {
     panic_mode = false;
     has_error = false;
+}
+
+void Parser::set_scanner(std::shared_ptr<Scanner> scanner) {
+    this->scanner = scanner;
     advance();
+}
+
+std::shared_ptr<AstNode> Parser::parse() {
+    return expression();
 }
 
 const ParseRule* Parser::get_rule(TokenType tokenType) const {

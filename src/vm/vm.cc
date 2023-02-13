@@ -27,6 +27,13 @@ void VM::init_stack() {
     sp = stack;
 }
 
+void VM::print_stack() {
+    for (carl_stackelem_t* p = stack + 1; p <= sp; p++) {
+        fprintf(stdout, "[ %ld ]", *p);
+    }
+    fprintf(stdout, "\n");
+}
+
 void VM::load_chunk(std::unique_ptr<Chunk> chunk) {
     this->chunk = std::move(chunk);
     ip = this->chunk->get_memory();
@@ -65,6 +72,7 @@ InterpretResult VM::run() {
     InterpretResult r = STEP_OK; // empty program is okay
     do {
         r = step();
+        print_stack();
     } while (r == STEP_OK);
     return r;
 }

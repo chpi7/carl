@@ -11,6 +11,10 @@ static const std::unordered_map<TokenType, OpCode> opMap = {
     {TOKEN_SLASH, OP_DIV}, {TOKEN_BANG, OP_NEG},
 };
 
+static const std::unordered_map<TokenType, OpCode> unaryOpMap = {
+    {TOKEN_MINUS, OP_NEG} , {TOKEN_BANG, OP_NEG},
+};
+
 CodeGenerator::CodeGenerator() {
     chunk = std::make_unique<Chunk>(2048);
 }
@@ -44,11 +48,11 @@ void CodeGenerator::visit_binary(Binary* binary) {
 void CodeGenerator::visit_unary(Unary* unary) {
     unary->get_operand()->accept(this);
     auto tokenType = unary->get_op().type;
-    if (!opMap.contains(tokenType)) {
+    if (!unaryOpMap.contains(tokenType)) {
         std::cerr << "operator token type not found in opMap" << std::endl;
         return;
     }
-    OpCode opCode = opMap.at(tokenType);
+    OpCode opCode = unaryOpMap.at(tokenType);
     chunk->write_byte(opCode);
 }
 

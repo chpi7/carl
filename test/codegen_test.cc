@@ -16,8 +16,9 @@ TEST(CodeGen, SimpleCalc) {
     const char* expr_src = "2 + 3 * 4";
     scanner->init(expr_src);
 
-    Parser parser(scanner);
+    Parser parser;
     CodeGenerator generator;
+    parser.set_scanner(scanner);
     auto expression = parser.expression();
 
     expression->accept(&generator);

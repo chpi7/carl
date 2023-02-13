@@ -41,7 +41,9 @@ class Parser {
     Token previous;
 
    public:
-    Parser(std::shared_ptr<Scanner> scanner);
+    Parser();
+    void set_scanner(std::shared_ptr<Scanner> scanner);
+    std::shared_ptr<AstNode> parse();
     std::shared_ptr<AstNode> statement();
     std::shared_ptr<AstNode> expr_stmt();
     std::shared_ptr<AstNode> let_stmt();

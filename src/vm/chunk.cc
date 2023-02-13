@@ -87,6 +87,9 @@ void Chunk::print(std::ostream& os) {
             case OP_MUL:
                 print_simple_instruction(os, "MUL", &pos);
                 break;
+            case OP_DIV:
+                print_simple_instruction(os, "DIV", &pos);
+                break;
             case OP_NEG:
                 print_simple_instruction(os, "NEG", &pos);
                 break;

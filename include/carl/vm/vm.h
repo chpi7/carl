@@ -37,6 +37,7 @@ class VM {
     InterpretResult step();
     InterpretResult run();
     carl_stackelem_t get_stack_top();
+    void print_stack();
 
    private:
     void free_stack();

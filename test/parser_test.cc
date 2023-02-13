@@ -17,7 +17,8 @@ TEST(Parser, parse_expression_simple) {
     std::string expected_print = "(+ 1 (* 2 (- 3)))";
     scanner->init(expr_src);
 
-    Parser parser(scanner);
+    Parser parser;
+    parser.set_scanner(scanner);
 
     std::shared_ptr<AstNode> node = parser.expression();
 
@@ -34,7 +35,8 @@ TEST(Parser, parse_normally_left_assoc) {
     std::string expected_print = "(+ (+ a b) c)";
     scanner->init(expr_src);
 
-    Parser parser(scanner);
+    Parser parser;
+    parser.set_scanner(scanner);
 
     std::shared_ptr<AstNode> node = parser.expression();
 
@@ -51,7 +53,8 @@ TEST(Parser, parse_assignment_right_assoc) {
     std::string expected_print = "(= a (= b c))";
     scanner->init(expr_src);
 
-    Parser parser(scanner);
+    Parser parser;
+    parser.set_scanner(scanner);
 
     std::shared_ptr<AstNode> node = parser.expression();
 
@@ -68,7 +71,8 @@ TEST(Parser, parse_expression_logical) {
     std::string expected_print = "(|| 1 (== (+ 1 2) 3))";
     scanner->init(expr_src);
 
-    Parser parser(scanner);
+    Parser parser;
+    parser.set_scanner(scanner);
 
     std::shared_ptr<AstNode> node = parser.expression();
 
@@ -85,7 +89,8 @@ TEST(Parser, parse_expression_grouping) {
     std::string expected_print = "(+ 0 (* (+ 1.3 2) (- 3)))";
     scanner->init(expr_src);
 
-    Parser parser(scanner);
+    Parser parser;
+    parser.set_scanner(scanner);
 
     std::shared_ptr<AstNode> node = parser.expression();
 
@@ -102,7 +107,8 @@ TEST(Parser, parse_expression_associativity) {
     std::string expected_print = "(+ (+ 0 1) (* 2 3))";
     scanner->init(expr_src);
 
-    Parser parser(scanner);
+    Parser parser;
+    parser.set_scanner(scanner);
 
     std::shared_ptr<AstNode> node = parser.expression();
 
@@ -119,7 +125,8 @@ TEST(Parser, parse_everything) {
     std::string expected_print = "(|| (&& (< (+ 1 (* 2 3)) 4) true) false)";
     scanner->init(expr_src);
 
-    Parser parser(scanner);
+    Parser parser;
+    parser.set_scanner(scanner);
 
     std::shared_ptr<AstNode> node = parser.expression();
 
