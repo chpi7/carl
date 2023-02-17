@@ -49,7 +49,11 @@ InterpretResult VM::step() {
 #define BINOP(op) do { \
     auto rhs = pop(); \
     auto lhs = pop(); \
-    push(lhs op rhs); \
+    if (rhs == CARL_NIL || lhs == CARL_NIL) { \
+        push(CARL_NIL); \
+    } else { \
+        push(lhs op rhs); \
+    } \
 } while (0);
     OpCode op = static_cast<OpCode>(*ip++);
     switch (op) {
