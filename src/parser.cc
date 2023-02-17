@@ -107,6 +107,32 @@ const ParseRule* Parser::get_rule(TokenType tokenType) const {
     return c;
 }
 
+void Parser::synchronize() {
+    panic_mode = false;
+
+    while (current.type != TOKEN_EOF) {
+        if (previous.type == TOKEN_SEMICOLON) return;
+        switch (current.type) {
+            case TOKEN_FN:
+            case TOKEN_LET:
+            case TOKEN_IF:
+            case TOKEN_RETURN:
+                return;
+            default:
+                ;
+        }
+        advance();
+    }
+}
+
+std::shared_ptr<AstNode> Parser::declaration() {
+    auto result = statement();
+    if (panic_mode) {
+        synchronize();
+    }
+    return result;
+}
+
 std::shared_ptr<AstNode> Parser::statement() {
     if (match(TOKEN_LET)) return let_stmt();
     return expr_stmt();

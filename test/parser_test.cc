@@ -137,6 +137,24 @@ TEST(Parser, parse_everything) {
     ASSERT_EQ(ss.str(), expected_print);
 }
 
+TEST(Parser, parse_nil) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* expr_src = "nil || nil";
+    std::string expected_print = "(|| nil nil)";
+    scanner->init(expr_src);
+
+    Parser parser;
+    parser.set_scanner(scanner);
+
+    std::shared_ptr<AstNode> node = parser.expression();
+
+    std::ostringstream ss;
+    auto v = new PrintAstNodeVisitor(ss);
+    node->accept(v);
+
+    ASSERT_EQ(ss.str(), expected_print);
+}
+
 TEST(Parser, parse_exprstmt) {
     auto scanner = std::make_shared<Scanner>();
     const char* expr_src = "1 + 2;";

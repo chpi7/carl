@@ -44,6 +44,7 @@ class Parser {
     Parser();
     void set_scanner(std::shared_ptr<Scanner> scanner);
     std::shared_ptr<AstNode> parse();
+    std::shared_ptr<AstNode> declaration();
     std::shared_ptr<AstNode> statement();
     std::shared_ptr<AstNode> expr_stmt();
     std::shared_ptr<AstNode> let_stmt();
@@ -60,6 +61,7 @@ class Parser {
     void error_at(Token token, const char* message);
     void consume(TokenType type, const char* message);
     void advance();
+    void synchronize();
     bool match(TokenType tokenType);
     bool peek(TokenType tokenType);
     std::shared_ptr<AstNode> parse_precedence(Precedence precedence);

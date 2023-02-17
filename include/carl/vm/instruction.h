@@ -4,6 +4,10 @@
 namespace carl {
 enum OpCode {
     OP_NOP,
+    OP_NIL,
+    OP_TRUE,
+    OP_FALSE,
+
     OP_MKBASIC,
     OP_GTBASIC,
     OP_LOADC,
@@ -13,6 +17,9 @@ enum OpCode {
     OP_SUB,
     OP_MUL,
     OP_DIV,
+    OP_AND,
+    OP_OR,
+    OP_NOT,
     OP_REM,
     OP_NEG,
     OP_EQ,
@@ -20,6 +27,7 @@ enum OpCode {
     OP_LEQ,
     OP_JUMP,
     OP_JUMPZ,
+    OP_DEFINE_VAR,
     OP_HALT,
 };
 }

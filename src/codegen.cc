@@ -4,15 +4,18 @@
 
 #include "carl/common.h"
 
+#include <cstring>
+
 using namespace carl;
 
 static const std::unordered_map<TokenType, OpCode> opMap = {
     {TOKEN_PLUS, OP_ADD},  {TOKEN_MINUS, OP_SUB}, {TOKEN_STAR, OP_MUL},
     {TOKEN_SLASH, OP_DIV}, {TOKEN_BANG, OP_NEG}, {TOKEN_PERC, OP_REM},
+    {TOKEN_AND, OP_AND}, {TOKEN_OR, OP_OR},
 };
 
 static const std::unordered_map<TokenType, OpCode> unaryOpMap = {
-    {TOKEN_MINUS, OP_NEG} , {TOKEN_BANG, OP_NEG},
+    {TOKEN_MINUS, OP_NEG} , {TOKEN_BANG, OP_NOT},
 };
 
 CodeGenerator::CodeGenerator() {
@@ -60,19 +63,45 @@ void CodeGenerator::visit_unary(Unary* unary) {
     chunk->write_byte(opCode);
 }
 
-void CodeGenerator::visit_variable(Variable* variable){}
+void CodeGenerator::visit_variable(Variable*){
+    std::cerr << "Variable codegen not implemented yet!" << std::endl;
+}
 
-void CodeGenerator::visit_literal(Literal* literal){}
+void CodeGenerator::visit_literal(Literal* literal){
+    auto tok = literal->get_value();
+    if (tok.length == 4 && (tok.start, "true", 4)) {
+        chunk->write_byte(OP_TRUE);
+    } else if (tok.length == 5 && (tok.start, "false", 5)) {
+        chunk->write_byte(OP_FALSE);
+    } else if (tok.length == 3 && (tok.start, "nil", 3)) {
+        chunk->write_byte(OP_NIL);
+    } else {
+        std::cerr << "Unkown literal: " << std::string(tok.start, tok.length) << std::endl;
+    }
+}
 
-void CodeGenerator::visit_string(String* string){}
+void CodeGenerator::visit_string(String*){
+    std::cerr << "String codegen not implemented yet!" << std::endl;
+}
 
 void CodeGenerator::visit_number(Number* number) {
-    // TODO maybe do this more nicely?
     carl_int_t v = atoi(number->get_value().start);
     chunk->write_byte(OP_LOADC);
     chunk->write_int_const(v);
 }
 
-void CodeGenerator::visit_exprstmt(ExprStmt* exprstmt){}
+void CodeGenerator::visit_exprstmt(ExprStmt* exprstmt){
+    exprstmt->accept(this);
+    chunk->write_byte(OP_POP);
+}
 
-void CodeGenerator::visit_letstmt(LetStmt* letstmt){}
+void CodeGenerator::visit_letstmt(LetStmt* letstmt){
+    // auto name_tok = letstmt->get_name();
+    // uint64_t name_hash = hash_string(name_tok.start, name_tok.length);
+    // name_hashes.emplace(std::piecewise_construct, std::forward_as_tuple(name_tok.start, name_tok.length), std::forward_as_tuple(name_hash));
+
+    letstmt->accept(this); // compute initializer value
+    chunk->write_byte(OP_MKBASIC); // move to heap
+    // chunk->write_int_const(name_hash); // put variable id
+    chunk->write_byte(OP_DEFINE_VAR); // link id -> heap object
+}

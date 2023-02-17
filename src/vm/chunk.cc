@@ -111,6 +111,9 @@ void Chunk::print(std::ostream& os) {
             case OP_JUMPZ:
                 print_simple_instruction(os, "JUMPZ", &pos);
                 break;
+            case OP_DEFINE_VAR:
+                print_simple_instruction(os, "DEFINE_VAR", &pos);
+                break;
             case OP_HALT:
                 print_simple_instruction(os, "HALT", &pos);
                 break;

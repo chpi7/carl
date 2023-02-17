@@ -17,6 +17,8 @@ class CodeGenerator : public AstNodeVisitor {
     std::unique_ptr<Chunk> take_chunk();
 
    private:
+    uint64_t hash_string(const char* s, int length);
+
     void visit_invalid(Invalid* invalid);
     void visit_binary(Binary* binary);
     void visit_unary(Unary* unary);

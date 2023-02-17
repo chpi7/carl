@@ -44,6 +44,7 @@ class VM {
     void init_stack();
     inline carl_stackelem_t pop();
     inline void push(carl_stackelem_t v);
+    inline carl_int_t logic_binop(OpCode op, carl_int_t lhs, carl_int_t rhs);
 };
 }  // namespace carl
 

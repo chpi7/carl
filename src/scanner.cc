@@ -140,7 +140,7 @@ TokenType Scanner::get_identifier_type() {
         case 'l':
             return check_keyword(1, 2, "et", TOKEN_LET);
         case 'n':
-            return check_keyword(1, 2, "il", TOKEN_LET);
+            return check_keyword(1, 2, "il", TOKEN_NIL);
         case 'r':
             return check_keyword(1, 5, "eturn", TOKEN_RETURN);
         case 't':
