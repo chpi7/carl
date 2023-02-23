@@ -69,15 +69,17 @@ void CodeGenerator::visit_variable(Variable*){
 
 void CodeGenerator::visit_literal(Literal* literal){
     auto tok = literal->get_value();
-    if (tok.length == 4 && (tok.start, "true", 4)) {
+#define IS_TOK(s, l) (tok.length == l && strncmp(tok.start, s, l) == 0)
+    if (IS_TOK("true", 4)) {
         chunk->write_byte(OP_TRUE);
-    } else if (tok.length == 5 && (tok.start, "false", 5)) {
+    } else if (IS_TOK("false", 5)) {
         chunk->write_byte(OP_FALSE);
-    } else if (tok.length == 3 && (tok.start, "nil", 3)) {
+    } else if (IS_TOK("nil", 3)) {
         chunk->write_byte(OP_NIL);
     } else {
         std::cerr << "Unkown literal: " << std::string(tok.start, tok.length) << std::endl;
     }
+#undef IS_TOK
 }
 
 void CodeGenerator::visit_string(String*){
