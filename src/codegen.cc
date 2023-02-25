@@ -22,6 +22,13 @@ CodeGenerator::CodeGenerator() {
     chunk = std::make_unique<Chunk>(2048);
 }
 
+void CodeGenerator::generate(std::vector<std::shared_ptr<AstNode>>& nodes) {
+    for (auto& node : nodes) {
+        node->accept(this);
+    }
+    chunk->write_byte(OP_HALT);
+}
+
 void CodeGenerator::generate(std::shared_ptr<AstNode> node) {
     node->accept(this);
 }
@@ -63,8 +70,12 @@ void CodeGenerator::visit_unary(Unary* unary) {
     chunk->write_byte(opCode);
 }
 
-void CodeGenerator::visit_variable(Variable*){
-    std::cerr << "Variable codegen not implemented yet!" << std::endl;
+void CodeGenerator::visit_variable(Variable* variable){
+    // retrieve the stored name for this name
+    auto name = chunk->save_name(std::string(variable->get_name().start, variable->get_name().length));
+    chunk->write_byte(OP_LOADC);
+    chunk->write_int_const(reinterpret_cast<carl_int_t>(name.get()));
+    chunk->write_byte(OP_GET_VAR);
 }
 
 void CodeGenerator::visit_literal(Literal* literal){
@@ -93,17 +104,17 @@ void CodeGenerator::visit_number(Number* number) {
 }
 
 void CodeGenerator::visit_exprstmt(ExprStmt* exprstmt){
-    exprstmt->accept(this);
+    exprstmt->get_expr()->accept(this);
     chunk->write_byte(OP_POP);
 }
 
 void CodeGenerator::visit_letstmt(LetStmt* letstmt){
-    // auto name_tok = letstmt->get_name();
-    // uint64_t name_hash = hash_string(name_tok.start, name_tok.length);
-    // name_hashes.emplace(std::piecewise_construct, std::forward_as_tuple(name_tok.start, name_tok.length), std::forward_as_tuple(name_hash));
+    // compute initializer value
+    letstmt->get_initializer()->accept(this);
 
-    letstmt->accept(this); // compute initializer value
-    chunk->write_byte(OP_MKBASIC); // move to heap
-    // chunk->write_int_const(name_hash); // put variable id
-    chunk->write_byte(OP_DEFINE_VAR); // link id -> heap object
+    // copy name string and save to chunk
+    auto name = chunk->save_name(std::string(letstmt->get_name().start, letstmt->get_name().length));
+    chunk->write_byte(OP_LOADC);
+    chunk->write_int_const(reinterpret_cast<carl_int_t>(name.get()));
+    chunk->write_byte(OP_DEFINE_VAR);
 }

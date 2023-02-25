@@ -13,6 +13,7 @@ class CodeGenerator : public AstNodeVisitor {
    public:
     CodeGenerator();
     void generate(std::shared_ptr<AstNode> node);
+    void generate(std::vector<std::shared_ptr<AstNode>>& nodes);
     Chunk* get_chunk();
     std::unique_ptr<Chunk> take_chunk();
 

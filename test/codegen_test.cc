@@ -6,6 +6,7 @@
 
 #include "carl/parser.h"
 #include "carl/ast/print_visitor.h"
+#include "carl/ast/ast_printer.h"
 #include "carl/vm/vm.h"
 
 using namespace carl;
@@ -147,5 +148,33 @@ TEST(CodeGen, logic_true_and_false) {
     auto r = vm.get_stack_top();
 
     ASSERT_EQ(r, CARL_FALSE);
+}
+
+TEST(CodeGen, letstmt) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* expr_src = ""
+    "let x = 1;"
+    "x + 1;";
+    scanner->init(expr_src);
+
+    Parser parser;
+    CodeGenerator generator;
+    parser.set_scanner(scanner);
+    auto decl_list = parser.parse();
+    ASSERT_EQ(decl_list.size(), 2);
+
+    generator.generate(decl_list);
+    
+    VM vm(256);
+    vm.load_chunk(generator.take_chunk());
+
+    ASSERT_EQ(generator.get_chunk(), nullptr);
+
+    for(int i = 0; i < 7; ++i) vm.step();
+    auto r = vm.get_stack_top();
+    ASSERT_EQ(r, 2);
+
+    auto code = vm.run();
+    ASSERT_EQ(code, STEP_HALT);
 }
 }  // namespace

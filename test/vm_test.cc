@@ -48,7 +48,7 @@ TEST(VM, sub_add_three) {
     ASSERT_EQ(result, -3);
 }
 
-TEST(VM, def_get_var) {
+TEST(VM, def_set_get_var) {
     VM vm(1024);
     const char* name = "x";
 
@@ -82,8 +82,6 @@ TEST(VM, def_get_var) {
     chunk->write_byte(OP_GET_VAR);
 
     chunk->write_byte(OP_HALT);
-
-    chunk->print(std::cout);
 
     vm.load_chunk(std::move(chunk));
 

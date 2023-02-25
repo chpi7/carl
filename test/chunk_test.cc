@@ -35,4 +35,22 @@ TEST(Chunk, write_and_print) {
     ASSERT_EQ(chunk.get_write_offset(), 26);
     ASSERT_EQ(os.str(), expected);
 }
+
+TEST(Chunk, set_of_shared_ptr_to_string) {
+    auto s1 = std::string("string 1");
+    auto s1_d = std::string("string 1");
+    auto s2 = std::string("string 2");
+
+    Chunk c(255);
+    auto saved1 = c.save_name(s1); 
+    auto saved1_d = c.save_name(s1_d); 
+    ASSERT_EQ(saved1, saved1_d);
+
+    auto saved2 = c.save_name(s2);
+    ASSERT_NE(saved2, saved1);
+
+    auto r1 = c.get_name(s1);
+    auto r1_d = c.get_name(s1_d);
+    ASSERT_EQ(r1, r1_d);
+}
 }  // namespace

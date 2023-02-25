@@ -31,6 +31,10 @@ void VM::init_stack() {
 }
 
 void VM::print_stack() {
+    if (stack + 1 > sp) {
+        fprintf(stdout, "<empty>\n");
+        return;
+    }
     for (carl_stackelem_t* p = stack + 1; p <= sp; p++) {
         if (*p == CARL_NIL) {
             fprintf(stdout, "[ nil ]");
@@ -153,15 +157,12 @@ InterpretResult VM::step() {
 #undef BINOP
 }
 
-InterpretResult VM::run() {
+InterpretResult VM::run(bool print_stack_flag) {
     InterpretResult r = STEP_OK; // empty program is okay
     do {
         r = step();
-        print_stack();
+        if (print_stack_flag) print_stack();
     } while (r == STEP_OK);
-#ifdef DEBUG
-    if (r == STEP_HALT) std::cout << "halting execution\n";
-#endif
     return r;
 }
 
@@ -195,4 +196,5 @@ carl_int_t VM::logic_binop(OpCode op, carl_int_t lhs, carl_int_t rhs) {
         default:
             std::cerr << "unsupported logical_binop" << std::endl;
     }
+    return 0;
 }

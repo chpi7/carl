@@ -68,6 +68,10 @@ static const std::unordered_map<TokenType, ParseRule> parse_rules = {
 std::shared_ptr<AstNode> Parser::parse_precedence(Precedence precedence) {
     auto prefix_rule = get_rule(current.type);
     // assert(get_rule(current.type)->prefix != nullptr && "No prefix rule for token");
+    if (prefix_rule->prefix == nullptr) {
+        error_at(current, "no prefix rule found.");
+        return make_error_node();
+    }
     // so nice :)
     std::shared_ptr<AstNode> expression = (this->*(prefix_rule->prefix))();
 
@@ -95,8 +99,12 @@ void Parser::set_scanner(std::shared_ptr<Scanner> scanner) {
     advance();
 }
 
-std::shared_ptr<AstNode> Parser::parse() {
-    return statement();
+std::vector<std::shared_ptr<AstNode>> Parser::parse() {
+    std::vector<std::shared_ptr<AstNode>> result;
+    while (current.type != TOKEN_EOF) {
+        result.push_back(declaration());         
+    }
+    return result;
 }
 
 const ParseRule* Parser::get_rule(TokenType tokenType) const {

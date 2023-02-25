@@ -40,7 +40,7 @@ class VM {
     ~VM();
     void load_chunk(std::unique_ptr<Chunk> chunk);
     InterpretResult step();
-    InterpretResult run();
+    InterpretResult run(bool print_stack_flag = false);
     carl_stackelem_t get_stack_top();
     void print_stack();
 

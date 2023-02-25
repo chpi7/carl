@@ -2,6 +2,12 @@
 
 using namespace carl;
 
+void AstPrinter::print(AstNode* node) {
+    indent = 0;
+    node->accept(this);
+    os << "\n";
+}
+
 void AstPrinter::visit_invalid(Invalid* invalid){
     write_indent();
     os << "invalid" << std::endl;

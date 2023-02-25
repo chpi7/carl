@@ -2,6 +2,7 @@
 #define carl_parser_h
 
 #include <memory>
+#include <vector>
 
 #include "carl/ast/ast.h"
 #include "carl/scanner.h"
@@ -43,7 +44,7 @@ class Parser {
    public:
     Parser();
     void set_scanner(std::shared_ptr<Scanner> scanner);
-    std::shared_ptr<AstNode> parse();
+    std::vector<std::shared_ptr<AstNode>> parse();
     std::shared_ptr<AstNode> declaration();
     std::shared_ptr<AstNode> statement();
     std::shared_ptr<AstNode> expr_stmt();

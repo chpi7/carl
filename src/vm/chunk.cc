@@ -1,6 +1,7 @@
 #include "carl/vm/chunk.h"
 
 #include <cstring>
+#include <iostream>
 
 #include "carl/common.h"
 
@@ -142,3 +143,21 @@ uint8_t* Chunk::get_memory() {
 }
 
 uint64_t Chunk::get_write_offset() { return write_pos - memory; }
+
+std::shared_ptr<std::string> Chunk::get_name(std::string name) {
+    if (!names.contains(name)) {
+        std::cerr << "name " << name << " not found.\n";
+        return std::make_shared<std::string>();
+    }
+    return names[name];
+}
+
+std::shared_ptr<std::string> Chunk::save_name(std::string name) {
+    if (names.contains(name)) return names[name];
+    names[name] = std::make_shared<std::string>(name);
+    return names[name];
+}
+
+std::unordered_map<std::string, std::shared_ptr<std::string>>& Chunk::get_names() {
+    return names;
+}
