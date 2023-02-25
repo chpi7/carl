@@ -29,6 +29,7 @@ enum OpCode {
     OP_JUMPZ,
     OP_DEFINE_VAR,
     OP_GET_VAR,
+    OP_SET_VAR,
     OP_PUSH_ENV,
     OP_POP_ENV,
     OP_HALT,

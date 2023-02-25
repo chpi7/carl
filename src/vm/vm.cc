@@ -92,6 +92,13 @@ InterpretResult VM::step() {
             push(val);
             break;
         }
+        case OP_SET_VAR: {
+            // this has to be a valid address to the name string
+            const char* name = reinterpret_cast<const char*>(pop());
+            Value* value = reinterpret_cast<Value*>(pop());
+            env->update(name, value);
+            break;
+        }
         case OP_PUSH_ENV: {
             if (env) {
                 env = std::make_unique<Env>(std::move(env));

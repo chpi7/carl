@@ -19,6 +19,7 @@ class Env {
     Value* lookup(const char* name);
     void insert(const char* name, Value* value);
     void remove(const char* name);
+    void update(const char* name, Value* value);
     std::unique_ptr<Env> take_parent();
 };
 }  // namespace carl

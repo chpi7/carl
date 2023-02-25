@@ -59,9 +59,24 @@ TEST(VM, def_get_var) {
     // name
     chunk->write_byte(OP_LOADC);
     chunk->write_int_const(reinterpret_cast<carl_int_t>(name));
-    // save 
+    // define 
     chunk->write_byte(OP_DEFINE_VAR);
-    // load 
+
+    // load 1
+    chunk->write_byte(OP_LOADC);
+    chunk->write_int_const(reinterpret_cast<carl_int_t>(name));
+    chunk->write_byte(OP_GET_VAR);
+
+    chunk->write_byte(OP_HALT);
+
+    // update
+    chunk->write_byte(OP_LOADC);
+    chunk->write_int_const(0xdead);
+    chunk->write_byte(OP_LOADC);
+    chunk->write_int_const(reinterpret_cast<carl_int_t>(name));
+    chunk->write_byte(OP_SET_VAR);
+
+    // load 2
     chunk->write_byte(OP_LOADC);
     chunk->write_int_const(reinterpret_cast<carl_int_t>(name));
     chunk->write_byte(OP_GET_VAR);
@@ -71,10 +86,15 @@ TEST(VM, def_get_var) {
     chunk->print(std::cout);
 
     vm.load_chunk(std::move(chunk));
+
     auto exit_code = vm.run();
     ASSERT_EQ(exit_code, STEP_HALT);
-
     auto result = vm.get_stack_top();
     ASSERT_EQ(result, 0xbeef);
+
+    exit_code = vm.run();
+    ASSERT_EQ(exit_code, STEP_HALT);
+    result = vm.get_stack_top();
+    ASSERT_EQ(result, 0xdead);
 }
 }  // namespace

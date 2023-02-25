@@ -117,6 +117,9 @@ void Chunk::print(std::ostream& os) {
             case OP_GET_VAR:
                 print_simple_instruction(os, "GET_VAR", &pos);
                 break;
+            case OP_SET_VAR:
+                print_simple_instruction(os, "SET_VAR", &pos);
+                break;
             case OP_PUSH_ENV:
                 print_simple_instruction(os, "PUSH_ENV", &pos);
                 break;
