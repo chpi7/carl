@@ -1,8 +1,10 @@
 set(SRC_CC
     src/vm/vm.cc
     src/vm/chunk.cc
+    src/vm/env.cc
     src/ast/ast.cc
     src/ast/print_visitor.cc
+    src/ast/ast_printer.cc
     src/parser.cc 
     src/scanner.cc 
     src/codegen.cc 

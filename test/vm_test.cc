@@ -47,4 +47,34 @@ TEST(VM, sub_add_three) {
     auto result = vm.get_stack_top();
     ASSERT_EQ(result, -3);
 }
+
+TEST(VM, def_get_var) {
+    VM vm(1024);
+    const char* name = "x";
+
+    auto chunk = std::make_unique<Chunk>(255);
+    // value
+    chunk->write_byte(OP_LOADC);
+    chunk->write_int_const(0xbeef);
+    // name
+    chunk->write_byte(OP_LOADC);
+    chunk->write_int_const(reinterpret_cast<carl_int_t>(name));
+    // save 
+    chunk->write_byte(OP_DEFINE_VAR);
+    // load 
+    chunk->write_byte(OP_LOADC);
+    chunk->write_int_const(reinterpret_cast<carl_int_t>(name));
+    chunk->write_byte(OP_GET_VAR);
+
+    chunk->write_byte(OP_HALT);
+
+    chunk->print(std::cout);
+
+    vm.load_chunk(std::move(chunk));
+    auto exit_code = vm.run();
+    ASSERT_EQ(exit_code, STEP_HALT);
+
+    auto result = vm.get_stack_top();
+    ASSERT_EQ(result, 0xbeef);
+}
 }  // namespace

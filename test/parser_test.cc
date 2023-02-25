@@ -27,6 +27,7 @@ TEST(Parser, parse_expression_simple) {
     node->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
+    delete v;
 }
 
 TEST(Parser, parse_normally_left_assoc) {
@@ -45,6 +46,7 @@ TEST(Parser, parse_normally_left_assoc) {
     node->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
+    delete v;
 }
 
 TEST(Parser, parse_assignment_right_assoc) {
@@ -63,6 +65,7 @@ TEST(Parser, parse_assignment_right_assoc) {
     node->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
+    delete v;
 }
 
 TEST(Parser, parse_expression_logical) {
@@ -81,6 +84,7 @@ TEST(Parser, parse_expression_logical) {
     node->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
+    delete v;
 }
 
 TEST(Parser, parse_expression_grouping) {
@@ -99,6 +103,7 @@ TEST(Parser, parse_expression_grouping) {
     node->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
+    delete v;
 }
 
 TEST(Parser, parse_expression_associativity) {
@@ -117,6 +122,7 @@ TEST(Parser, parse_expression_associativity) {
     node->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
+    delete v;
 }
 
 TEST(Parser, parse_everything) {
@@ -135,6 +141,7 @@ TEST(Parser, parse_everything) {
     node->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
+    delete v;
 }
 
 TEST(Parser, parse_nil) {
@@ -153,6 +160,7 @@ TEST(Parser, parse_nil) {
     node->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
+    delete v;
 }
 
 TEST(Parser, parse_exprstmt) {
@@ -171,6 +179,7 @@ TEST(Parser, parse_exprstmt) {
     node->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
+    delete v;
 }
 
 TEST(Parser, parse_letstmt) {
@@ -189,5 +198,6 @@ TEST(Parser, parse_letstmt) {
     node->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
+    delete v;
 }
 }  // namespace

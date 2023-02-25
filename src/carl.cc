@@ -4,7 +4,7 @@
 #include "carl/parser.h"
 #include "carl/codegen.h"
 #include "carl/vm/vm.h"
-#include "carl/ast/print_visitor.h"
+#include "carl/ast/ast_printer.h"
 
 using namespace carl;
 
@@ -13,7 +13,7 @@ static void interpret(const char* line) {
     Parser parser;
     CodeGenerator gen;
 #ifdef DEBUG
-    PrintAstNodeVisitor v(std::cout);
+    AstPrinter v(std::cout);
 #endif
     VM vm(512);
 

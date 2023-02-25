@@ -3,8 +3,10 @@
 
 #include <cstdint>
 #include <memory>
+#include <unordered_set>
 
 #include "carl/vm/chunk.h"
+#include "carl/vm/env.h"
 
 namespace carl {
 
@@ -27,8 +29,11 @@ class VM {
     uint8_t* ip;
     std::unique_ptr<Chunk> chunk;
 
-    // Heap
-    // use the cpp heap for now bc im lazy :)
+    // Heap (allocate carl::Value's on the real heap)
+    // env is used to lookup addresses based on names
+    std::unique_ptr<Env> env;
+    // hold on to the names such that the addresses used during runtime will stay valid.
+    std::unordered_set<std::shared_ptr<std::string>> names;
 
    public:
     VM(uint64_t stack_size);

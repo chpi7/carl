@@ -1,15 +1,16 @@
-#ifndef CARL_PRINT_VISITOR_H
-#define CARL_PRINT_VISITOR_H
+#ifndef CARL_AST_PRINTER_H
+#define CARL_AST_PRINTER_H
 
 #include "carl/ast/ast.h"
 
 namespace carl {
-class PrintAstNodeVisitor : public AstNodeVisitor {
+class AstPrinter : public AstNodeVisitor {
    private:
     std::ostream& os;
+    int indent;
 
    public:
-    PrintAstNodeVisitor(std::ostream& os) : os(os){};
+    AstPrinter(std::ostream& os) : os(os), indent(0) {};
     void visit_invalid(Invalid* invalid);
     void visit_letstmt(LetStmt* letstmt);
     void visit_exprstmt(ExprStmt* exprstmt);
@@ -19,6 +20,9 @@ class PrintAstNodeVisitor : public AstNodeVisitor {
     void visit_literal(Literal* node);
     void visit_string(String* node);
     void visit_number(Number* node);
+private:
+    void write_indent();
 };
-}  // namespace carl
+}
+
 #endif

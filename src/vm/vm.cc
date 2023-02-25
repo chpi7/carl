@@ -8,6 +8,7 @@
 using namespace carl;
 
 VM::VM(uint64_t stack_size) : stack_size(stack_size) {
+    env = std::make_unique<Env>();
     init_stack();
 }
 
@@ -33,8 +34,10 @@ void VM::print_stack() {
     for (carl_stackelem_t* p = stack + 1; p <= sp; p++) {
         if (*p == CARL_NIL) {
             fprintf(stdout, "[ nil ]");
-        } else {
+        } else if (*p < 255) {
             fprintf(stdout, "[ %ld ]", *p);
+        } else {
+            fprintf(stdout, "[ %lx ]", *p);
         }
     }
     fprintf(stdout, "\n");
@@ -73,6 +76,36 @@ InterpretResult VM::step() {
             // pop -> value
             // make_basic(type, value) --> address
             // string will be its own type --> mkstring or use vector type (mb vec not good if elements are other heap elems instead of chars...)
+            break;
+        }
+        case OP_DEFINE_VAR: {
+            // this has to be a valid address to the name string
+            const char* name = reinterpret_cast<const char*>(pop());
+            Value* value = reinterpret_cast<Value*>(pop());
+            env->insert(name, value);
+            break;
+        }
+        case OP_GET_VAR: {
+            // this has to be a valid address to the name string
+            const char* name = reinterpret_cast<const char*>(pop());
+            auto val = reinterpret_cast<carl_stackelem_t>(env->lookup(name));
+            push(val);
+            break;
+        }
+        case OP_PUSH_ENV: {
+            if (env) {
+                env = std::make_unique<Env>(std::move(env));
+            } else {
+                std::cerr << "can not push env. env is empty.\n";
+            }
+            break;
+        }
+        case OP_POP_ENV: {
+            if (env) {
+                env = env->take_parent();
+            } else {
+                std::cerr << "can not pop env. it does not exist.\n";
+            }
             break;
         }
         case OP_LOADC: {
@@ -119,6 +152,9 @@ InterpretResult VM::run() {
         r = step();
         print_stack();
     } while (r == STEP_OK);
+#ifdef DEBUG
+    if (r == STEP_HALT) std::cout << "halting execution\n";
+#endif
     return r;
 }
 
