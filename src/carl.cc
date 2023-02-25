@@ -29,7 +29,7 @@ static void interpret(const char* line) {
 #endif
 
     vm.load_chunk(gen.take_chunk());
-    vm.run();
+    vm.run(true);
 
 #ifdef DEBUG
     printf("Stack top hex: %016lx\n", vm.get_stack_top());

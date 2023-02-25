@@ -184,6 +184,25 @@ TEST(CodeGen, letstmt) {
     ASSERT_EQ(code, STEP_HALT);
 }
 
+TEST(CodeGen, single_var_expr_stmt) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* expr_src = "x;";
+    scanner->init(expr_src);
+
+    Parser parser;
+    CodeGenerator generator;
+    parser.set_scanner(scanner);
+    auto decl_list = parser.parse();
+
+    generator.generate(decl_list);
+
+    VM vm(256);
+    vm.load_chunk(generator.take_chunk());
+
+    auto code = vm.run();
+    ASSERT_EQ(code, STEP_ERROR);
+}
+
 TEST(CodeGen, let_and_set) {
     auto scanner = std::make_shared<Scanner>();
     const char* expr_src =

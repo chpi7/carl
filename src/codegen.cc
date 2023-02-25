@@ -92,7 +92,7 @@ void CodeGenerator::visit_variable(Variable* variable){
     // retrieve the stored name for this name
     auto name = chunk->save_name(std::string(variable->get_name().start, variable->get_name().length));
     chunk->write_byte(OP_LOADC);
-    chunk->write_int_const(reinterpret_cast<carl_int_t>(name.get()));
+    chunk->write_int_const(reinterpret_cast<carl_int_t>(name->c_str()));
     chunk->write_byte(OP_GET_VAR);
 }
 
@@ -137,6 +137,6 @@ void CodeGenerator::visit_letstmt(LetStmt* letstmt){
     // copy name string and save to chunk
     auto name = chunk->save_name(std::string(letstmt->get_name().start, letstmt->get_name().length));
     chunk->write_byte(OP_LOADC);
-    chunk->write_int_const(reinterpret_cast<carl_int_t>(name.get()));
+    chunk->write_int_const(reinterpret_cast<carl_int_t>(name->c_str()));
     chunk->write_byte(OP_DEFINE_VAR);
 }

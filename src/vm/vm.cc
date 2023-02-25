@@ -97,6 +97,11 @@ InterpretResult VM::step() {
             // this has to be a valid address to the name string
             const char* name = reinterpret_cast<const char*>(pop());
             auto val = reinterpret_cast<carl_stackelem_t>(env->lookup(name));
+            // getting a var will always load a heap address --> 0 is invalid
+            if (val == 0) {
+                push(0);
+                return STEP_ERROR;
+            }
             push(val);
             break;
         }
