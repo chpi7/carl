@@ -34,6 +34,14 @@ void PrintAstNodeVisitor::visit_binary(Binary* node) {
     os << ")";
 }
 
+void PrintAstNodeVisitor::visit_assignment(Assignment* node) {
+    os << "(= ";
+    node->get_target()->accept(this);
+    os << " ";
+    node->get_expr()->accept(this);
+    os << ")";
+}
+
 void PrintAstNodeVisitor::visit_unary(Unary* node) {
     os << "(";
     stringify_token(stringify_buffer, node->get_op());

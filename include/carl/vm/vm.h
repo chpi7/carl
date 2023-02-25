@@ -50,6 +50,9 @@ class VM {
     inline carl_stackelem_t pop();
     inline void push(carl_stackelem_t v);
     inline carl_int_t logic_binop(OpCode op, carl_int_t lhs, carl_int_t rhs);
+    inline carl_stackelem_t mkbasic();
+    inline carl_stackelem_t gtbasic();
+    inline void update_value();
 };
 }  // namespace carl
 

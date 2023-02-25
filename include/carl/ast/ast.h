@@ -46,6 +46,17 @@ class LetStmt : public AstNode {
     void accept(AstNodeVisitor* visitor);
 };
 
+class Assignment : public AstNode {
+   private:
+    std::shared_ptr<AstNode> target;
+    std::shared_ptr<AstNode> expr;
+   public:
+    Assignment(std::shared_ptr<AstNode> target, std::shared_ptr<AstNode> expr) :target(target), expr(expr) {}
+    std::shared_ptr<AstNode> get_target() { return this->target; }
+    std::shared_ptr<AstNode> get_expr() { return this->expr; }
+    void accept(AstNodeVisitor* visitor);
+};
+
 class Binary : public AstNode {
    private:
     Token op;
@@ -111,6 +122,7 @@ class AstNodeVisitor {
     virtual void visit_invalid(Invalid* invalid) { assert(false && "visit invalid not overwritten"); };
     virtual void visit_exprstmt(ExprStmt* exprstmt) { assert(false && "visit exprstmt not overwritten"); };
     virtual void visit_letstmt(LetStmt* letstmt) { assert(false && "visit letstmt not overwritten"); };
+    virtual void visit_assignment(Assignment* assignment) { assert(false && "visit assignment not overwritten"); };
     virtual void visit_binary(Binary* binary) { assert(false && "visit binary not overwritten"); };
     virtual void visit_unary(Unary* unary) { assert(false && "visit unary not overwritten"); };
     virtual void visit_variable(Variable* variable) { assert(false && "visit variable not overwritten"); };

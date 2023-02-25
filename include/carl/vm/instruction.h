@@ -10,6 +10,7 @@ enum OpCode {
 
     OP_MKBASIC,
     OP_GTBASIC,
+    OP_UPDATE_VALUE,
     OP_LOADC,
     OP_POP,
     OP_DUP,

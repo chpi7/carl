@@ -20,6 +20,7 @@ TYPES = [
     "Invalid() : AstNode",
     "ExprStmt(@spr<AstNode> expr) : AstNode",
     "LetStmt(Token name, @spr<AstNode> initializer) : AstNode",
+    "Assignment(@spr<AstNode> target, @spr<AstNode> expr) : AstNode",
     "Binary(Token op, @spr<AstNode> lhs, @spr<AstNode> rhs) : AstNode",
     "Unary(Token op, @spr<AstNode> operand) : AstNode",
     "Variable(Token name) : AstNode",
@@ -48,7 +49,7 @@ def parse_class_decl(decl: str) -> Class:
 
     name, rem = rem.split("(")
     name.strip()
-    assert (rem[-1] == ")", "Expected variable list to have a ) at the end")
+    assert rem[-1] == ")", "Expected variable list to have a ) at the end"
     rem = rem[:-2]
 
     members = rem.strip().split(",")
@@ -191,7 +192,7 @@ def main():
     argparser.add_argument(
         "-oh", type=Path, default=Path(__file__, "../include/carl/ast/ast.h")
     )
-    argparser.add_argument("-occ", type=Path, default=Path(__file__, "../src/ast.cc"))
+    argparser.add_argument("-occ", type=Path, default=Path(__file__, "../src/ast/ast.cc"))
     args = argparser.parse_args()
 
     header_path = args.oh.resolve()

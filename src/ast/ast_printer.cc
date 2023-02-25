@@ -8,17 +8,18 @@ void AstPrinter::print(AstNode* node) {
     os << "\n";
 }
 
-void AstPrinter::visit_invalid(Invalid* invalid){
+void AstPrinter::visit_invalid(Invalid* invalid) {
     write_indent();
     os << "invalid" << std::endl;
 }
 
-void AstPrinter::visit_letstmt(LetStmt* letstmt){
+void AstPrinter::visit_letstmt(LetStmt* letstmt) {
     write_indent();
     os << "letStmt\n";
     indent++;
     write_indent();
-    os << "name = " << std::string(letstmt->get_name().start, letstmt->get_name().length);
+    os << "name = "
+       << std::string(letstmt->get_name().start, letstmt->get_name().length);
     os << "\n";
     write_indent();
     os << "initializer =\n";
@@ -28,7 +29,7 @@ void AstPrinter::visit_letstmt(LetStmt* letstmt){
     indent--;
 }
 
-void AstPrinter::visit_exprstmt(ExprStmt* exprstmt){
+void AstPrinter::visit_exprstmt(ExprStmt* exprstmt) {
     write_indent();
     os << "exprStmt\n";
     indent++;
@@ -38,7 +39,7 @@ void AstPrinter::visit_exprstmt(ExprStmt* exprstmt){
     indent--;
 }
 
-void AstPrinter::visit_binary(Binary* node){
+void AstPrinter::visit_binary(Binary* node) {
     write_indent();
     os << "binary\n";
 
@@ -65,7 +66,31 @@ void AstPrinter::visit_binary(Binary* node){
     indent--;
 }
 
-void AstPrinter::visit_unary(Unary* node){
+void AstPrinter::visit_assignment(Assignment* assignment) {
+    write_indent();
+    os << "assignment\n";
+
+    indent++;
+
+    write_indent();
+    os << "target = ";
+    os << "\n";
+    indent++;
+    assignment->get_target()->accept(this);
+    os << "\n";
+    indent--;
+
+    write_indent();
+    os << "expr = ";
+    os << "\n";
+    indent++;
+    assignment->get_expr()->accept(this);
+    indent--;
+
+    indent--;
+}
+
+void AstPrinter::visit_unary(Unary* node) {
     write_indent();
     os << "unary\n";
 
@@ -84,29 +109,33 @@ void AstPrinter::visit_unary(Unary* node){
     indent--;
 }
 
-void AstPrinter::visit_variable(Variable* node){
+void AstPrinter::visit_variable(Variable* node) {
     write_indent();
     os << "variable\n";
-    
+
     indent++;
     write_indent();
-    os << "name = " << std::string(node->get_name().start, node->get_name().length);
+    os << "name = "
+       << std::string(node->get_name().start, node->get_name().length);
     indent--;
 }
 
-void AstPrinter::visit_literal(Literal* node){
+void AstPrinter::visit_literal(Literal* node) {
     write_indent();
-    os << "literal " << std::string(node->get_value().start, node->get_value().length);
+    os << "literal "
+       << std::string(node->get_value().start, node->get_value().length);
 }
 
-void AstPrinter::visit_string(String* node){
+void AstPrinter::visit_string(String* node) {
     write_indent();
-    os << "string " << std::string(node->get_value().start, node->get_value().length);
+    os << "string "
+       << std::string(node->get_value().start, node->get_value().length);
 }
 
-void AstPrinter::visit_number(Number* node){
+void AstPrinter::visit_number(Number* node) {
     write_indent();
-    os << "number " << std::string(node->get_value().start, node->get_value().length);
+    os << "number "
+       << std::string(node->get_value().start, node->get_value().length);
 }
 
 void AstPrinter::write_indent() {

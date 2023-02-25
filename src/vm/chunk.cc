@@ -70,6 +70,9 @@ void Chunk::print(std::ostream& os) {
             case OP_GTBASIC:
                 print_simple_instruction(os, "GTBASIC", &pos);
                 break;
+            case OP_UPDATE_VALUE:
+                print_simple_instruction(os, "OP_UPDATE_VALUE", &pos);
+                break;
             case OP_LOADC:
                 print_single_arg_instruction(os, "LOADC", &pos);
                 break;

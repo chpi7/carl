@@ -1,6 +1,7 @@
 #include "carl/vm/vm.h"
 
 #include <iostream>
+#include <cstring>
 
 #include "carl/vm/chunk.h"
 #include "carl/vm/memory.h"
@@ -74,12 +75,15 @@ InterpretResult VM::step() {
             push(CARL_NIL);
             break;
         case OP_MKBASIC: {
-            // TODO make basic value of given type
-            // maybe just put the type enum value on the stack to get it here transparently
-            // pop -> type
-            // pop -> value
-            // make_basic(type, value) --> address
-            // string will be its own type --> mkstring or use vector type (mb vec not good if elements are other heap elems instead of chars...)
+            push(mkbasic());
+            break;
+        }
+        case OP_GTBASIC: {
+            push(gtbasic());
+            break;
+        }
+        case OP_UPDATE_VALUE: {
+            update_value();
             break;
         }
         case OP_DEFINE_VAR: {
@@ -197,4 +201,33 @@ carl_int_t VM::logic_binop(OpCode op, carl_int_t lhs, carl_int_t rhs) {
             std::cerr << "unsupported logical_binop" << std::endl;
     }
     return 0;
+}
+
+carl_stackelem_t VM::mkbasic() {
+    // this new is never cleaned up atm
+    BasicValue* v = new BasicValue(); 
+    v->type = ValueType::Basic;
+    v->value = pop();
+    return reinterpret_cast<carl_stackelem_t>(v);
+}
+
+carl_stackelem_t VM::gtbasic() {
+    BasicValue* v = reinterpret_cast<BasicValue*>(pop());
+    if (v->type != ValueType::Basic) {
+        std::cerr << "value in gtbasic is not of type Basic!\n";
+        return 0;
+    }
+    return v->value;
+}
+
+void VM::update_value() {
+    // this operation just overwrites target with val
+    auto target_addr = reinterpret_cast<Value*>(pop());
+    auto new_val = reinterpret_cast<Value*>(pop());
+    if (target_addr->type != new_val->type) {
+        std::cerr << "target and new value are not of the same type. aborting assign.\n";
+        return;
+    }
+    // TODO: make sure this will also work for functions and other complex values.
+    memcpy((void*)target_addr, (void*)new_val, get_size(target_addr->type));
 }

@@ -9,14 +9,15 @@
     program -> declaration*
     declaration -> letDecl | fnDecl | statement
 
-    statement -> ifStatement | whileStatment | blockStatement | expressionStatement
-    ifStatement -> 'if' expression statement [else statement]
+    statement -> ifStatement | whileStatment | blockStatement |
+   expressionStatement ifStatement -> 'if' expression statement [else statement]
     whileStatement -> 'while' expression statement
     blockStatement -> { declaration* }
     expressionStatement -> statement ';'
 
     expression -> assignment    // maybe support if expression here
-    assignment -> ...           // according to operator precedence (= is right associative, left associative otherwise)
+    assignment -> ...           // according to operator precedence (= is right
+   associative, left associative otherwise)
 */
 
 namespace carl {
@@ -67,7 +68,8 @@ static const std::unordered_map<TokenType, ParseRule> parse_rules = {
 
 std::shared_ptr<AstNode> Parser::parse_precedence(Precedence precedence) {
     auto prefix_rule = get_rule(current.type);
-    // assert(get_rule(current.type)->prefix != nullptr && "No prefix rule for token");
+    // assert(get_rule(current.type)->prefix != nullptr && "No prefix rule for
+    // token");
     if (prefix_rule->prefix == nullptr) {
         error_at(current, "no prefix rule found.");
         return make_error_node();
@@ -77,13 +79,26 @@ std::shared_ptr<AstNode> Parser::parse_precedence(Precedence precedence) {
 
     const ParseRule* infix_rule;
     while (precedence <= (infix_rule = get_rule(current.type))->prec) {
-        assert(get_rule(current.type)->infix != nullptr && "No infix rule for token");
+        assert(get_rule(current.type)->infix != nullptr &&
+               "No infix rule for token");
 
         auto op_token = current;
         advance();
 
-        auto rhs = (this->*(infix_rule)->infix)();
-        expression = std::make_shared<Binary>(op_token, expression, rhs);
+        if (op_token.type == TOKEN_EQUAL) {
+            if (precedence > PREC_ASSIGNMENT) {
+                error_at(current, "assignment no possible here");
+                return make_error_node();
+            } else {
+                // assignment
+                auto value = (this->*(infix_rule)->infix)();
+                expression = std::make_shared<Assignment>(expression, value);
+            }
+        } else {
+            // normal binop
+            auto rhs = (this->*(infix_rule)->infix)();
+            expression = std::make_shared<Binary>(op_token, expression, rhs);
+        }
     }
 
     return expression;
@@ -102,7 +117,7 @@ void Parser::set_scanner(std::shared_ptr<Scanner> scanner) {
 std::vector<std::shared_ptr<AstNode>> Parser::parse() {
     std::vector<std::shared_ptr<AstNode>> result;
     while (current.type != TOKEN_EOF) {
-        result.push_back(declaration());         
+        result.push_back(declaration());
     }
     return result;
 }
@@ -126,8 +141,7 @@ void Parser::synchronize() {
             case TOKEN_IF:
             case TOKEN_RETURN:
                 return;
-            default:
-                ;
+            default:;
         }
         advance();
     }
@@ -153,12 +167,15 @@ std::shared_ptr<AstNode> Parser::expr_stmt() {
 }
 
 std::shared_ptr<AstNode> Parser::let_stmt() {
-    consume(TOKEN_IDENTIFIER, "Expected identifier as variable name after let.");
+    consume(TOKEN_IDENTIFIER,
+            "Expected identifier as variable name after let.");
     auto identifier = previous;
     if (peek(TOKEN_SEMICOLON)) {
-        error_at(current, "Expected initialization after variable declaration.");
+        error_at(current,
+                 "Expected initialization after variable declaration.");
         return make_error_node();
-    } if (match(TOKEN_EQUAL)) {
+    }
+    if (match(TOKEN_EQUAL)) {
         auto initializer = expression();
         auto result = std::make_shared<LetStmt>(identifier, initializer);
         if (!match(TOKEN_SEMICOLON)) {
@@ -208,7 +225,8 @@ std::shared_ptr<AstNode> Parser::binary() {
     int prec_offset = 0;
     if (current_rule->prec != PREC_ASSIGNMENT) prec_offset++;
 
-    return parse_precedence(static_cast<Precedence>(current_rule->prec + prec_offset));
+    return parse_precedence(
+        static_cast<Precedence>(current_rule->prec + prec_offset));
 }
 
 std::shared_ptr<AstNode> Parser::grouping() {

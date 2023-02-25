@@ -22,6 +22,7 @@ class CodeGenerator : public AstNodeVisitor {
 
     void visit_invalid(Invalid* invalid);
     void visit_binary(Binary* binary);
+    void visit_assignment(Assignment* binary);
     void visit_unary(Unary* unary);
     void visit_variable(Variable* variable);
     void visit_literal(Literal* literal);

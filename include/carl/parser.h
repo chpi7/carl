@@ -56,6 +56,7 @@ class Parser {
     std::shared_ptr<AstNode> string();
     std::shared_ptr<AstNode> number();
     std::shared_ptr<AstNode> binary();
+    std::shared_ptr<AstNode> assignment();
     std::shared_ptr<AstNode> grouping();
 
    private:

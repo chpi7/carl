@@ -1,6 +1,7 @@
 #include "carl/codegen.h"
 
 #include <unordered_map>
+#include <type_traits>
 
 #include "carl/common.h"
 
@@ -49,7 +50,10 @@ void CodeGenerator::visit_invalid(Invalid* invalid) {
 
 void CodeGenerator::visit_binary(Binary* binary) {
     binary->get_lhs()->accept(this);
+    chunk->write_byte(OP_GTBASIC);
+
     binary->get_rhs()->accept(this);
+    chunk->write_byte(OP_GTBASIC);
     auto tokenType = binary->get_op().type;
     if (!opMap.contains(tokenType)) {
         std::cerr << "operator token type not found in opMap" << std::endl;
@@ -57,10 +61,23 @@ void CodeGenerator::visit_binary(Binary* binary) {
     }
     OpCode opCode = opMap.at(tokenType);
     chunk->write_byte(opCode);
+    chunk->write_byte(OP_MKBASIC);
+}
+
+void CodeGenerator::visit_assignment(Assignment* assignment) {
+    // generate the value to assign
+    assignment->get_expr()->accept(this);
+
+    // generate the heap address of the assignment target.
+    assignment->get_target()->accept(this);
+
+    // assume that by assigning the type does not change
+    chunk->write_byte(OP_UPDATE_VALUE);
 }
 
 void CodeGenerator::visit_unary(Unary* unary) {
     unary->get_operand()->accept(this);
+    chunk->write_byte(OP_GTBASIC);
     auto tokenType = unary->get_op().type;
     if (!unaryOpMap.contains(tokenType)) {
         std::cerr << "operator token type not found in opMap" << std::endl;
@@ -68,6 +85,7 @@ void CodeGenerator::visit_unary(Unary* unary) {
     }
     OpCode opCode = unaryOpMap.at(tokenType);
     chunk->write_byte(opCode);
+    chunk->write_byte(OP_MKBASIC);
 }
 
 void CodeGenerator::visit_variable(Variable* variable){
@@ -89,18 +107,22 @@ void CodeGenerator::visit_literal(Literal* literal){
         chunk->write_byte(OP_NIL);
     } else {
         std::cerr << "Unkown literal: " << std::string(tok.start, tok.length) << std::endl;
+        chunk->write_byte(OP_NIL);
     }
+    chunk->write_byte(OP_MKBASIC);
 #undef IS_TOK
 }
 
 void CodeGenerator::visit_string(String*){
     std::cerr << "String codegen not implemented yet!" << std::endl;
+    // MK_STRING or smth like that.
 }
 
 void CodeGenerator::visit_number(Number* number) {
     carl_int_t v = atoi(number->get_value().start);
     chunk->write_byte(OP_LOADC);
     chunk->write_int_const(v);
+    chunk->write_byte(OP_MKBASIC);
 }
 
 void CodeGenerator::visit_exprstmt(ExprStmt* exprstmt){

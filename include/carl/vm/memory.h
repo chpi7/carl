@@ -11,9 +11,7 @@ typedef int64_t carl_int_t;
 #define CARL_FALSE (static_cast<carl_int_t>(0))
 
 enum ValueType {
-    Nil,
-    Bool,
-    Int,
+    Basic,
     Function,
     Closure,
     Vector,
@@ -23,14 +21,15 @@ struct Value {
     ValueType type;
 };
 
-struct NilValue : public Value {};
-
-struct BoolValue : public Value {
-    bool value;
+struct BasicValue : public Value {
+    carl_int_t value;
 };
 
-struct IntValue : public Value {
-    carl_int_t value;
+static size_t get_size(ValueType type) {
+    switch (type) {
+        case Basic: return sizeof(BasicValue);
+        default: return 0;
+    }
 };
 
 }  // namespace carl

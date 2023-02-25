@@ -26,6 +26,7 @@ class Chunk {
     Chunk(uint64_t size);
     ~Chunk();
     void write_byte(OpCode opcode);
+    void write_value_type(ValueType type);
     void write_int_const(carl_int_t c);
     void print(std::ostream& os);
     uint8_t* get_memory();
