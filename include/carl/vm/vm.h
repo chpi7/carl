@@ -39,7 +39,7 @@ class VM {
     VM(uint64_t stack_size);
     ~VM();
     void load_chunk(std::unique_ptr<Chunk> chunk);
-    InterpretResult step();
+    InterpretResult step(bool print_trace = false);
     InterpretResult run(bool print_stack_flag = false);
     carl_stackelem_t get_stack_top();
     void print_stack();
@@ -48,6 +48,7 @@ class VM {
     void free_stack();
     void init_stack();
     inline carl_stackelem_t pop();
+    inline carl_stackelem_t peek();
     inline void push(carl_stackelem_t v);
     inline carl_int_t logic_binop(OpCode op, carl_int_t lhs, carl_int_t rhs);
     inline carl_stackelem_t mkbasic();

@@ -53,9 +53,8 @@ static void print_single_arg_instruction(std::ostream& os, const char* name,
     *pos += sizeof(carl_int_t) + 1;
 }
 
-void Chunk::print(std::ostream& os) {
-    uint8_t* pos = memory;
-    while (pos <= memory + size && pos < write_pos) {
+int Chunk::print_single(std::ostream& os, uint8_t* pos) {
+        uint8_t* initial_pos = pos;
         auto instruction = *pos;
         char fmtbuf[128]{0};
         sprintf(fmtbuf, "%4x: ", (uint32_t)(pos - memory));
@@ -137,6 +136,14 @@ void Chunk::print(std::ostream& os) {
                 os << "<unknown " << instruction << ">";
                 pos += 1;
         }
+
+    return pos - initial_pos;
+}
+
+void Chunk::print(std::ostream& os) {
+    uint8_t* pos = memory;
+    while (pos <= memory + size && pos < write_pos) {
+        pos += print_single(os, pos);
         os << std::endl;
     }
 }

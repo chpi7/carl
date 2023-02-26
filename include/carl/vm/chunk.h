@@ -29,6 +29,7 @@ class Chunk {
     void write_value_type(ValueType type);
     void write_int_const(carl_int_t c);
     void print(std::ostream& os);
+    int print_single(std::ostream& os, uint8_t* pos);
     uint8_t* get_memory();
     std::shared_ptr<std::string> save_name(std::string name);
     std::shared_ptr<std::string> get_name(std::string name);

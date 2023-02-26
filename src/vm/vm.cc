@@ -53,7 +53,7 @@ void VM::load_chunk(std::unique_ptr<Chunk> chunk) {
     ip = this->chunk->get_memory();
 }
 
-InterpretResult VM::step() {
+InterpretResult VM::step(bool print_trace) {
 #define BINOP(op) do { \
     auto rhs = pop(); \
     auto lhs = pop(); \
@@ -63,6 +63,12 @@ InterpretResult VM::step() {
         push(lhs op rhs); \
     } \
 } while (0);
+
+    if (print_trace) {
+        chunk->print_single(std::cout, ip);
+        std::cout << std::endl;
+    }
+
     OpCode op = static_cast<OpCode>(*ip++);
     switch (op) {
         case OP_TRUE:
@@ -166,11 +172,11 @@ InterpretResult VM::step() {
 #undef BINOP
 }
 
-InterpretResult VM::run(bool print_stack_flag) {
+InterpretResult VM::run(bool print_trace_flag) {
     InterpretResult r = STEP_OK; // empty program is okay
     do {
-        r = step();
-        if (print_stack_flag) print_stack();
+        r = step(print_trace_flag);
+        if (print_trace_flag) print_stack();
     } while (r == STEP_OK);
     return r;
 }
@@ -182,6 +188,11 @@ carl_stackelem_t VM::get_stack_top() {
 carl_stackelem_t VM::pop() {
     carl_stackelem_t v = *sp;
     sp--;
+    return v;
+}
+
+carl_stackelem_t VM::peek() {
+    carl_stackelem_t v = *sp;
     return v;
 }
 
@@ -228,7 +239,7 @@ carl_stackelem_t VM::gtbasic() {
 void VM::update_value() {
     // this operation just overwrites target with val
     auto target_addr = reinterpret_cast<Value*>(pop());
-    auto new_val = reinterpret_cast<Value*>(pop());
+    auto new_val = reinterpret_cast<Value*>(peek());
     if (target_addr->type != new_val->type) {
         std::cerr << "target and new value are not of the same type. aborting assign.\n";
         return;
