@@ -49,8 +49,7 @@ void VM::print_stack() {
 }
 
 Value* VM::get_value_by_name(const char* target) {
-    for (auto& kvp : chunk->get_names()) {
-        auto& name = kvp.second;
+    for (auto& name : names) {
         if (name->size() == strnlen(target, 20)) {
             if (strncmp(name->c_str(), target, name->size()) == 0) {
                 return env->lookup(name->c_str());
@@ -62,6 +61,10 @@ Value* VM::get_value_by_name(const char* target) {
 
 void VM::load_chunk(std::unique_ptr<Chunk> chunk) {
     this->chunk = std::move(chunk);
+
+    for (auto& pair : this->chunk->get_names()) {
+        names.insert(pair.second);
+    }
     ip = this->chunk->get_memory();
 }
 

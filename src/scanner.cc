@@ -62,7 +62,7 @@ Token Scanner::scan_token() {
             return match('=') ? make_token(TOKEN_GREATER_EQUAL)
                        : make_token(TOKEN_GREATER);
         default:
-            make_token(TOKEN_ERROR);
+            return make_token(TOKEN_ERROR);
     }
 }
 
@@ -145,6 +145,8 @@ TokenType Scanner::get_identifier_type() {
             return check_keyword(1, 5, "eturn", TOKEN_RETURN);
         case 't':
             return check_keyword(1, 3, "rue", TOKEN_TRUE);
+        case 'w':
+            return check_keyword(1, 4, "hile", TOKEN_WHILE);
         default:
             return TOKEN_IDENTIFIER;
     }
