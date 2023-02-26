@@ -12,7 +12,7 @@ using namespace carl;
 static const std::unordered_map<TokenType, OpCode> opMap = {
     {TOKEN_PLUS, OP_ADD},  {TOKEN_MINUS, OP_SUB}, {TOKEN_STAR, OP_MUL},
     {TOKEN_SLASH, OP_DIV}, {TOKEN_BANG, OP_NEG}, {TOKEN_PERC, OP_REM},
-    {TOKEN_AND, OP_AND}, {TOKEN_OR, OP_OR},
+    {TOKEN_AND, OP_AND}, {TOKEN_OR, OP_OR}, {TOKEN_EQUAL_EQUAL, OP_EQ},
 };
 
 static const std::unordered_map<TokenType, OpCode> unaryOpMap = {

@@ -257,7 +257,6 @@ TEST(CodeGen, let_nested_assign) {
 
     VM vm(256);
     vm.load_chunk(generator.take_chunk());
-    std::cout << "\n\n";
 
     ASSERT_EQ(generator.get_chunk(), nullptr);
 
@@ -285,5 +284,37 @@ TEST(CodeGen, let_nested_assign) {
 
     auto code = vm.run();
     ASSERT_EQ(code, STEP_HALT);
+}
+
+TEST(CodeGen, let_nested_assign_with_equals) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* expr_src =
+        "let a = 1;"
+        "let b = 2;"
+        "let c = 3;"
+        "let x = 4;"
+        "x = a = b = c;"
+        "let result = (a == b) && (c == x);";
+    scanner->init(expr_src);
+
+    Parser parser;
+    CodeGenerator generator;
+    parser.set_scanner(scanner);
+    auto decl_list = parser.parse();
+    ASSERT_EQ(decl_list.size(), 6);
+
+    generator.generate(decl_list);
+
+    VM vm(256);
+    vm.load_chunk(generator.take_chunk());
+
+    ASSERT_EQ(generator.get_chunk(), nullptr);
+
+    auto code = vm.run();
+    ASSERT_EQ(code, STEP_HALT);
+
+    BasicValue* r = reinterpret_cast<BasicValue*>(vm.get_value_by_name("result"));
+    ASSERT_EQ(r->type, ValueType::Basic);
+    ASSERT_EQ(r->value, CARL_TRUE);
 }
 }  // namespace

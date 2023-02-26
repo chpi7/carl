@@ -102,6 +102,9 @@ int Chunk::print_single(std::ostream& os, uint8_t* pos) {
             case OP_EQ:
                 print_simple_instruction(os, "EQ", &pos);
                 break;
+            case OP_AND:
+                print_simple_instruction(os, "AND", &pos);
+                break;
             case OP_LE:
                 print_simple_instruction(os, "LE", &pos);
                 break;

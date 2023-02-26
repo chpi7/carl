@@ -43,6 +43,8 @@ class VM {
     InterpretResult run(bool print_stack_flag = false);
     carl_stackelem_t get_stack_top();
     void print_stack();
+    // use for testing.
+    Value* get_value_by_name(const char* target);
 
    private:
     void free_stack();

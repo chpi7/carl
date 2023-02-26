@@ -48,6 +48,18 @@ void VM::print_stack() {
     fprintf(stdout, "\n");
 }
 
+Value* VM::get_value_by_name(const char* target) {
+    for (auto& kvp : chunk->get_names()) {
+        auto& name = kvp.second;
+        if (name->size() == strnlen(target, 20)) {
+            if (strncmp(name->c_str(), target, name->size()) == 0) {
+                return env->lookup(name->c_str());
+            }
+        }
+    }
+    return nullptr;
+}
+
 void VM::load_chunk(std::unique_ptr<Chunk> chunk) {
     this->chunk = std::move(chunk);
     ip = this->chunk->get_memory();
@@ -159,6 +171,12 @@ InterpretResult VM::step(bool print_trace) {
             push(logic_binop(OP_OR, lhs, rhs));
             break;
         }
+        case OP_EQ: {
+            auto rhs = pop();
+            auto lhs = pop();
+            push(logic_binop(OP_EQ, lhs, rhs));
+            break;
+        }
         case OP_NOT: {
             auto lhs = pop();
             push(logic_binop(OP_NOT, lhs, 0));
@@ -207,12 +225,18 @@ carl_int_t VM::logic_binop(OpCode op, carl_int_t lhs, carl_int_t rhs) {
     switch (op) {
         case OP_AND:
             if (lhs == CARL_NIL) return lhs;
-            return !lb ? lhs : rhs; // if lhs is true, return rhs for (false, true, nil).
+            return (lb && rb) ? CARL_TRUE : CARL_FALSE;
+            // return !lb ? lhs : rhs; // if lhs is true, return rhs for (false, true, nil).
         case OP_OR:
-            if (lb) return lhs;
-            return rhs; // always return rhs for (false, true, nil).
+            if (lb) return CARL_TRUE;
+            if (!lb && (rhs == CARL_NIL)) return CARL_NIL;
+            return (lb || rb) ? CARL_TRUE : CARL_FALSE;
+            // if (lb) return lhs;
+            // return rhs; // always return rhs for (false, true, nil).
         case OP_NOT:
             return lhs == CARL_NIL ? lhs : static_cast<carl_int_t>(!lb);
+        case OP_EQ:
+            return lhs == rhs ? CARL_TRUE : CARL_FALSE;
         default:
             std::cerr << "unsupported logical_binop" << std::endl;
     }
