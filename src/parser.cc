@@ -1,6 +1,7 @@
 #include "carl/parser.h"
 
 #include <unordered_map>
+#include <list>
 
 #include "carl/common.h"
 
@@ -11,7 +12,7 @@
 
     statement -> ifStatement | whileStatment | blockStatement |
    expressionStatement ifStatement -> 'if' expression statement [else statement]
-    whileStatement -> 'while' expression statement
+    whileStatement -> 'while' ( expression ) statement
     blockStatement -> { declaration* }
     expressionStatement -> statement ';'
 
@@ -159,7 +160,31 @@ std::shared_ptr<AstNode> Parser::declaration() {
 }
 
 std::shared_ptr<AstNode> Parser::statement() {
-    return expr_stmt();
+    if (match(TOKEN_WHILE)) {
+        return while_stmt();
+    } else if (match(TOKEN_LEFT_BRACE)) {
+        return block();
+    } else {
+        return expr_stmt();
+    }
+}
+
+std::shared_ptr<AstNode> Parser::while_stmt() {
+    consume(TOKEN_LEFT_PAREN, "Expected ( after 'while'.");
+    auto condition = expression();
+    consume(TOKEN_RIGHT_PAREN, "Expected ) after while condition.");
+    auto body = statement();
+    return std::make_shared<WhileStmt>(condition, body);
+}
+
+std::shared_ptr<AstNode> Parser::block() {
+    std::list<std::shared_ptr<AstNode>> decls;
+    while (!peek(TOKEN_RIGHT_BRACE)) {
+        decls.push_back(declaration());
+        if (has_error) break;
+    }
+    consume(TOKEN_RIGHT_BRACE, "Expected } at the end of a block.");
+    return std::make_shared<Block>(decls);
 }
 
 std::shared_ptr<AstNode> Parser::expr_stmt() {

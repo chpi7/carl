@@ -21,17 +21,29 @@ Chunk::~Chunk() {
     }
 }
 
-void Chunk::write_byte(OpCode opcode) { 
+uint8_t* Chunk::write_byte(OpCode opcode) { 
     assert(get_write_offset() + 1 < size && "No more space in chunk for opcode");
-    *(write_pos++) = (uint8_t)opcode; 
+    auto retval = write_pos;
+    *(write_pos) = (uint8_t)opcode; 
+    write_pos++;
+    return retval;
 }
 
-void Chunk::write_int_const(carl_int_t c) {
+uint8_t* Chunk::write_int_const(carl_int_t c) {
     assert(get_write_offset() + sizeof(carl_int_t) < size && "No more space in chunk for immediate");
     carl_int_t* loc = reinterpret_cast<carl_int_t*>(write_pos);
     *loc = c;
     assert(*loc == c && "Readback incorrect!");
+
+    auto retval = write_pos;
     write_pos += sizeof(carl_int_t);
+    return retval;
+}
+
+void Chunk::patch_const(uint8_t* address, uint64_t c) {
+    carl_int_t* loc = reinterpret_cast<carl_int_t*>(address);
+    *loc = c;
+    assert(*loc == c && "Readback incorrect!");
 }
 
 static void print_simple_instruction(std::ostream& os, const char* name,
@@ -49,6 +61,17 @@ static void print_single_arg_instruction(std::ostream& os, const char* name,
 
     char fmtbuf[128]{0};
     sprintf(fmtbuf, "%s %016lx", name, val);
+    os << fmtbuf;
+    *pos += sizeof(carl_int_t) + 1;
+}
+
+static void print_jump_instruction(std::ostream& os, const char* name,
+                                         uint8_t** pos, uint8_t* base) {
+    carl_int_t* val_loc = reinterpret_cast<carl_int_t*>((*pos)+1);
+    carl_int_t val = *val_loc;
+
+    char fmtbuf[128]{0};
+    sprintf(fmtbuf, "%s %016lx", name, reinterpret_cast<uint8_t*>(val) - base);
     os << fmtbuf;
     *pos += sizeof(carl_int_t) + 1;
 }
@@ -112,10 +135,10 @@ int Chunk::print_single(std::ostream& os, uint8_t* pos) {
                 print_simple_instruction(os, "LEQ", &pos);
                 break;
             case OP_JUMP:
-                print_simple_instruction(os, "JUMP", &pos);
+                print_jump_instruction(os, "JUMP", &pos, get_memory());
                 break;
             case OP_JUMPZ:
-                print_simple_instruction(os, "JUMPZ", &pos);
+                print_jump_instruction(os, "JUMPZ", &pos, get_memory());
                 break;
             case OP_DEFINE_VAR:
                 print_simple_instruction(os, "DEFINE_VAR", &pos);

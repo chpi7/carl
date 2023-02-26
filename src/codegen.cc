@@ -13,6 +13,7 @@ static const std::unordered_map<TokenType, OpCode> opMap = {
     {TOKEN_PLUS, OP_ADD},  {TOKEN_MINUS, OP_SUB}, {TOKEN_STAR, OP_MUL},
     {TOKEN_SLASH, OP_DIV}, {TOKEN_BANG, OP_NEG}, {TOKEN_PERC, OP_REM},
     {TOKEN_AND, OP_AND}, {TOKEN_OR, OP_OR}, {TOKEN_EQUAL_EQUAL, OP_EQ},
+    {TOKEN_LESS, OP_LE},
 };
 
 static const std::unordered_map<TokenType, OpCode> unaryOpMap = {
@@ -139,4 +140,30 @@ void CodeGenerator::visit_letstmt(LetStmt* letstmt){
     chunk->write_byte(OP_LOADC);
     chunk->write_int_const(reinterpret_cast<carl_int_t>(name->c_str()));
     chunk->write_byte(OP_DEFINE_VAR);
+}
+
+void CodeGenerator::visit_block(Block* block) {
+    chunk->write_byte(OP_PUSH_ENV);
+    for (auto& decl : block->get_declarations()) {
+        decl->accept(this);
+    }
+    chunk->write_byte(OP_POP_ENV);
+}
+
+void CodeGenerator::visit_whilestmt(WhileStmt* whilestmt) {
+    // evaluate the condition
+    uint8_t* cond_loc = chunk->get_memory() + chunk->get_write_offset();
+    whilestmt->get_condition()->accept(this);
+
+    // jump over body if false
+    chunk->write_byte(OP_GTBASIC);
+    chunk->write_byte(OP_JUMPZ);
+    uint8_t* loc = chunk->write_int_const(0);
+
+    whilestmt->get_body()->accept(this);
+
+    chunk->write_byte(OP_JUMP);
+    chunk->write_int_const(reinterpret_cast<carl_int_t>(cond_loc));
+
+    chunk->patch_const(loc, reinterpret_cast<uint64_t>(chunk->get_memory() + chunk->get_write_offset()));
 }

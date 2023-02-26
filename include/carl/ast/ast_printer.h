@@ -13,6 +13,8 @@ class AstPrinter : public AstNodeVisitor {
     AstPrinter(std::ostream& os) : os(os), indent(0) {};
     void print(AstNode* node);
     void visit_invalid(Invalid* invalid);
+    void visit_block(Block* block);
+    void visit_whilestmt(WhileStmt* whilestmt);
     void visit_letstmt(LetStmt* letstmt);
     void visit_exprstmt(ExprStmt* exprstmt);
     void visit_binary(Binary* node);

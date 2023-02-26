@@ -11,6 +11,24 @@ void PrintAstNodeVisitor::visit_invalid(Invalid* invalid) {
     os << "<invalid>";
 }
 
+void PrintAstNodeVisitor::visit_block(Block* block) {
+    os << "{";
+    bool first = true;
+    for (auto& decl : block->get_declarations()) {
+        if (!first) os << ", ";
+        decl->accept(this);
+        first = false;
+    }
+    os << "}";
+}
+
+void PrintAstNodeVisitor::visit_whilestmt(WhileStmt* whilestmt) {
+    os << "while ";
+    whilestmt->get_condition()->accept(this);
+    os << " ";
+    whilestmt->get_body()->accept(this);
+}
+
 void PrintAstNodeVisitor::visit_letstmt(LetStmt* letstmt) {
     os << "let ";
     stringify_token(stringify_buffer, letstmt->get_name());

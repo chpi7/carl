@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "carl/ast/print_visitor.h"
+#include "carl/ast/ast_printer.h"
 #include "carl/scanner.h"
 
 using namespace carl;
@@ -196,6 +197,47 @@ TEST(Parser, parse_letstmt) {
     std::ostringstream ss;
     auto v = new PrintAstNodeVisitor(ss);
     node->accept(v);
+
+    ASSERT_EQ(ss.str(), expected_print);
+    delete v;
+}
+
+TEST(Parser, parse_block) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* src_string = "{"
+    "x + 1;"
+    "y + 2;"
+    "}";
+    std::string expected_print = "{(+ x 1);, (+ y 2);}";
+    scanner->init(src_string);
+
+    Parser parser;
+    parser.set_scanner(scanner);
+
+    std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
+
+    std::ostringstream ss;
+    auto v = new PrintAstNodeVisitor(ss);
+    decls.front()->accept(v);
+
+    ASSERT_EQ(ss.str(), expected_print);
+    delete v;
+}
+
+TEST(Parser, parse_while_stmt) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* src_string = "while (i < 10) {1 + 2;}";
+    std::string expected_print = "while (< i 10) {(+ 1 2);}";
+    scanner->init(src_string);
+
+    Parser parser;
+    parser.set_scanner(scanner);
+
+    std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
+
+    std::ostringstream ss;
+    auto v = new PrintAstNodeVisitor(ss);
+    decls.front()->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
     delete v;

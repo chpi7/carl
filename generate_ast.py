@@ -5,10 +5,10 @@ from pathlib import Path
 from argparse import ArgumentParser
 
 IFDEF_NAME = "carl_ast_h"
-INCLUDES = ["<sstream>", "<fstream>", "<memory>", '"carl/scanner.h"', '"carl/common.h"']
+INCLUDES = ["<sstream>", "<fstream>", "<memory>", "<list>", '"carl/scanner.h"', '"carl/common.h"']
 NAMESPACE = "carl"
 FORWARD_DECLS = ["class AstNodeVisitor;"]
-REPLACEMENTS = {"@spr": "std::shared_ptr"}
+REPLACEMENTS = {"@spr": "std::shared_ptr", "@list": "std::list"}
 
 ASTNODE = """class AstNode {
    public:
@@ -19,6 +19,9 @@ ASTNODE = """class AstNode {
 TYPES = [
     "Invalid() : AstNode",
     "ExprStmt(@spr<AstNode> expr) : AstNode",
+    "WhileStmt(@spr<AstNode> condition, @spr<AstNode> body) : AstNode",
+    "Block(@list<@spr<AstNode>> declarations) : AstNode",
+    # TODO: rename this to LetDecl
     "LetStmt(Token name, @spr<AstNode> initializer) : AstNode",
     "Assignment(@spr<AstNode> target, @spr<AstNode> expr) : AstNode",
     "Binary(Token op, @spr<AstNode> lhs, @spr<AstNode> rhs) : AstNode",
@@ -48,9 +51,10 @@ def parse_class_decl(decl: str) -> Class:
     parent = parent.strip()
 
     name, rem = rem.split("(")
-    name.strip()
-    assert rem[-1] == ")", "Expected variable list to have a ) at the end"
-    rem = rem[:-2]
+    name = name.strip()
+    rem = rem.strip()
+    assert rem[-1] == ")", f"Expected variable list to have a ) at the end. is: {rem}"
+    rem = rem[:-1]
 
     members = rem.strip().split(",")
     if members == [""]:

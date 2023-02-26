@@ -51,6 +51,7 @@ class VM {
     void init_stack();
     inline carl_stackelem_t pop();
     inline carl_stackelem_t peek();
+    inline carl_int_t read_const_from_progmem();
     inline void push(carl_stackelem_t v);
     inline carl_int_t logic_binop(OpCode op, carl_int_t lhs, carl_int_t rhs);
     inline carl_stackelem_t mkbasic();

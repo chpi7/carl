@@ -317,4 +317,68 @@ TEST(CodeGen, let_nested_assign_with_equals) {
     ASSERT_EQ(r->type, ValueType::Basic);
     ASSERT_EQ(r->value, CARL_TRUE);
 }
+
+TEST(CodeGen, i_equals_i_plus_one) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* expr_src =
+        "let i = 0;"
+        "i = i + 1;"
+        "i = i + 1;";
+    scanner->init(expr_src);
+
+    Parser parser;
+    CodeGenerator generator;
+    parser.set_scanner(scanner);
+    auto decl_list = parser.parse();
+
+    generator.generate(decl_list);
+
+    VM vm(256);
+    vm.load_chunk(generator.take_chunk());
+
+    ASSERT_EQ(generator.get_chunk(), nullptr);
+
+    auto code = vm.run();
+    ASSERT_EQ(code, STEP_HALT);
+
+    BasicValue* r = reinterpret_cast<BasicValue*>(vm.get_value_by_name("i"));
+    ASSERT_EQ(r->type, ValueType::Basic);
+    ASSERT_EQ(r->value, 2);
+}
+
+TEST(CodeGen, simple_while) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* expr_src =
+        "let i = 0;"
+        "let j = 0;"
+        "while (i < 3) {"
+            "i = i + 1;"
+            "j = i + (2 * i) + j;" // 3 + 6 + 9
+        "}";
+    scanner->init(expr_src);
+
+    Parser parser;
+    CodeGenerator generator;
+    parser.set_scanner(scanner);
+    auto decl_list = parser.parse();
+
+    generator.generate(decl_list);
+    // generator.get_chunk()->print(std::cout);
+
+    VM vm(256);
+    vm.load_chunk(generator.take_chunk());
+
+    ASSERT_EQ(generator.get_chunk(), nullptr);
+
+    auto code = vm.run();
+    ASSERT_EQ(code, STEP_HALT);
+
+    BasicValue* r = reinterpret_cast<BasicValue*>(vm.get_value_by_name("i"));
+    ASSERT_EQ(r->type, ValueType::Basic);
+    ASSERT_EQ(r->value, 3);
+
+    r = reinterpret_cast<BasicValue*>(vm.get_value_by_name("j"));
+    ASSERT_EQ(r->type, ValueType::Basic);
+    ASSERT_EQ(r->value, 18);
+}
 }  // namespace

@@ -150,9 +150,7 @@ InterpretResult VM::step(bool print_trace) {
             break;
         }
         case OP_LOADC: {
-            carl_int_t* vp = reinterpret_cast<carl_int_t*>(ip);
-            ip += sizeof(carl_int_t);
-            push(*vp);
+            push(read_const_from_progmem());
             break;
         }
         case OP_POP: pop(); break;
@@ -161,6 +159,7 @@ InterpretResult VM::step(bool print_trace) {
         case OP_MUL: BINOP(*); break;
         case OP_DIV: BINOP(/); break;
         case OP_REM: BINOP(%); break;
+        case OP_LE:  BINOP(<); break;
         case OP_NEG: push(-pop()); break;
         case OP_AND: {
             auto rhs = pop();
@@ -185,8 +184,22 @@ InterpretResult VM::step(bool print_trace) {
             push(logic_binop(OP_NOT, lhs, 0));
             break;
         }
+        case OP_JUMP: {
+            auto target = read_const_from_progmem();
+            ip = reinterpret_cast<uint8_t*>(target);
+            break;
+        }
+        case OP_JUMPZ: {
+            auto condition = pop();
+            auto target = read_const_from_progmem();
+            if (condition == CARL_FALSE) {
+                ip = reinterpret_cast<uint8_t*>(target);
+            }
+            break;
+        }
         case OP_HALT: return STEP_HALT;
         default:
+            std::cerr << "OpCode " << op << " not implemented in VM.\n";
             return STEP_ERROR;
     }
     return STEP_OK;
@@ -215,6 +228,12 @@ carl_stackelem_t VM::pop() {
 carl_stackelem_t VM::peek() {
     carl_stackelem_t v = *sp;
     return v;
+}
+
+carl_int_t VM::read_const_from_progmem() {
+    carl_int_t* vp = reinterpret_cast<carl_int_t*>(ip);
+    ip += sizeof(carl_int_t);
+    return *vp;
 }
 
 void VM::push(carl_stackelem_t v) {

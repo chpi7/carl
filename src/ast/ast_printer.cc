@@ -29,6 +29,38 @@ void AstPrinter::visit_letstmt(LetStmt* letstmt) {
     indent--;
 }
 
+void AstPrinter::visit_block(Block* block) {
+    write_indent();
+    os << "block\n";
+    indent++;
+    for (auto& decl : block->get_declarations()) {
+        decl->accept(this);
+        os << "\n";
+    }
+    indent--;
+}
+
+void AstPrinter::visit_whilestmt(WhileStmt* whilestmt) {
+    write_indent();
+    os << "while\n";
+    indent++;
+
+    write_indent();
+    os << "condition =\n";
+    indent++;
+    whilestmt->get_condition()->accept(this);
+    os << "\n";
+    indent--;
+
+    write_indent();
+    os << "body =\n";
+    indent++;
+    whilestmt->get_body()->accept(this);
+    indent--;
+
+    indent--;
+}
+
 void AstPrinter::visit_exprstmt(ExprStmt* exprstmt) {
     write_indent();
     os << "exprStmt\n";

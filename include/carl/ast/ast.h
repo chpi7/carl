@@ -4,6 +4,7 @@
 #include <sstream>
 #include <fstream>
 #include <memory>
+#include <list>
 #include "carl/scanner.h"
 #include "carl/common.h"
 
@@ -32,6 +33,26 @@ class ExprStmt : public AstNode {
    public:
     ExprStmt(std::shared_ptr<AstNode> expr) :expr(expr) {}
     std::shared_ptr<AstNode> get_expr() { return this->expr; }
+    void accept(AstNodeVisitor* visitor);
+};
+
+class WhileStmt : public AstNode {
+   private:
+    std::shared_ptr<AstNode> condition;
+    std::shared_ptr<AstNode> body;
+   public:
+    WhileStmt(std::shared_ptr<AstNode> condition, std::shared_ptr<AstNode> body) :condition(condition), body(body) {}
+    std::shared_ptr<AstNode> get_condition() { return this->condition; }
+    std::shared_ptr<AstNode> get_body() { return this->body; }
+    void accept(AstNodeVisitor* visitor);
+};
+
+class Block : public AstNode {
+   private:
+    std::list<std::shared_ptr<AstNode>> declarations;
+   public:
+    Block(std::list<std::shared_ptr<AstNode>> declarations) :declarations(declarations) {}
+    std::list<std::shared_ptr<AstNode>> get_declarations() { return this->declarations; }
     void accept(AstNodeVisitor* visitor);
 };
 
@@ -121,6 +142,8 @@ class AstNodeVisitor {
    public:
     virtual void visit_invalid(Invalid* invalid) { assert(false && "visit invalid not overwritten"); };
     virtual void visit_exprstmt(ExprStmt* exprstmt) { assert(false && "visit exprstmt not overwritten"); };
+    virtual void visit_whilestmt(WhileStmt* whilestmt) { assert(false && "visit whilestmt not overwritten"); };
+    virtual void visit_block(Block* block) { assert(false && "visit block not overwritten"); };
     virtual void visit_letstmt(LetStmt* letstmt) { assert(false && "visit letstmt not overwritten"); };
     virtual void visit_assignment(Assignment* assignment) { assert(false && "visit assignment not overwritten"); };
     virtual void visit_binary(Binary* binary) { assert(false && "visit binary not overwritten"); };

@@ -30,6 +30,8 @@ class CodeGenerator : public AstNodeVisitor {
     void visit_number(Number* number);
     void visit_exprstmt(ExprStmt* exprstmt);
     void visit_letstmt(LetStmt* letstmt);
+    void visit_block(Block* letstmt);
+    void visit_whilestmt(WhileStmt* letstmt);
 };
 }  // namespace carl
 
