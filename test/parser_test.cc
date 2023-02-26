@@ -191,7 +191,7 @@ TEST(Parser, parse_letstmt) {
     Parser parser;
     parser.set_scanner(scanner);
 
-    std::shared_ptr<AstNode> node = parser.statement();
+    std::shared_ptr<AstNode> node = parser.declaration();
 
     std::ostringstream ss;
     auto v = new PrintAstNodeVisitor(ss);

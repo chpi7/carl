@@ -114,14 +114,6 @@ void Parser::set_scanner(std::shared_ptr<Scanner> scanner) {
     advance();
 }
 
-std::vector<std::shared_ptr<AstNode>> Parser::parse() {
-    std::vector<std::shared_ptr<AstNode>> result;
-    while (current.type != TOKEN_EOF) {
-        result.push_back(declaration());
-    }
-    return result;
-}
-
 const ParseRule* Parser::get_rule(TokenType tokenType) const {
     if (!parse_rules.contains(tokenType)) {
         return nullptr;
@@ -147,16 +139,26 @@ void Parser::synchronize() {
     }
 }
 
-std::shared_ptr<AstNode> Parser::declaration() {
-    auto result = statement();
-    if (panic_mode) {
-        synchronize();
+std::vector<std::shared_ptr<AstNode>> Parser::parse() {
+    std::vector<std::shared_ptr<AstNode>> result;
+    while (current.type != TOKEN_EOF) {
+        result.push_back(declaration());
+        if (panic_mode) {
+            synchronize();
+        }
     }
     return result;
 }
 
+std::shared_ptr<AstNode> Parser::declaration() {
+    if (match(TOKEN_LET)) {
+        return let_decl();
+    } else {
+        return statement();
+    }
+}
+
 std::shared_ptr<AstNode> Parser::statement() {
-    if (match(TOKEN_LET)) return let_stmt();
     return expr_stmt();
 }
 
@@ -166,7 +168,7 @@ std::shared_ptr<AstNode> Parser::expr_stmt() {
     return std::make_shared<ExprStmt>(expr);
 }
 
-std::shared_ptr<AstNode> Parser::let_stmt() {
+std::shared_ptr<AstNode> Parser::let_decl() {
     consume(TOKEN_IDENTIFIER,
             "Expected identifier as variable name after let.");
     auto identifier = previous;
