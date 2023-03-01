@@ -40,6 +40,48 @@ void AstPrinter::visit_block(Block* block) {
     indent--;
 }
 
+void AstPrinter::visit_fndecl(FnDecl* fndecl) {
+    write_indent();
+    os << "fndecl " << std::string(fndecl->get_name().start, fndecl->get_name().length) << "\n";
+    indent++;
+
+    write_indent();
+    os << "formals =\n";
+    indent++;
+    for (auto& formal : fndecl->get_formals()) {
+        formal->accept(this);
+    }
+    indent--;
+
+    write_indent();
+    os << "body =\n";
+    indent++;
+    fndecl->get_body()->accept(this);
+    indent--;
+
+    indent--;
+}
+
+void AstPrinter::visit_formalparam(FormalParam* formalparam) {
+    write_indent();
+    os << std::string(formalparam->get_name().start, formalparam->get_name().length);
+    os << "\n";
+}
+
+void AstPrinter::visit_returnstmt(ReturnStmt* returnstmt) {
+    write_indent();
+    os << "returnstmt\n";
+    indent++;
+    
+    write_indent();
+    os << "expression =\n";
+    indent++;
+    returnstmt->get_expr()->accept(this);
+    os << "\n";
+    indent--;
+    indent--;
+}
+
 void AstPrinter::visit_whilestmt(WhileStmt* whilestmt) {
     write_indent();
     os << "while\n";

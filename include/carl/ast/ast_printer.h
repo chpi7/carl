@@ -14,6 +14,9 @@ class AstPrinter : public AstNodeVisitor {
     void print(AstNode* node);
     void visit_invalid(Invalid* invalid);
     void visit_block(Block* block);
+    void visit_fndecl(FnDecl* fndecl);
+    void visit_formalparam(FormalParam* formalparam);
+    void visit_returnstmt(ReturnStmt* returnstmt);
     void visit_whilestmt(WhileStmt* whilestmt);
     void visit_letstmt(LetStmt* letstmt);
     void visit_exprstmt(ExprStmt* exprstmt);

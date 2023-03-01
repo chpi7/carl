@@ -23,4 +23,9 @@ add_executable(
     ${INCLUDE_H}
 )
 
-target_link_libraries(carl carl-lib)
+target_link_libraries(
+    carl 
+    carl-lib
+    ${LLVM_LIBS}
+    ${LLVM_LDFLAGS}
+)

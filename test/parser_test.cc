@@ -242,4 +242,20 @@ TEST(Parser, parse_while_stmt) {
     ASSERT_EQ(ss.str(), expected_print);
     delete v;
 }
+
+TEST(Parser, parse_fndecl) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* src_string = "fn foo (a, b) { return b; }";
+    scanner->init(src_string);
+
+    Parser parser;
+    parser.set_scanner(scanner);
+
+    std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
+
+    ASSERT_EQ(decls.size(), 1);
+
+    AstPrinter printer(std::cout);
+    printer.print(decls.front().get());
+}
 }  // namespace

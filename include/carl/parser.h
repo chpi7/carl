@@ -46,11 +46,13 @@ class Parser {
     void set_scanner(std::shared_ptr<Scanner> scanner);
     std::vector<std::shared_ptr<AstNode>> parse();
     std::shared_ptr<AstNode> declaration();
+    std::shared_ptr<AstNode> let_decl();
+    std::shared_ptr<AstNode> fn_decl();
     std::shared_ptr<AstNode> statement();
+    std::shared_ptr<AstNode> ret_stmt();
     std::shared_ptr<AstNode> expr_stmt();
     std::shared_ptr<AstNode> while_stmt();
     std::shared_ptr<AstNode> block();
-    std::shared_ptr<AstNode> let_decl();
     std::shared_ptr<AstNode> expression();
     std::shared_ptr<AstNode> unary();
     std::shared_ptr<AstNode> literal();

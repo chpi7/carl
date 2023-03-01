@@ -36,6 +36,15 @@ class ExprStmt : public AstNode {
     void accept(AstNodeVisitor* visitor);
 };
 
+class ReturnStmt : public AstNode {
+   private:
+    std::shared_ptr<AstNode> expr;
+   public:
+    ReturnStmt(std::shared_ptr<AstNode> expr) :expr(expr) {}
+    std::shared_ptr<AstNode> get_expr() { return this->expr; }
+    void accept(AstNodeVisitor* visitor);
+};
+
 class WhileStmt : public AstNode {
    private:
     std::shared_ptr<AstNode> condition;
@@ -53,6 +62,28 @@ class Block : public AstNode {
    public:
     Block(std::list<std::shared_ptr<AstNode>> declarations) :declarations(declarations) {}
     std::list<std::shared_ptr<AstNode>> get_declarations() { return this->declarations; }
+    void accept(AstNodeVisitor* visitor);
+};
+
+class FnDecl : public AstNode {
+   private:
+    Token name;
+    std::list<std::shared_ptr<AstNode>> formals;
+    std::shared_ptr<AstNode> body;
+   public:
+    FnDecl(Token name, std::list<std::shared_ptr<AstNode>> formals, std::shared_ptr<AstNode> body) :name(name), formals(formals), body(body) {}
+    Token get_name() { return this->name; }
+    std::list<std::shared_ptr<AstNode>> get_formals() { return this->formals; }
+    std::shared_ptr<AstNode> get_body() { return this->body; }
+    void accept(AstNodeVisitor* visitor);
+};
+
+class FormalParam : public AstNode {
+   private:
+    Token name;
+   public:
+    FormalParam(Token name) :name(name) {}
+    Token get_name() { return this->name; }
     void accept(AstNodeVisitor* visitor);
 };
 
@@ -142,8 +173,11 @@ class AstNodeVisitor {
    public:
     virtual void visit_invalid(Invalid* invalid) { assert(false && "visit invalid not overwritten"); };
     virtual void visit_exprstmt(ExprStmt* exprstmt) { assert(false && "visit exprstmt not overwritten"); };
+    virtual void visit_returnstmt(ReturnStmt* returnstmt) { assert(false && "visit returnstmt not overwritten"); };
     virtual void visit_whilestmt(WhileStmt* whilestmt) { assert(false && "visit whilestmt not overwritten"); };
     virtual void visit_block(Block* block) { assert(false && "visit block not overwritten"); };
+    virtual void visit_fndecl(FnDecl* fndecl) { assert(false && "visit fndecl not overwritten"); };
+    virtual void visit_formalparam(FormalParam* formalparam) { assert(false && "visit formalparam not overwritten"); };
     virtual void visit_letstmt(LetStmt* letstmt) { assert(false && "visit letstmt not overwritten"); };
     virtual void visit_assignment(Assignment* assignment) { assert(false && "visit assignment not overwritten"); };
     virtual void visit_binary(Binary* binary) { assert(false && "visit binary not overwritten"); };

@@ -19,8 +19,11 @@ ASTNODE = """class AstNode {
 TYPES = [
     "Invalid() : AstNode",
     "ExprStmt(@spr<AstNode> expr) : AstNode",
+    "ReturnStmt(@spr<AstNode> expr) : AstNode",
     "WhileStmt(@spr<AstNode> condition, @spr<AstNode> body) : AstNode",
     "Block(@list<@spr<AstNode>> declarations) : AstNode",
+    "FnDecl(Token name, @list<@spr<AstNode>> formals, @spr<AstNode> body) : AstNode",
+    "FormalParam(Token name) : AstNode",
     # TODO: rename this to LetDecl
     "LetStmt(Token name, @spr<AstNode> initializer) : AstNode",
     "Assignment(@spr<AstNode> target, @spr<AstNode> expr) : AstNode",

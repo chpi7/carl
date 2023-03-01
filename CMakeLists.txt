@@ -4,17 +4,26 @@ project(
     carl-language
     VERSION 0.1
     DESCRIPTION "The carl programming language"
-    LANGUAGES CXX
+    LANGUAGES CXX C
 )
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+
+# LLVM
+find_package(LLVM 15 REQUIRED CONFIG)
+message(STATUS "LLVM_INCLUDE_DIRS = ${LLVM_INCLUDE_DIRS}")
+message(STATUS "LLVM_INSTALL_PREFIX = ${LLVM_INSTALL_PREFIX}")
+add_definitions(${LLVM_DEFINITIONS})
+llvm_map_components_to_libnames(LLVM_LIBS core support mcjit x86codegen OrcJIT)
 
 include("${CMAKE_SOURCE_DIR}/include/local.cmake")
 include_directories("${CMAKE_SOURCE_DIR}/include")
 include_directories(SYSTEM 
     ${GTEST_INCLUDE_DIRS}
+    ${LLVM_INLCUDE_DIRECTORIES}
 )
 
 include("${CMAKE_SOURCE_DIR}/src/local.cmake")

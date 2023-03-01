@@ -73,6 +73,7 @@ std::shared_ptr<AstNode> Parser::parse_precedence(Precedence precedence) {
     // token");
     if (prefix_rule->prefix == nullptr) {
         error_at(current, "no prefix rule found.");
+        advance(); // dont get stuck in infinite loop
         return make_error_node();
     }
     // so nice :)
@@ -154,8 +155,60 @@ std::vector<std::shared_ptr<AstNode>> Parser::parse() {
 std::shared_ptr<AstNode> Parser::declaration() {
     if (match(TOKEN_LET)) {
         return let_decl();
+    } else if (match(TOKEN_FN)) {
+        return fn_decl();
     } else {
         return statement();
+    }
+}
+
+std::shared_ptr<AstNode> Parser::let_decl() {
+    consume(TOKEN_IDENTIFIER,
+            "Expected identifier as variable name after let.");
+    auto identifier = previous;
+    if (peek(TOKEN_SEMICOLON)) {
+        error_at(current,
+                 "Expected initialization after variable declaration.");
+        return make_error_node();
+    } else if (match(TOKEN_EQUAL)) {
+        auto initializer = expression();
+        auto result = std::make_shared<LetStmt>(identifier, initializer);
+        if (!match(TOKEN_SEMICOLON)) {
+            error_at(current, "Expected ; after let initializer.");
+        }
+        return result;
+    } else {
+        error_at(current, "Expected '=' after 'let'.");
+        return make_error_node();
+    }
+}
+
+std::shared_ptr<AstNode> Parser::fn_decl() {
+    consume(TOKEN_IDENTIFIER, "Expected function name after fn keyword.");
+    auto name = previous;
+
+    consume(TOKEN_LEFT_PAREN, "Expected ( after fn name.");
+
+    std::list<std::shared_ptr<AstNode>> formal_params;
+    while (!peek(TOKEN_RIGHT_PAREN)) {
+        if (formal_params.size() > 0) {
+            consume(TOKEN_COMMA, "Expected ',' after formal parameter.");
+        }
+
+        if (!match(TOKEN_IDENTIFIER)) {
+            error_at(current, "Expected identifier as formal parameter.");
+            return make_error_node();
+        }
+        formal_params.push_back(std::make_shared<FormalParam>(previous));
+    }
+    consume(TOKEN_RIGHT_PAREN, "Expected ) after fn formal parameters.");
+
+    // does this make sense? maybe ... :)
+    auto body = statement();
+    if (has_error) {
+        return body;
+    } else {
+        return std::make_shared<FnDecl>(name, formal_params, body);
     }
 }
 
@@ -164,9 +217,17 @@ std::shared_ptr<AstNode> Parser::statement() {
         return while_stmt();
     } else if (match(TOKEN_LEFT_BRACE)) {
         return block();
+    } else if (match(TOKEN_RETURN)) {
+        return ret_stmt();
     } else {
         return expr_stmt();
     }
+}
+
+std::shared_ptr<AstNode> Parser::ret_stmt() {
+    auto return_value = expression();
+    consume(TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
+    return std::make_shared<ReturnStmt>(return_value);
 }
 
 std::shared_ptr<AstNode> Parser::while_stmt() {
@@ -191,28 +252,6 @@ std::shared_ptr<AstNode> Parser::expr_stmt() {
     auto expr = expression();
     consume(TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
     return std::make_shared<ExprStmt>(expr);
-}
-
-std::shared_ptr<AstNode> Parser::let_decl() {
-    consume(TOKEN_IDENTIFIER,
-            "Expected identifier as variable name after let.");
-    auto identifier = previous;
-    if (peek(TOKEN_SEMICOLON)) {
-        error_at(current,
-                 "Expected initialization after variable declaration.");
-        return make_error_node();
-    }
-    if (match(TOKEN_EQUAL)) {
-        auto initializer = expression();
-        auto result = std::make_shared<LetStmt>(identifier, initializer);
-        if (!match(TOKEN_SEMICOLON)) {
-            error_at(current, "Expected ; after let initializer.");
-        }
-        return result;
-    } else {
-        error_at(current, "Expected ';' or '=' after 'let _'.");
-        return make_error_node();
-    }
 }
 
 std::shared_ptr<AstNode> Parser::expression() {
