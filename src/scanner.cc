@@ -35,6 +35,8 @@ Token Scanner::scan_token() {
             return make_token(TOKEN_COMMA);
         case ';':
             return make_token(TOKEN_SEMICOLON);
+        case ':':
+            return make_token(TOKEN_COLON);
         case '.':
             return make_token(TOKEN_DOT);
         case '-':

@@ -245,7 +245,7 @@ TEST(Parser, parse_while_stmt) {
 
 TEST(Parser, parse_fndecl) {
     auto scanner = std::make_shared<Scanner>();
-    const char* src_string = "fn foo (a, b) { return b; }";
+    const char* src_string = "fn foo (a: int, b: int) { return b; }";
     scanner->init(src_string);
 
     Parser parser;

@@ -16,6 +16,7 @@ enum TokenType {
     TOKEN_MINUS,
     TOKEN_PLUS,
     TOKEN_SEMICOLON,
+    TOKEN_COLON,
     TOKEN_SLASH,
     TOKEN_STAR,
     TOKEN_PIPE,

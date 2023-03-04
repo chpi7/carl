@@ -18,21 +18,28 @@ ASTNODE = """class AstNode {
 
 TYPES = [
     "Invalid() : AstNode",
-    "ExprStmt(@spr<AstNode> expr) : AstNode",
-    "ReturnStmt(@spr<AstNode> expr) : AstNode",
-    "WhileStmt(@spr<AstNode> condition, @spr<AstNode> body) : AstNode",
-    "Block(@list<@spr<AstNode>> declarations) : AstNode",
+
+    "Statement() : AstNode",
+    "Expression() : AstNode",
+
+    "Type(Token name) : AstNode",
+    "FormalParam(Token name, @spr<Type> type) : AstNode",
     "FnDecl(Token name, @list<@spr<AstNode>> formals, @spr<AstNode> body) : AstNode",
-    "FormalParam(Token name) : AstNode",
+
     # TODO: rename this to LetDecl
-    "LetStmt(Token name, @spr<AstNode> initializer) : AstNode",
-    "Assignment(@spr<AstNode> target, @spr<AstNode> expr) : AstNode",
-    "Binary(Token op, @spr<AstNode> lhs, @spr<AstNode> rhs) : AstNode",
-    "Unary(Token op, @spr<AstNode> operand) : AstNode",
-    "Variable(Token name) : AstNode",
-    "Literal(Token value) : AstNode",
-    "String(Token value) : AstNode",
-    "Number(Token value) : AstNode",
+    "LetStmt(Token name, @spr<AstNode> initializer) : Statement",
+    "ExprStmt(@spr<AstNode> expr) : Statement",
+    "ReturnStmt(@spr<AstNode> expr) : Statement",
+    "WhileStmt(@spr<AstNode> condition, @spr<AstNode> body) : Statement",
+    "Block(@list<@spr<AstNode>> declarations) : Statement",
+
+    "Assignment(@spr<AstNode> target, @spr<Expression> expr) : Expression",
+    "Binary(Token op, @spr<Expression> lhs, @spr<Expression> rhs) : Expression",
+    "Unary(Token op, @spr<Expression> operand) : Expression",
+    "Variable(Token name) : Expression",
+    "Literal(Token value) : Expression",
+    "String(Token value) : Expression",
+    "Number(Token value) : Expression",
 ]
 
 

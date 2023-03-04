@@ -23,10 +23,12 @@
 
 namespace carl {
 
-static std::shared_ptr<AstNode> make_error_node() {
-    return std::make_shared<Invalid>();
+template<typename T>
+static std::shared_ptr<T> make_error_node() {
+    return std::make_shared<T>();
 }
 
+// Parse rules for the parse_precedence function --> returns expressions only.
 static const std::unordered_map<TokenType, ParseRule> parse_rules = {
     {TOKEN_LEFT_PAREN, {PREC_NONE, &Parser::grouping, nullptr}},
     {TOKEN_RIGHT_PAREN, {PREC_NONE, nullptr, nullptr}},
@@ -67,17 +69,17 @@ static const std::unordered_map<TokenType, ParseRule> parse_rules = {
     {TOKEN_EOF, {PREC_NONE, nullptr, nullptr}},
 };
 
-std::shared_ptr<AstNode> Parser::parse_precedence(Precedence precedence) {
+std::shared_ptr<Expression> Parser::parse_precedence(Precedence precedence) {
     auto prefix_rule = get_rule(current.type);
     // assert(get_rule(current.type)->prefix != nullptr && "No prefix rule for
     // token");
     if (prefix_rule->prefix == nullptr) {
         error_at(current, "no prefix rule found.");
         advance(); // dont get stuck in infinite loop
-        return make_error_node();
+        return make_error_node<Expression>();
     }
     // so nice :)
-    std::shared_ptr<AstNode> expression = (this->*(prefix_rule->prefix))();
+    std::shared_ptr<Expression> expression = (this->*(prefix_rule->prefix))();
 
     const ParseRule* infix_rule;
     while (precedence <= (infix_rule = get_rule(current.type))->prec) {
@@ -90,7 +92,7 @@ std::shared_ptr<AstNode> Parser::parse_precedence(Precedence precedence) {
         if (op_token.type == TOKEN_EQUAL) {
             if (precedence > PREC_ASSIGNMENT) {
                 error_at(current, "assignment no possible here");
-                return make_error_node();
+                return make_error_node<Expression>();
             } else {
                 // assignment
                 auto value = (this->*(infix_rule)->infix)();
@@ -169,7 +171,7 @@ std::shared_ptr<AstNode> Parser::let_decl() {
     if (peek(TOKEN_SEMICOLON)) {
         error_at(current,
                  "Expected initialization after variable declaration.");
-        return make_error_node();
+        return make_error_node<Expression>();
     } else if (match(TOKEN_EQUAL)) {
         auto initializer = expression();
         auto result = std::make_shared<LetStmt>(identifier, initializer);
@@ -179,7 +181,7 @@ std::shared_ptr<AstNode> Parser::let_decl() {
         return result;
     } else {
         error_at(current, "Expected '=' after 'let'.");
-        return make_error_node();
+        return make_error_node<Expression>();
     }
 }
 
@@ -197,9 +199,12 @@ std::shared_ptr<AstNode> Parser::fn_decl() {
 
         if (!match(TOKEN_IDENTIFIER)) {
             error_at(current, "Expected identifier as formal parameter.");
-            return make_error_node();
+            return make_error_node<Expression>();
         }
-        formal_params.push_back(std::make_shared<FormalParam>(previous));
+
+        consume(TOKEN_COLON, "Expected ':' between formal param name and formal param type.");
+        auto type_ = type();
+        formal_params.push_back(std::make_shared<FormalParam>(previous, type_));
     }
     consume(TOKEN_RIGHT_PAREN, "Expected ) after fn formal parameters.");
 
@@ -212,7 +217,12 @@ std::shared_ptr<AstNode> Parser::fn_decl() {
     }
 }
 
-std::shared_ptr<AstNode> Parser::statement() {
+std::shared_ptr<Type> Parser::type() {
+    consume(TOKEN_IDENTIFIER, "Expected identifier as typename.");
+    return std::make_shared<Type>(previous);
+}
+
+std::shared_ptr<Statement> Parser::statement() {
     if (match(TOKEN_WHILE)) {
         return while_stmt();
     } else if (match(TOKEN_LEFT_BRACE)) {
@@ -224,13 +234,13 @@ std::shared_ptr<AstNode> Parser::statement() {
     }
 }
 
-std::shared_ptr<AstNode> Parser::ret_stmt() {
+std::shared_ptr<Statement> Parser::ret_stmt() {
     auto return_value = expression();
     consume(TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
     return std::make_shared<ReturnStmt>(return_value);
 }
 
-std::shared_ptr<AstNode> Parser::while_stmt() {
+std::shared_ptr<Statement> Parser::while_stmt() {
     consume(TOKEN_LEFT_PAREN, "Expected ( after 'while'.");
     auto condition = expression();
     consume(TOKEN_RIGHT_PAREN, "Expected ) after while condition.");
@@ -238,7 +248,7 @@ std::shared_ptr<AstNode> Parser::while_stmt() {
     return std::make_shared<WhileStmt>(condition, body);
 }
 
-std::shared_ptr<AstNode> Parser::block() {
+std::shared_ptr<Statement> Parser::block() {
     std::list<std::shared_ptr<AstNode>> decls;
     while (!peek(TOKEN_RIGHT_BRACE)) {
         decls.push_back(declaration());
@@ -248,43 +258,43 @@ std::shared_ptr<AstNode> Parser::block() {
     return std::make_shared<Block>(decls);
 }
 
-std::shared_ptr<AstNode> Parser::expr_stmt() {
+std::shared_ptr<Statement> Parser::expr_stmt() {
     auto expr = expression();
     consume(TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
     return std::make_shared<ExprStmt>(expr);
 }
 
-std::shared_ptr<AstNode> Parser::expression() {
+std::shared_ptr<Expression> Parser::expression() {
     return parse_precedence(PREC_ASSIGNMENT);
 }
 
-std::shared_ptr<AstNode> Parser::literal() {
+std::shared_ptr<Expression> Parser::literal() {
     advance();
     return std::make_shared<Literal>(previous);
 }
 
-std::shared_ptr<AstNode> Parser::number() {
+std::shared_ptr<Expression> Parser::number() {
     advance();
     return std::make_shared<Number>(previous);
 }
 
-std::shared_ptr<AstNode> Parser::string() {
+std::shared_ptr<Expression> Parser::string() {
     advance();
     return std::make_shared<String>(previous);
 }
 
-std::shared_ptr<AstNode> Parser::unary() {
+std::shared_ptr<Expression> Parser::unary() {
     advance();  // Consume the unary operator.
     auto op_token = previous;
     return std::make_shared<Unary>(op_token, parse_precedence(PREC_UNARY));
 }
 
-std::shared_ptr<AstNode> Parser::variable() {
+std::shared_ptr<Expression> Parser::variable() {
     consume(TOKEN_IDENTIFIER, "Expected identifier as variable name.");
     return std::make_shared<Variable>(previous);
 }
 
-std::shared_ptr<AstNode> Parser::binary() {
+std::shared_ptr<Expression> Parser::binary() {
     const ParseRule* current_rule = get_rule(previous.type);
 
     // small trick to make assignment right associative
@@ -295,7 +305,7 @@ std::shared_ptr<AstNode> Parser::binary() {
         static_cast<Precedence>(current_rule->prec + prec_offset));
 }
 
-std::shared_ptr<AstNode> Parser::grouping() {
+std::shared_ptr<Expression> Parser::grouping() {
     advance();
     auto contained_expression = expression();
     consume(TOKEN_RIGHT_PAREN,

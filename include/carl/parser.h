@@ -25,7 +25,7 @@ enum Precedence {
 
 class Parser;
 // https://websites.umich.edu/~eecs381/handouts/Pointers_to_memberfuncs.pdf
-using ParseFn = std::shared_ptr<AstNode> (Parser::*)();
+using ParseFn = std::shared_ptr<Expression> (Parser::*)();
 
 struct ParseRule {
     Precedence prec;
@@ -44,24 +44,28 @@ class Parser {
    public:
     Parser();
     void set_scanner(std::shared_ptr<Scanner> scanner);
+
     std::vector<std::shared_ptr<AstNode>> parse();
     std::shared_ptr<AstNode> declaration();
     std::shared_ptr<AstNode> let_decl();
+    std::shared_ptr<Type> type();
     std::shared_ptr<AstNode> fn_decl();
-    std::shared_ptr<AstNode> statement();
-    std::shared_ptr<AstNode> ret_stmt();
-    std::shared_ptr<AstNode> expr_stmt();
-    std::shared_ptr<AstNode> while_stmt();
-    std::shared_ptr<AstNode> block();
-    std::shared_ptr<AstNode> expression();
-    std::shared_ptr<AstNode> unary();
-    std::shared_ptr<AstNode> literal();
-    std::shared_ptr<AstNode> variable();
-    std::shared_ptr<AstNode> string();
-    std::shared_ptr<AstNode> number();
-    std::shared_ptr<AstNode> binary();
-    std::shared_ptr<AstNode> assignment();
-    std::shared_ptr<AstNode> grouping();
+
+    std::shared_ptr<Statement> statement();
+    std::shared_ptr<Statement> ret_stmt();
+    std::shared_ptr<Statement> expr_stmt();
+    std::shared_ptr<Statement> while_stmt();
+    std::shared_ptr<Statement> block();
+
+    std::shared_ptr<Expression> expression();
+    std::shared_ptr<Expression> unary();
+    std::shared_ptr<Expression> literal();
+    std::shared_ptr<Expression> variable();
+    std::shared_ptr<Expression> string();
+    std::shared_ptr<Expression> number();
+    std::shared_ptr<Expression> binary();
+    std::shared_ptr<Expression> assignment();
+    std::shared_ptr<Expression> grouping();
 
    private:
     void error_at(Token token, const char* message);
@@ -70,7 +74,7 @@ class Parser {
     void synchronize();
     bool match(TokenType tokenType);
     bool peek(TokenType tokenType);
-    std::shared_ptr<AstNode> parse_precedence(Precedence precedence);
+    std::shared_ptr<Expression> parse_precedence(Precedence precedence);
     const ParseRule* get_rule(TokenType tokenType) const;
 };
 

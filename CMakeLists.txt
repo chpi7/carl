@@ -14,16 +14,20 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # LLVM
 find_package(LLVM 15 REQUIRED CONFIG)
+message(STATUS "LLVM_VERSION = ${LLVM_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 message(STATUS "LLVM_INCLUDE_DIRS = ${LLVM_INCLUDE_DIRS}")
 message(STATUS "LLVM_INSTALL_PREFIX = ${LLVM_INSTALL_PREFIX}")
+# separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS})
-llvm_map_components_to_libnames(LLVM_LIBS core support mcjit x86codegen OrcJIT)
+llvm_map_components_to_libnames(LLVM_LIBS core support)
 
 include("${CMAKE_SOURCE_DIR}/include/local.cmake")
-include_directories("${CMAKE_SOURCE_DIR}/include")
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
 include_directories(SYSTEM 
     ${GTEST_INCLUDE_DIRS}
-    ${LLVM_INLCUDE_DIRECTORIES}
+    ${LLVM_INCLUDE_DIRS}
 )
 
 include("${CMAKE_SOURCE_DIR}/src/local.cmake")

@@ -8,6 +8,7 @@ set(
     include/carl/ast/ast_printer.h
     include/carl/ast/ast.h
     include/carl/codegen.h
+    include/carl/llvmcg.h
     include/carl/scanner.h
     include/carl/parser.h
     include/carl/common.h
