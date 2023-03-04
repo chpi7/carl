@@ -18,11 +18,15 @@ void LLVMCodeGenerator::visit_assignment(Assignment* assignment) {}
 void LLVMCodeGenerator::visit_binary(Binary* binary) {
     auto lhs = do_visit(binary->get_lhs().get());
     auto rhs = do_visit(binary->get_rhs().get());
-    // based on float or not --> change op
-    result = builder->CreateAdd(lhs, rhs, "addtmp");
+    if (lhs->getType()->isDoubleTy() && rhs->getType()->isDoubleTy()) {
+        result = builder->CreateFAdd(lhs, rhs, "faddtmp");
+    } else if (lhs->getType()->isIntegerTy() && rhs->getType()->isIntegerTy()) {
+        result = builder->CreateAdd(lhs, rhs, "addtmp");
+    }
 }
 void LLVMCodeGenerator::visit_unary(Unary* unary) {}
 void LLVMCodeGenerator::visit_variable(Variable* variable) {}
 void LLVMCodeGenerator::visit_literal(Literal* literal) {}
 void LLVMCodeGenerator::visit_string(String* string) {}
-void LLVMCodeGenerator::visit_number(Number* number) {}
+void LLVMCodeGenerator::visit_number(Number* number) {
+}

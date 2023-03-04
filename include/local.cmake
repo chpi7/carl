@@ -7,6 +7,7 @@ set(
     include/carl/ast/print_visitor.h
     include/carl/ast/ast_printer.h
     include/carl/ast/ast.h
+    include/carl/ast/types.h
     include/carl/codegen.h
     include/carl/llvmcg.h
     include/carl/scanner.h

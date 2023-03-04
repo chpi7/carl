@@ -245,7 +245,14 @@ TEST(Parser, parse_while_stmt) {
 
 TEST(Parser, parse_fndecl) {
     auto scanner = std::make_shared<Scanner>();
-    const char* src_string = "fn foo (a: int, b: int) { return b; }";
+    const char* src_string = 
+    "fn foo (a: int, b: int) {"
+        "let sq = a * a;"
+        "return sq + b;"
+    "}"
+    "let a = 2;"
+    "let result_foo = foo(a, 3);" // TODO: implement call expression.
+    "let check = result_foo == 7;";
     scanner->init(src_string);
 
     Parser parser;
@@ -253,9 +260,11 @@ TEST(Parser, parse_fndecl) {
 
     std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
 
-    ASSERT_EQ(decls.size(), 1);
+    ASSERT_EQ(decls.size(), 4);
 
     AstPrinter printer(std::cout);
-    printer.print(decls.front().get());
+    for (auto& decl : decls) {
+        printer.print(decl.get());
+    }
 }
 }  // namespace

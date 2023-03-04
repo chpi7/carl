@@ -40,6 +40,7 @@ TYPES = [
     "Literal(Token value) : Expression",
     "String(Token value) : Expression",
     "Number(Token value) : Expression",
+    "Call(Token fname, @list<Expression> arguments) : Expression",
 ]
 
 

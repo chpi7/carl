@@ -198,6 +198,17 @@ class Number : public Expression {
     void accept(AstNodeVisitor* visitor);
 };
 
+class Call : public Expression {
+   private:
+    Token fname;
+    std::list<Expression> arguments;
+   public:
+    Call(Token fname, std::list<Expression> arguments) :fname(fname), arguments(arguments) {}
+    Token get_fname() { return this->fname; }
+    std::list<Expression> get_arguments() { return this->arguments; }
+    void accept(AstNodeVisitor* visitor);
+};
+
 class AstNodeVisitor {
    public:
     virtual void visit_invalid(Invalid* invalid) { assert(false && "visit invalid not overwritten"); };
@@ -218,6 +229,7 @@ class AstNodeVisitor {
     virtual void visit_literal(Literal* literal) { assert(false && "visit literal not overwritten"); };
     virtual void visit_string(String* string) { assert(false && "visit string not overwritten"); };
     virtual void visit_number(Number* number) { assert(false && "visit number not overwritten"); };
+    virtual void visit_call(Call* call) { assert(false && "visit call not overwritten"); };
 };
 
 } // namespace carl
