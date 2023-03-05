@@ -1,5 +1,6 @@
 #include "llvm/IR/Value.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Constants.h"
 
 #include <memory>
 #include <map>

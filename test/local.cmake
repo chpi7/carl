@@ -14,10 +14,18 @@ set(TEST_CC
     test/chunk_test.cc
     test/vm_test.cc
     test/codegen_test.cc
+    test/llvmcg_test.cc
 )
 
 add_executable(tester test/tester.cc ${TEST_CC} ${CARL_INCLUDE_H})
-target_link_libraries(tester carl-lib gtest gmock)
+target_link_libraries(
+  tester 
+  carl-lib 
+  gtest 
+  gmock 
+  ${LLVM_LIBS}
+  ${LLVM_LDFLAGS}
+)
 
 enable_testing()
 add_test(carl-lib tester)

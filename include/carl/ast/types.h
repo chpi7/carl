@@ -6,7 +6,7 @@
 namespace carl {
 namespace types {
 
-enum class BaseType { BOOL, STRING, INT, FLOAT, FN };
+enum class BaseType { UNKNOWN, BOOL, STRING, INT, FLOAT, FN };
 
 class Type {
     virtual BaseType get_base_type() = 0;
