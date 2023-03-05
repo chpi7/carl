@@ -2,217 +2,225 @@
 
 using namespace carl;
 
-void AstPrinter::print(AstNode* node) {
-    indent = 0;
-    node->accept(this);
-    os << "\n";
-}
-
 void AstPrinter::visit_invalid(Invalid* invalid) {
     write_indent();
-    os << "invalid" << std::endl;
+    os << "Invalid" << "\n";
+    indent++;
+
+    indent--;
+}
+
+void AstPrinter::visit_type(Type* type) {
+    write_indent();
+    os << "Type" << "\n";
+    indent++;
+    write_indent();
+    os << "name = " << std::string(type->get_name().start, type->get_name().length) << "\n";
+    indent--;
+}
+
+void AstPrinter::visit_formalparam(FormalParam* formalparam) {
+    write_indent();
+    os << "FormalParam" << "\n";
+    indent++;
+    write_indent();
+    os << "name = " << std::string(formalparam->get_name().start, formalparam->get_name().length) << "\n";
+    write_indent();
+    os << "type\n";
+    indent++;
+    formalparam->get_type()->accept(this);
+    indent--;
+    indent--;
+}
+
+void AstPrinter::visit_fndecl(FnDecl* fndecl) {
+    write_indent();
+    os << "FnDecl" << "\n";
+    indent++;
+    write_indent();
+    os << "name = " << std::string(fndecl->get_name().start, fndecl->get_name().length) << "\n";
+    write_indent();
+    os << "formals\n";
+    indent++;
+    for (auto& elem : fndecl->get_formals()) {
+        elem->accept(this);
+    }
+    indent--;
+    write_indent();
+    os << "body\n";
+    indent++;
+    fndecl->get_body()->accept(this);
+    indent--;
+    indent--;
 }
 
 void AstPrinter::visit_letstmt(LetStmt* letstmt) {
     write_indent();
-    os << "letStmt\n";
+    os << "LetStmt" << "\n";
     indent++;
     write_indent();
-    os << "name = "
-       << std::string(letstmt->get_name().start, letstmt->get_name().length);
-    os << "\n";
+    os << "name = " << std::string(letstmt->get_name().start, letstmt->get_name().length) << "\n";
     write_indent();
-    os << "initializer =\n";
+    os << "initializer\n";
     indent++;
     letstmt->get_initializer()->accept(this);
     indent--;
     indent--;
 }
 
-void AstPrinter::visit_block(Block* block) {
+void AstPrinter::visit_exprstmt(ExprStmt* exprstmt) {
     write_indent();
-    os << "block\n";
+    os << "ExprStmt" << "\n";
     indent++;
-    for (auto& decl : block->get_declarations()) {
-        decl->accept(this);
-        os << "\n";
-    }
-    indent--;
-}
-
-void AstPrinter::visit_fndecl(FnDecl* fndecl) {
     write_indent();
-    os << "fndecl " << std::string(fndecl->get_name().start, fndecl->get_name().length) << "\n";
+    os << "expr\n";
     indent++;
-
-    write_indent();
-    os << "formals =\n";
-    indent++;
-    for (auto& formal : fndecl->get_formals()) {
-        formal->accept(this);
-    }
+    exprstmt->get_expr()->accept(this);
     indent--;
-
-    write_indent();
-    os << "body =\n";
-    indent++;
-    fndecl->get_body()->accept(this);
     indent--;
-
-    indent--;
-}
-
-void AstPrinter::visit_formalparam(FormalParam* formalparam) {
-    write_indent();
-    os << std::string(formalparam->get_name().start, formalparam->get_name().length);
-    os << "\n";
 }
 
 void AstPrinter::visit_returnstmt(ReturnStmt* returnstmt) {
     write_indent();
-    os << "returnstmt\n";
+    os << "ReturnStmt" << "\n";
     indent++;
-    
     write_indent();
-    os << "expression =\n";
+    os << "expr\n";
     indent++;
     returnstmt->get_expr()->accept(this);
-    os << "\n";
     indent--;
     indent--;
 }
 
 void AstPrinter::visit_whilestmt(WhileStmt* whilestmt) {
     write_indent();
-    os << "while\n";
+    os << "WhileStmt" << "\n";
     indent++;
-
     write_indent();
-    os << "condition =\n";
+    os << "condition\n";
     indent++;
     whilestmt->get_condition()->accept(this);
-    os << "\n";
     indent--;
-
     write_indent();
-    os << "body =\n";
+    os << "body\n";
     indent++;
     whilestmt->get_body()->accept(this);
     indent--;
-
     indent--;
 }
 
-void AstPrinter::visit_exprstmt(ExprStmt* exprstmt) {
+void AstPrinter::visit_block(Block* block) {
     write_indent();
-    os << "exprStmt\n";
+    os << "Block" << "\n";
     indent++;
     write_indent();
-    os << "expr =\n";
-    exprstmt->get_expr()->accept(this);
+    os << "declarations\n";
+    indent++;
+    for (auto& elem : block->get_declarations()) {
+        elem->accept(this);
+    }
     indent--;
-}
-
-void AstPrinter::visit_binary(Binary* node) {
-    write_indent();
-    os << "binary\n";
-
-    indent++;
-    write_indent();
-    os << "op = " << std::string(node->get_op().start, node->get_op().length);
-    os << "\n";
-
-    write_indent();
-    os << "lhs = ";
-    os << "\n";
-    indent++;
-    node->get_lhs()->accept(this);
-    os << "\n";
-    indent--;
-
-    write_indent();
-    os << "rhs = ";
-    os << "\n";
-    indent++;
-    node->get_rhs()->accept(this);
-    indent--;
-
     indent--;
 }
 
 void AstPrinter::visit_assignment(Assignment* assignment) {
     write_indent();
-    os << "assignment\n";
-
+    os << "Assignment" << "\n";
     indent++;
-
     write_indent();
-    os << "target = ";
-    os << "\n";
+    os << "target\n";
     indent++;
     assignment->get_target()->accept(this);
-    os << "\n";
     indent--;
-
     write_indent();
-    os << "expr = ";
-    os << "\n";
+    os << "expr\n";
     indent++;
     assignment->get_expr()->accept(this);
     indent--;
-
     indent--;
 }
 
-void AstPrinter::visit_unary(Unary* node) {
+void AstPrinter::visit_binary(Binary* binary) {
     write_indent();
-    os << "unary\n";
-
+    os << "Binary" << "\n";
     indent++;
     write_indent();
-    os << "op = " << std::string(node->get_op().start, node->get_op().length);
-    os << "\n";
-
+    os << "op = " << std::string(binary->get_op().start, binary->get_op().length) << "\n";
     write_indent();
-    os << "operand = ";
-    os << "\n";
+    os << "lhs\n";
     indent++;
-    node->get_operand()->accept(this);
+    binary->get_lhs()->accept(this);
     indent--;
-
+    write_indent();
+    os << "rhs\n";
+    indent++;
+    binary->get_rhs()->accept(this);
+    indent--;
     indent--;
 }
 
-void AstPrinter::visit_variable(Variable* node) {
+void AstPrinter::visit_unary(Unary* unary) {
     write_indent();
-    os << "variable\n";
-
+    os << "Unary" << "\n";
     indent++;
     write_indent();
-    os << "name = "
-       << std::string(node->get_name().start, node->get_name().length);
+    os << "op = " << std::string(unary->get_op().start, unary->get_op().length) << "\n";
+    write_indent();
+    os << "operand\n";
+    indent++;
+    unary->get_operand()->accept(this);
+    indent--;
     indent--;
 }
 
-void AstPrinter::visit_literal(Literal* node) {
+void AstPrinter::visit_variable(Variable* variable) {
     write_indent();
-    os << "literal "
-       << std::string(node->get_value().start, node->get_value().length);
+    os << "Variable" << "\n";
+    indent++;
+    write_indent();
+    os << "name = " << std::string(variable->get_name().start, variable->get_name().length) << "\n";
+    indent--;
 }
 
-void AstPrinter::visit_string(String* node) {
+void AstPrinter::visit_literal(Literal* literal) {
     write_indent();
-    os << "string "
-       << std::string(node->get_value().start, node->get_value().length);
+    os << "Literal" << "\n";
+    indent++;
+    write_indent();
+    os << "value = " << std::string(literal->get_value().start, literal->get_value().length) << "\n";
+    indent--;
 }
 
-void AstPrinter::visit_number(Number* node) {
+void AstPrinter::visit_string(String* string) {
     write_indent();
-    os << "number "
-       << std::string(node->get_value().start, node->get_value().length);
+    os << "String" << "\n";
+    indent++;
+    write_indent();
+    os << "value = " << std::string(string->get_value().start, string->get_value().length) << "\n";
+    indent--;
 }
 
-void AstPrinter::write_indent() {
-    static constexpr const char* indent_with = "  ";
-    for (int i = 0; i < indent; ++i) os << indent_with;
+void AstPrinter::visit_number(Number* number) {
+    write_indent();
+    os << "Number" << "\n";
+    indent++;
+    write_indent();
+    os << "value = " << std::string(number->get_value().start, number->get_value().length) << "\n";
+    indent--;
+}
+
+void AstPrinter::visit_call(Call* call) {
+    write_indent();
+    os << "Call" << "\n";
+    indent++;
+    write_indent();
+    os << "fname = " << std::string(call->get_fname().start, call->get_fname().length) << "\n";
+    write_indent();
+    os << "arguments\n";
+    indent++;
+    for (auto& elem : call->get_arguments()) {
+        elem->accept(this);
+    }
+    indent--;
+    indent--;
 }

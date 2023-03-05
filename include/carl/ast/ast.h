@@ -201,11 +201,11 @@ class Number : public Expression {
 class Call : public Expression {
    private:
     Token fname;
-    std::list<Expression> arguments;
+    std::list<std::shared_ptr<Expression>> arguments;
    public:
-    Call(Token fname, std::list<Expression> arguments) :fname(fname), arguments(arguments) {}
+    Call(Token fname, std::list<std::shared_ptr<Expression>> arguments) :fname(fname), arguments(arguments) {}
     Token get_fname() { return this->fname; }
-    std::list<Expression> get_arguments() { return this->arguments; }
+    std::list<std::shared_ptr<Expression>> get_arguments() { return this->arguments; }
     void accept(AstNodeVisitor* visitor);
 };
 
