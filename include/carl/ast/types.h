@@ -9,6 +9,7 @@ namespace types {
 enum class BaseType { UNKNOWN, BOOL, STRING, INT, FLOAT, FN };
 
 class Type {
+   public:
     virtual BaseType get_base_type() = 0;
 };
 

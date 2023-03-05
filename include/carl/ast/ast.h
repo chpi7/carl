@@ -7,6 +7,7 @@
 #include <list>
 #include "carl/scanner.h"
 #include "carl/common.h"
+#include "carl/ast/types.h"
 
 namespace carl {
 
@@ -192,9 +193,11 @@ class String : public Expression {
 class Number : public Expression {
    private:
     Token value;
+    std::shared_ptr<types::Type> type;
    public:
-    Number(Token value) :value(value) {}
+    Number(Token value, std::shared_ptr<types::Type> type) :value(value), type(type) {}
     Token get_value() { return this->value; }
+    std::shared_ptr<types::Type> get_type() { return this->type; }
     void accept(AstNodeVisitor* visitor);
 };
 

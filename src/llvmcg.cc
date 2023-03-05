@@ -2,6 +2,8 @@
 
 #include <functional>
 
+#include "carl/ast/types.h"
+
 using namespace carl;
 
 LLVMCodeGenerator::LLVMCodeGenerator() {
@@ -68,11 +70,17 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
         result = nullptr;
     }
 }
+
 void LLVMCodeGenerator::visit_unary(Unary* unary) {}
 void LLVMCodeGenerator::visit_variable(Variable* variable) {}
 void LLVMCodeGenerator::visit_literal(Literal* literal) {}
 void LLVMCodeGenerator::visit_string(String* string) {}
 void LLVMCodeGenerator::visit_number(Number* number) {
-    auto num = (double)atoi(number->get_value().start);
-    result = llvm::ConstantFP::get(*context.get(), llvm::APFloat(num));
+    if (number->get_type()->get_base_type() == types::BaseType::FLOAT) {
+        auto num = (double)atoi(number->get_value().start);
+        result = llvm::ConstantFP::get(*context, llvm::APFloat(num));
+    } else if (number->get_type()->get_base_type() == types::BaseType::INT) {
+        auto num = atoi(number->get_value().start);
+        result = llvm::ConstantInt::getSigned(llvm::IntegerType::getInt64Ty(*context), num);
+    }
 }

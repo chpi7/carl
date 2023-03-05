@@ -1,5 +1,5 @@
 IFDEF_NAME = "carl_ast_h"
-INCLUDES = ["<sstream>", "<fstream>", "<memory>", "<list>", '"carl/scanner.h"', '"carl/common.h"']
+INCLUDES = ["<sstream>", "<fstream>", "<memory>", "<list>", '"carl/scanner.h"', '"carl/common.h"', '"carl/ast/types.h"']
 NAMESPACE = "carl"
 FORWARD_DECLS = ["class AstNodeVisitor;"]
 REPLACEMENTS = {"@ptr": "std::shared_ptr", "@list": "std::list"}
@@ -33,6 +33,6 @@ TYPES = [
     "Variable(Token name) : Expression",
     "Literal(Token value) : Expression",
     "String(Token value) : Expression",
-    "Number(Token value) : Expression",
+    "Number(Token value, @ptr<types::Type> type) : Expression",
     "Call(Token fname, @list<@ptr<Expression>> arguments) : Expression",
 ]

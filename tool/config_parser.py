@@ -14,7 +14,7 @@ class ClassMember:
 
 
 def parse_class_decl(decl: str) -> Class:
-    rem, parent = decl.split(":")
+    rem, parent = decl.split(" : ")
     parent = parent.strip()
 
     name, rem = rem.split("(")

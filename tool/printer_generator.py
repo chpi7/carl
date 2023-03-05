@@ -3,6 +3,13 @@ from config_parser import Class, ClassMember
 
 EXCLUDE_CLASSES = ["Statement", "Expression"]
 
+# this is filled when calling a function here
+AST_CLASSES = []
+
+def fill_ast_classes(classes: list[Class]):
+    for cls in classes:
+        AST_CLASSES.append(cls.name)
+
 def generate_ast_node_visitor_functions(classes: list[Class]):
     fs = list()
     for cls in classes:
@@ -49,6 +56,9 @@ def generate_list_attr(cls: Class, attr: ClassMember) -> str:
     indent--;"""
 
 def generate_ptr_attr(cls: Class, attr: ClassMember) -> str:
+    if attr.typename not in AST_CLASSES:
+        # for now, skip non ast classes
+        return ""
     return f"""    write_indent();
     os << "{attr.name}\\n";
     indent++;
@@ -92,5 +102,6 @@ using namespace {NAMESPACE};
 
 
 def generate_print_visitor(classes: list[Class]) -> list[str]:
+    fill_ast_classes(classes)
     to_generate = list(filter(lambda c: c.name not in EXCLUDE_CLASSES, classes))
     return generate_header(to_generate), generate_impls(to_generate)

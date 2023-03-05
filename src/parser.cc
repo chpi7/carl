@@ -4,6 +4,7 @@
 #include <list>
 
 #include "carl/common.h"
+#include "carl/ast/types.h"
 
 /* Grammar Excerpt
 
@@ -304,7 +305,11 @@ std::shared_ptr<Expression> Parser::literal() {
 
 std::shared_ptr<Expression> Parser::number() {
     advance();
-    return std::make_shared<Number>(previous);
+    auto num_str = std::string(previous.start, previous.length);
+    bool is_float = num_str.find('.') != std::string::npos;
+    return std::make_shared<Number>(previous, is_float ? 
+        static_cast<std::shared_ptr<types::Number>>(std::make_shared<types::Float>()) : 
+        static_cast<std::shared_ptr<types::Number>>(std::make_shared<types::Int>()));
 }
 
 std::shared_ptr<Expression> Parser::string() {
