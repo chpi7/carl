@@ -2,6 +2,7 @@
 #define carl_scanner_h
 
 #include <iostream>
+#include <vector>
 
 namespace carl {
 
@@ -67,13 +68,18 @@ class Scanner {
     const char *start = nullptr;
     const char *current = nullptr;
     int line = 0;
+    std::vector<Token> tokens;
+    std::vector<Token>::iterator next_token;
 
    public:
     Scanner() = default;
     void init(const char *source);
     Token scan_token();
+    Token peek_token();
 
    private:
+    void scan_all();
+    Token scan_token_internal();
     bool is_at_end();
     bool match(char expected);
     char advance();

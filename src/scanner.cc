@@ -8,9 +8,30 @@ void Scanner::init(const char *source) {
     this->start = source;
     current = this->start;
     line = 1;
+
+    // Eagerly tokenize the whole input for easy lookahead.
+    scan_all();
+    next_token = tokens.begin();
+}
+
+void Scanner::scan_all() {
+    Token token;
+    do {
+        token = scan_token_internal();
+        tokens.push_back(token);
+    } while (token.type != TOKEN_EOF);
 }
 
 Token Scanner::scan_token() {
+    if (next_token == tokens.end()) return tokens.back();
+    return *(next_token++); 
+}
+
+Token Scanner::peek_token() {
+    return *(next_token); 
+}
+
+Token Scanner::scan_token_internal() {
     skip_whitespace();
     start = current;
 

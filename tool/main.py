@@ -24,7 +24,7 @@ def resolve_paths(ps: list[Path]) -> list[Path]:
 def write_file(content: str, path: Path):
     root = find_root_path(Path.cwd())
     full_path = root / path
-    print(f"📜 Writing {full_path.as_posix()}.")
+    print(f"📜 Writing {full_path.as_posix()}")
     with open(path, "wt") as f:
         f.write(content)
 
@@ -38,7 +38,10 @@ def main():
 
     header_path, src_path = [args.oh, args.occ]
 
+    print(f"🕵️‍♂️ Parsing classes...")
     classes = parse_classes(TYPES)
+
+    print(f"🏗️  Producing code...")
     header_file = generate_header_file(classes)
     cc_file = generate_cc_file(classes)
 
@@ -51,6 +54,8 @@ def main():
 
     write_file(printer_h, printer_h_path)
     write_file(printer_cc, printer_cc_path)
+
+    print(f"🚀🚀🚀 all done")
 
 
 if __name__ == "__main__":

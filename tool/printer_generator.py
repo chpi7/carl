@@ -93,5 +93,4 @@ using namespace {NAMESPACE};
 
 def generate_print_visitor(classes: list[Class]) -> list[str]:
     to_generate = list(filter(lambda c: c.name not in EXCLUDE_CLASSES, classes))
-    print(to_generate)
     return generate_header(to_generate), generate_impls(to_generate)

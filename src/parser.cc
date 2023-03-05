@@ -78,8 +78,20 @@ std::shared_ptr<Expression> Parser::parse_precedence(Precedence precedence) {
         advance(); // dont get stuck in infinite loop
         return make_error_node<Expression>();
     }
-    // so nice :)
-    std::shared_ptr<Expression> expression = (this->*(prefix_rule->prefix))();
+
+    std::shared_ptr<Expression> expression;
+    if (peek(TOKEN_IDENTIFIER) && peek_next(TOKEN_LEFT_PAREN)) {
+        // function call
+        expression = call();
+        // can not assign to result of call.
+        if (precedence == PREC_ASSIGNMENT) {
+            precedence = static_cast<Precedence>(precedence + 1);
+        }
+    } else {
+        // so nice :)
+        expression =
+            (this->*(prefix_rule->prefix))();
+    }
 
     const ParseRule* infix_rule;
     while (precedence <= (infix_rule = get_rule(current.type))->prec) {
@@ -268,6 +280,23 @@ std::shared_ptr<Expression> Parser::expression() {
     return parse_precedence(PREC_ASSIGNMENT);
 }
 
+std::shared_ptr<Expression> Parser::call() {
+    consume(TOKEN_IDENTIFIER, "Expected function identifier.");
+    auto fname = previous;
+
+    consume(TOKEN_LEFT_PAREN, "Expected '(' after function identifier.");
+
+    auto args = std::list<std::shared_ptr<Expression>>();
+    bool first = true;
+    do {
+        args.push_back(expression());
+        if (!match(TOKEN_COMMA)) break;
+    } while (current.type != TOKEN_ERROR && current.type != TOKEN_EOF);
+    consume(TOKEN_RIGHT_PAREN, "Expected ) at the end of function argument list.");
+
+    return std::make_shared<Call>(fname, args);
+}
+
 std::shared_ptr<Expression> Parser::literal() {
     advance();
     return std::make_shared<Literal>(previous);
@@ -321,6 +350,11 @@ bool Parser::match(TokenType tokenType) {
 
 bool Parser::peek(TokenType tokenType) {
     if (current.type != tokenType) return false;
+    return true;
+}
+
+bool Parser::peek_next(TokenType tokenType) {
+    if (scanner->peek_token().type != tokenType) return false;
     return true;
 }
 

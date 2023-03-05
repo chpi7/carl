@@ -36,12 +36,13 @@ struct ParseRule {
 class Parser {
    private:
     bool panic_mode;
-    bool has_error;
     std::shared_ptr<Scanner> scanner;
     Token current;
     Token previous;
 
    public:
+    bool has_error;
+
     Parser();
     void set_scanner(std::shared_ptr<Scanner> scanner);
 
@@ -58,6 +59,7 @@ class Parser {
     std::shared_ptr<Statement> block();
 
     std::shared_ptr<Expression> expression();
+    std::shared_ptr<Expression> call();
     std::shared_ptr<Expression> unary();
     std::shared_ptr<Expression> literal();
     std::shared_ptr<Expression> variable();
@@ -74,6 +76,7 @@ class Parser {
     void synchronize();
     bool match(TokenType tokenType);
     bool peek(TokenType tokenType);
+    bool peek_next(TokenType tokenType);
     std::shared_ptr<Expression> parse_precedence(Precedence precedence);
     const ParseRule* get_rule(TokenType tokenType) const;
 };

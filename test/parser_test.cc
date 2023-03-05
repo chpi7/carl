@@ -243,6 +243,45 @@ TEST(Parser, parse_while_stmt) {
     delete v;
 }
 
+TEST(Parser, parse_assign_to_call_is_error) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* src_string = 
+    "foo(a) = 1234;";
+    scanner->init(src_string);
+
+    Parser parser;
+    parser.set_scanner(scanner);
+
+    std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
+
+    ASSERT_EQ(decls.size(), 1);
+    ASSERT_TRUE(parser.has_error);
+
+    AstPrinter printer(std::cout);
+    for (auto& decl : decls) {
+        printer.print(decl.get());
+    }
+}
+
+TEST(Parser, parse_call_in_binop) {
+    auto scanner = std::make_shared<Scanner>();
+    const char* src_string = 
+    "let b = foo(a, 123) + 2;";
+    scanner->init(src_string);
+
+    Parser parser;
+    parser.set_scanner(scanner);
+
+    std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
+
+    ASSERT_EQ(decls.size(), 1);
+
+    AstPrinter printer(std::cout);
+    for (auto& decl : decls) {
+        printer.print(decl.get());
+    }
+}
+
 TEST(Parser, parse_fndecl) {
     auto scanner = std::make_shared<Scanner>();
     const char* src_string = 
@@ -251,7 +290,7 @@ TEST(Parser, parse_fndecl) {
         "return sq + b;"
     "}"
     "let a = 2;"
-    "let result_foo = foo(a, 3);" // TODO: implement call expression.
+    "let result_foo = foo(a, 3);"
     "let check = result_foo == 7;";
     scanner->init(src_string);
 
@@ -261,10 +300,5 @@ TEST(Parser, parse_fndecl) {
     std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
 
     ASSERT_EQ(decls.size(), 4);
-
-    AstPrinter printer(std::cout);
-    for (auto& decl : decls) {
-        printer.print(decl.get());
-    }
 }
 }  // namespace
