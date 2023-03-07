@@ -187,7 +187,7 @@ std::shared_ptr<AstNode> Parser::let_decl() {
         return make_error_node<Expression>();
     } else if (match(TOKEN_EQUAL)) {
         auto initializer = expression();
-        auto result = std::make_shared<LetStmt>(identifier, initializer);
+        auto result = std::make_shared<LetDecl>(identifier, initializer);
         if (!match(TOKEN_SEMICOLON)) {
             error_at(current, "Expected ; after let initializer.");
         }

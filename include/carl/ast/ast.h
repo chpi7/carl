@@ -79,12 +79,12 @@ class FnDecl : public AstNode {
     void accept(AstNodeVisitor* visitor);
 };
 
-class LetStmt : public Statement {
+class LetDecl : public AstNode {
    private:
     Token name;
     std::shared_ptr<AstNode> initializer;
    public:
-    LetStmt(Token name, std::shared_ptr<AstNode> initializer) :name(name), initializer(initializer) {}
+    LetDecl(Token name, std::shared_ptr<AstNode> initializer) :name(name), initializer(initializer) {}
     Token get_name() { return this->name; }
     std::shared_ptr<AstNode> get_initializer() { return this->initializer; }
     void accept(AstNodeVisitor* visitor);
@@ -220,7 +220,7 @@ class AstNodeVisitor {
     virtual void visit_type(Type* type) { assert(false && "visit type not overwritten"); };
     virtual void visit_formalparam(FormalParam* formalparam) { assert(false && "visit formalparam not overwritten"); };
     virtual void visit_fndecl(FnDecl* fndecl) { assert(false && "visit fndecl not overwritten"); };
-    virtual void visit_letstmt(LetStmt* letstmt) { assert(false && "visit letstmt not overwritten"); };
+    virtual void visit_letdecl(LetDecl* letdecl) { assert(false && "visit letdecl not overwritten"); };
     virtual void visit_exprstmt(ExprStmt* exprstmt) { assert(false && "visit exprstmt not overwritten"); };
     virtual void visit_returnstmt(ReturnStmt* returnstmt) { assert(false && "visit returnstmt not overwritten"); };
     virtual void visit_whilestmt(WhileStmt* whilestmt) { assert(false && "visit whilestmt not overwritten"); };

@@ -156,7 +156,7 @@ TEST(CodeGen, logic_true_and_false) {
     ASSERT_EQ(r, CARL_FALSE);
 }
 
-TEST(CodeGen, letstmt) {
+TEST(CodeGen, letdecl) {
     auto scanner = std::make_shared<Scanner>();
     const char* expr_src =
         "let x = 1;"

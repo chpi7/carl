@@ -131,12 +131,12 @@ void CodeGenerator::visit_exprstmt(ExprStmt* exprstmt){
     chunk->write_byte(OP_POP);
 }
 
-void CodeGenerator::visit_letstmt(LetStmt* letstmt){
+void CodeGenerator::visit_letdecl(LetDecl* letdecl){
     // compute initializer value
-    letstmt->get_initializer()->accept(this);
+    letdecl->get_initializer()->accept(this);
 
     // copy name string and save to chunk
-    auto name = chunk->save_name(std::string(letstmt->get_name().start, letstmt->get_name().length));
+    auto name = chunk->save_name(std::string(letdecl->get_name().start, letdecl->get_name().length));
     chunk->write_byte(OP_LOADC);
     chunk->write_int_const(reinterpret_cast<carl_int_t>(name->c_str()));
     chunk->write_byte(OP_DEFINE_VAR);

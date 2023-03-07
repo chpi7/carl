@@ -13,7 +13,7 @@ class PrintAstNodeVisitor : public AstNodeVisitor {
     void visit_invalid(Invalid* invalid);
     void visit_block(Block* block);
     void visit_whilestmt(WhileStmt* whilestmt);
-    void visit_letstmt(LetStmt* letstmt);
+    void visit_letdecl(LetDecl* letdecl);
     void visit_exprstmt(ExprStmt* exprstmt);
     void visit_binary(Binary* node);
     void visit_assignment(Assignment* node);

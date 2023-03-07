@@ -23,7 +23,7 @@ void LLVMCodeGenerator::visit_whilestmt(WhileStmt* whilestmt) {}
 void LLVMCodeGenerator::visit_block(Block* block) {}
 void LLVMCodeGenerator::visit_fndecl(FnDecl* fndecl) {}
 void LLVMCodeGenerator::visit_formalparam(FormalParam* formalparam) {}
-void LLVMCodeGenerator::visit_letstmt(LetStmt* letstmt) {}
+void LLVMCodeGenerator::visit_letdecl(LetDecl* letdecl) {}
 void LLVMCodeGenerator::visit_assignment(Assignment* assignment) {}
 void LLVMCodeGenerator::visit_binary(Binary* binary) {
     auto lhs = do_visit(binary->get_lhs().get());

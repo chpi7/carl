@@ -46,12 +46,12 @@ void AstPrinter::visit_fndecl(FnDecl* fndecl) {
     indent--;
 }
 
-void AstPrinter::visit_letstmt(LetStmt* letstmt) {
+void AstPrinter::visit_letdecl(LetDecl* letdecl) {
     write_indent();
-    os << "LetStmt" << "\n";
+    os << "LetDecl" << "\n";
     indent++;
     write_indent();
-    os << "name = " << std::string(letstmt->get_name().start, letstmt->get_name().length) << "\n";
+    os << "name = " << std::string(letdecl->get_name().start, letdecl->get_name().length) << "\n";
 
     indent--;
 }

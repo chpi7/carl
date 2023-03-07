@@ -29,11 +29,11 @@ void PrintAstNodeVisitor::visit_whilestmt(WhileStmt* whilestmt) {
     whilestmt->get_body()->accept(this);
 }
 
-void PrintAstNodeVisitor::visit_letstmt(LetStmt* letstmt) {
+void PrintAstNodeVisitor::visit_letdecl(LetDecl* letdecl) {
     os << "let ";
-    stringify_token(stringify_buffer, letstmt->get_name());
+    stringify_token(stringify_buffer, letdecl->get_name());
     os << stringify_buffer << " = ";
-    letstmt->get_initializer()->accept(this);
+    letdecl->get_initializer()->accept(this);
     os << ";";
 }
 

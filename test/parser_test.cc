@@ -183,7 +183,7 @@ TEST(Parser, parse_exprstmt) {
     delete v;
 }
 
-TEST(Parser, parse_letstmt) {
+TEST(Parser, parse_letdecl) {
     auto scanner = std::make_shared<Scanner>();
     const char* expr_src = "let x = 1 + 2;";
     std::string expected_print = "let x = (+ 1 2);";

@@ -30,7 +30,7 @@ class LLVMCodeGenerator : public AstNodeVisitor {
     void visit_block(Block* block);
     void visit_fndecl(FnDecl* fndecl);
     void visit_formalparam(FormalParam* formalparam);
-    void visit_letstmt(LetStmt* letstmt);
+    void visit_letdecl(LetDecl* letdecl);
     void visit_assignment(Assignment* assignment);
     void visit_binary(Binary* binary);
     void visit_unary(Unary* unary);

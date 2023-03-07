@@ -21,6 +21,7 @@ TEST(llvmcg, compile_expression) {
     LLVMCodeGenerator generator;
     llvm::Value* value = generator.do_visit(expr.get());
     value->print(llvm::outs());
-    std::cout << std::endl;
+
+
 }
 }  // namespace

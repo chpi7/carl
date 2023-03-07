@@ -19,9 +19,8 @@ TYPES = [
     "Type(Token name) : AstNode",
     "FormalParam(Token name, @ptr<Type> type) : AstNode",
     "FnDecl(Token name, @list<@ptr<AstNode>> formals, @ptr<AstNode> body) : AstNode",
+    "LetDecl(Token name, @ptr<AstNode> initializer) : AstNode",
 
-    # TODO: rename this to LetDecl
-    "LetStmt(Token name, @ptr<AstNode> initializer) : Statement",
     "ExprStmt(@ptr<AstNode> expr) : Statement",
     "ReturnStmt(@ptr<AstNode> expr) : Statement",
     "WhileStmt(@ptr<AstNode> condition, @ptr<AstNode> body) : Statement",

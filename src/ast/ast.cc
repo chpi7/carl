@@ -8,7 +8,7 @@ void Expression::accept(AstNodeVisitor* visitor) { visitor->visit_expression(thi
 void Type::accept(AstNodeVisitor* visitor) { visitor->visit_type(this); }
 void FormalParam::accept(AstNodeVisitor* visitor) { visitor->visit_formalparam(this); }
 void FnDecl::accept(AstNodeVisitor* visitor) { visitor->visit_fndecl(this); }
-void LetStmt::accept(AstNodeVisitor* visitor) { visitor->visit_letstmt(this); }
+void LetDecl::accept(AstNodeVisitor* visitor) { visitor->visit_letdecl(this); }
 void ExprStmt::accept(AstNodeVisitor* visitor) { visitor->visit_exprstmt(this); }
 void ReturnStmt::accept(AstNodeVisitor* visitor) { visitor->visit_returnstmt(this); }
 void WhileStmt::accept(AstNodeVisitor* visitor) { visitor->visit_whilestmt(this); }

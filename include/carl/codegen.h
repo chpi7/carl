@@ -29,9 +29,9 @@ class CodeGenerator : public AstNodeVisitor {
     void visit_string(String* string);
     void visit_number(Number* number);
     void visit_exprstmt(ExprStmt* exprstmt);
-    void visit_letstmt(LetStmt* letstmt);
-    void visit_block(Block* letstmt);
-    void visit_whilestmt(WhileStmt* letstmt);
+    void visit_letdecl(LetDecl* letdecl);
+    void visit_block(Block* letdecl);
+    void visit_whilestmt(WhileStmt* letdecl);
 };
 }  // namespace carl
 
