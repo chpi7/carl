@@ -14,7 +14,7 @@ set(TEST_CC
     test/chunk_test.cc
     test/vm_test.cc
     test/codegen_test.cc
-    test/llvmcg_test.cc
+    test/llvm_codegen_test.cc
 )
 
 add_executable(tester test/tester.cc ${TEST_CC} ${CARL_INCLUDE_H})

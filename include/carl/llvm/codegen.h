@@ -1,3 +1,6 @@
+#ifndef carl_llvm_codegen_h
+#define carl_llvm_codegen_h
+
 #include "llvm/IR/Value.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Constants.h"
@@ -40,3 +43,5 @@ class LLVMCodeGenerator : public AstNodeVisitor {
     void visit_number(Number* number);
 };
 }  // namespace carl
+
+#endif

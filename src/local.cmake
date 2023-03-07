@@ -8,7 +8,7 @@ set(SRC_CC
     src/parser.cc 
     src/scanner.cc 
     src/codegen.cc 
-    src/llvmcg.cc
+    src/llvm/codegen.cc
 )
 
 add_library(

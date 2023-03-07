@@ -1,4 +1,4 @@
-#include "carl/llvmcg.h"
+#include "carl/llvm/codegen.h"
 
 #include <gtest/gtest.h>
 
@@ -7,7 +7,7 @@
 using namespace carl;
 
 namespace {
-TEST(llvmcg, compile_expression) {
+TEST(llvmcodegen, compile_expression) {
     auto scanner = std::make_shared<Scanner>();
     const char* src_string = "1 + 2 * 3 == 7;";
     scanner->init(src_string);
