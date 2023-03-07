@@ -2,6 +2,13 @@
     "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4 }",
     "python.formatting.provider": "black",
     "files.associations": {
-        "type_traits": "cpp"
+        "type_traits": "cpp",
+        "*.tcc": "cpp",
+        "algorithm": "cpp",
+        "fstream": "cpp",
+        "numeric": "cpp",
+        "functional": "cpp",
+        "ratio": "cpp",
+        "*.def": "cpp"
     }
 }

@@ -25,7 +25,11 @@ void AstPrinter::visit_formalparam(FormalParam* formalparam) {
     indent++;
     write_indent();
     os << "name = " << std::string(formalparam->get_name().start, formalparam->get_name().length) << "\n";
-
+    write_indent();
+    os << "type_ast\n";
+    indent++;
+    formalparam->get_type_ast()->accept(this);
+    indent--;
     indent--;
 }
 
@@ -42,7 +46,11 @@ void AstPrinter::visit_fndecl(FnDecl* fndecl) {
         elem->accept(this);
     }
     indent--;
-
+    write_indent();
+    os << "body\n";
+    indent++;
+    fndecl->get_body()->accept(this);
+    indent--;
     indent--;
 }
 
@@ -52,7 +60,11 @@ void AstPrinter::visit_letdecl(LetDecl* letdecl) {
     indent++;
     write_indent();
     os << "name = " << std::string(letdecl->get_name().start, letdecl->get_name().length) << "\n";
-
+    write_indent();
+    os << "initializer\n";
+    indent++;
+    letdecl->get_initializer()->accept(this);
+    indent--;
     indent--;
 }
 
@@ -60,7 +72,11 @@ void AstPrinter::visit_exprstmt(ExprStmt* exprstmt) {
     write_indent();
     os << "ExprStmt" << "\n";
     indent++;
-
+    write_indent();
+    os << "expr\n";
+    indent++;
+    exprstmt->get_expr()->accept(this);
+    indent--;
     indent--;
 }
 
@@ -68,7 +84,11 @@ void AstPrinter::visit_returnstmt(ReturnStmt* returnstmt) {
     write_indent();
     os << "ReturnStmt" << "\n";
     indent++;
-
+    write_indent();
+    os << "expr\n";
+    indent++;
+    returnstmt->get_expr()->accept(this);
+    indent--;
     indent--;
 }
 
@@ -76,8 +96,16 @@ void AstPrinter::visit_whilestmt(WhileStmt* whilestmt) {
     write_indent();
     os << "WhileStmt" << "\n";
     indent++;
-
-
+    write_indent();
+    os << "condition\n";
+    indent++;
+    whilestmt->get_condition()->accept(this);
+    indent--;
+    write_indent();
+    os << "body\n";
+    indent++;
+    whilestmt->get_body()->accept(this);
+    indent--;
     indent--;
 }
 
@@ -99,8 +127,16 @@ void AstPrinter::visit_assignment(Assignment* assignment) {
     write_indent();
     os << "Assignment" << "\n";
     indent++;
-
-
+    write_indent();
+    os << "target\n";
+    indent++;
+    assignment->get_target()->accept(this);
+    indent--;
+    write_indent();
+    os << "expr\n";
+    indent++;
+    assignment->get_expr()->accept(this);
+    indent--;
     indent--;
 }
 
@@ -110,8 +146,16 @@ void AstPrinter::visit_binary(Binary* binary) {
     indent++;
     write_indent();
     os << "op = " << std::string(binary->get_op().start, binary->get_op().length) << "\n";
-
-
+    write_indent();
+    os << "lhs\n";
+    indent++;
+    binary->get_lhs()->accept(this);
+    indent--;
+    write_indent();
+    os << "rhs\n";
+    indent++;
+    binary->get_rhs()->accept(this);
+    indent--;
     indent--;
 }
 
@@ -121,7 +165,11 @@ void AstPrinter::visit_unary(Unary* unary) {
     indent++;
     write_indent();
     os << "op = " << std::string(unary->get_op().start, unary->get_op().length) << "\n";
-
+    write_indent();
+    os << "operand\n";
+    indent++;
+    unary->get_operand()->accept(this);
+    indent--;
     indent--;
 }
 

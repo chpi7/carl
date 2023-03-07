@@ -275,11 +275,6 @@ TEST(Parser, parse_call_in_binop) {
     std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
 
     ASSERT_EQ(decls.size(), 1);
-
-    AstPrinter printer(std::cout);
-    for (auto& decl : decls) {
-        printer.print(decl.get());
-    }
 }
 
 TEST(Parser, parse_fndecl) {
@@ -298,6 +293,10 @@ TEST(Parser, parse_fndecl) {
     parser.set_scanner(scanner);
 
     std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
+    AstPrinter printer(std::cout);
+    for (auto& node : decls) {
+        printer.print(node.get());
+    }
 
     ASSERT_EQ(decls.size(), 4);
 }

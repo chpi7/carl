@@ -11,22 +11,17 @@
     program -> declaration*
     declaration -> letDecl | fnDecl | statement
 
-    statement -> ifStatement | whileStatment | blockStatement |
-   expressionStatement ifStatement -> 'if' expression statement [else statement]
+    statement -> whileStatment | blockStatement | expressionStatement 
     whileStatement -> 'while' ( expression ) statement
     blockStatement -> { declaration* }
     expressionStatement -> statement ';'
-
-    expression -> assignment    // maybe support if expression here
-    assignment -> ...           // according to operator precedence (= is right
-   associative, left associative otherwise)
 */
 
 namespace carl {
 
 template<typename T>
 static std::shared_ptr<T> make_error_node() {
-    return std::make_shared<T>();
+    return nullptr;
 }
 
 // Parse rules for the parse_precedence function --> returns expressions only.
@@ -84,7 +79,7 @@ std::shared_ptr<Expression> Parser::parse_precedence(Precedence precedence) {
     if (peek(TOKEN_IDENTIFIER) && peek_next(TOKEN_LEFT_PAREN)) {
         // function call
         expression = call();
-        // can not assign to result of call.
+        // can not assign to Result of call.
         if (precedence == PREC_ASSIGNMENT) {
             precedence = static_cast<Precedence>(precedence + 1);
         }
@@ -167,6 +162,11 @@ std::vector<std::shared_ptr<AstNode>> Parser::parse() {
     return result;
 }
 
+std::shared_ptr<Type> Parser::type() {
+    consume(TOKEN_IDENTIFIER, "Expected identifier as typename.");
+    return std::make_shared<Type>(previous);
+}
+
 std::shared_ptr<AstNode> Parser::declaration() {
     if (match(TOKEN_LET)) {
         return let_decl();
@@ -177,14 +177,14 @@ std::shared_ptr<AstNode> Parser::declaration() {
     }
 }
 
-std::shared_ptr<AstNode> Parser::let_decl() {
+std::shared_ptr<LetDecl> Parser::let_decl() {
     consume(TOKEN_IDENTIFIER,
             "Expected identifier as variable name after let.");
     auto identifier = previous;
     if (peek(TOKEN_SEMICOLON)) {
         error_at(current,
                  "Expected initialization after variable declaration.");
-        return make_error_node<Expression>();
+        return make_error_node<LetDecl>();
     } else if (match(TOKEN_EQUAL)) {
         auto initializer = expression();
         auto result = std::make_shared<LetDecl>(identifier, initializer);
@@ -194,17 +194,17 @@ std::shared_ptr<AstNode> Parser::let_decl() {
         return result;
     } else {
         error_at(current, "Expected '=' after 'let'.");
-        return make_error_node<Expression>();
+        return make_error_node<LetDecl>();
     }
 }
 
-std::shared_ptr<AstNode> Parser::fn_decl() {
+std::shared_ptr<FnDecl> Parser::fn_decl() {
     consume(TOKEN_IDENTIFIER, "Expected function name after fn keyword.");
     auto name = previous;
 
     consume(TOKEN_LEFT_PAREN, "Expected ( after fn name.");
 
-    std::list<std::shared_ptr<AstNode>> formal_params;
+    std::list<std::shared_ptr<FormalParam>> formal_params;
     while (!peek(TOKEN_RIGHT_PAREN)) {
         if (formal_params.size() > 0) {
             consume(TOKEN_COMMA, "Expected ',' after formal parameter.");
@@ -212,7 +212,7 @@ std::shared_ptr<AstNode> Parser::fn_decl() {
 
         if (!match(TOKEN_IDENTIFIER)) {
             error_at(current, "Expected identifier as formal parameter.");
-            return make_error_node<Expression>();
+            return make_error_node<FnDecl>();
         }
 
         consume(TOKEN_COLON, "Expected ':' between formal param name and formal param type.");
@@ -224,15 +224,10 @@ std::shared_ptr<AstNode> Parser::fn_decl() {
     // does this make sense? maybe ... :)
     auto body = statement();
     if (has_error) {
-        return body;
+        return make_error_node<FnDecl>();
     } else {
         return std::make_shared<FnDecl>(name, formal_params, body);
     }
-}
-
-std::shared_ptr<Type> Parser::type() {
-    consume(TOKEN_IDENTIFIER, "Expected identifier as typename.");
-    return std::make_shared<Type>(previous);
 }
 
 std::shared_ptr<Statement> Parser::statement() {
@@ -247,13 +242,13 @@ std::shared_ptr<Statement> Parser::statement() {
     }
 }
 
-std::shared_ptr<Statement> Parser::ret_stmt() {
+std::shared_ptr<ReturnStmt> Parser::ret_stmt() {
     auto return_value = expression();
     consume(TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
     return std::make_shared<ReturnStmt>(return_value);
 }
 
-std::shared_ptr<Statement> Parser::while_stmt() {
+std::shared_ptr<WhileStmt> Parser::while_stmt() {
     consume(TOKEN_LEFT_PAREN, "Expected ( after 'while'.");
     auto condition = expression();
     consume(TOKEN_RIGHT_PAREN, "Expected ) after while condition.");
@@ -261,7 +256,7 @@ std::shared_ptr<Statement> Parser::while_stmt() {
     return std::make_shared<WhileStmt>(condition, body);
 }
 
-std::shared_ptr<Statement> Parser::block() {
+std::shared_ptr<Block> Parser::block() {
     std::list<std::shared_ptr<AstNode>> decls;
     while (!peek(TOKEN_RIGHT_BRACE)) {
         decls.push_back(declaration());
@@ -271,7 +266,7 @@ std::shared_ptr<Statement> Parser::block() {
     return std::make_shared<Block>(decls);
 }
 
-std::shared_ptr<Statement> Parser::expr_stmt() {
+std::shared_ptr<ExprStmt> Parser::expr_stmt() {
     auto expr = expression();
     consume(TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
     return std::make_shared<ExprStmt>(expr);
@@ -281,7 +276,7 @@ std::shared_ptr<Expression> Parser::expression() {
     return parse_precedence(PREC_ASSIGNMENT);
 }
 
-std::shared_ptr<Expression> Parser::call() {
+std::shared_ptr<Call> Parser::call() {
     consume(TOKEN_IDENTIFIER, "Expected function identifier.");
     auto fname = previous;
 

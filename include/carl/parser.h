@@ -48,26 +48,26 @@ class Parser {
 
     std::vector<std::shared_ptr<AstNode>> parse();
     std::shared_ptr<AstNode> declaration();
-    std::shared_ptr<AstNode> let_decl();
+    std::shared_ptr<LetDecl> let_decl();
     std::shared_ptr<Type> type();
-    std::shared_ptr<AstNode> fn_decl();
+    std::shared_ptr<FnDecl> fn_decl();
 
     std::shared_ptr<Statement> statement();
-    std::shared_ptr<Statement> ret_stmt();
-    std::shared_ptr<Statement> expr_stmt();
-    std::shared_ptr<Statement> while_stmt();
-    std::shared_ptr<Statement> block();
+    std::shared_ptr<ReturnStmt> ret_stmt();
+    std::shared_ptr<ExprStmt> expr_stmt();
+    std::shared_ptr<WhileStmt> while_stmt();
+    std::shared_ptr<Block> block();
 
     std::shared_ptr<Expression> expression();
-    std::shared_ptr<Expression> call();
+    std::shared_ptr<Expression> grouping();
+    std::shared_ptr<Call> call();
+    // can be Assignment or Binary
+    std::shared_ptr<Expression> binary();
     std::shared_ptr<Expression> unary();
-    std::shared_ptr<Expression> literal();
-    std::shared_ptr<Expression> variable();
     std::shared_ptr<Expression> string();
     std::shared_ptr<Expression> number();
-    std::shared_ptr<Expression> binary();
-    std::shared_ptr<Expression> assignment();
-    std::shared_ptr<Expression> grouping();
+    std::shared_ptr<Expression> variable();
+    std::shared_ptr<Expression> literal();
 
    private:
     void error_at(Token token, const char* message);

@@ -17,16 +17,16 @@ TYPES = [
     "Expression() : AstNode",
 
     "Type(Token name) : AstNode",
-    "FormalParam(Token name, @ptr<Type> type) : AstNode",
-    "FnDecl(Token name, @list<@ptr<AstNode>> formals, @ptr<AstNode> body) : AstNode",
-    "LetDecl(Token name, @ptr<AstNode> initializer) : AstNode",
+    "FormalParam(Token name, @ptr<Type> type_ast) : AstNode",
+    "FnDecl(Token name, @list<@ptr<FormalParam>> formals, @ptr<Statement> body) : AstNode",
+    "LetDecl(Token name, @ptr<Expression> initializer) : AstNode",
 
-    "ExprStmt(@ptr<AstNode> expr) : Statement",
-    "ReturnStmt(@ptr<AstNode> expr) : Statement",
-    "WhileStmt(@ptr<AstNode> condition, @ptr<AstNode> body) : Statement",
+    "ExprStmt(@ptr<Expression> expr) : Statement",
+    "ReturnStmt(@ptr<Expression> expr) : Statement",
+    "WhileStmt(@ptr<Expression> condition, @ptr<Statement> body) : Statement",
     "Block(@list<@ptr<AstNode>> declarations) : Statement",
 
-    "Assignment(@ptr<AstNode> target, @ptr<Expression> expr) : Expression",
+    "Assignment(@ptr<Variable> target, @ptr<Expression> expr) : Expression",
     "Binary(Token op, @ptr<Expression> lhs, @ptr<Expression> rhs) : Expression",
     "Unary(Token op, @ptr<Expression> operand) : Expression",
     "Variable(Token name) : Expression",

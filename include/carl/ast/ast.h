@@ -58,64 +58,64 @@ class Type : public AstNode {
 class FormalParam : public AstNode {
    private:
     Token name;
-    std::shared_ptr<Type> type;
+    std::shared_ptr<Type> type_ast;
    public:
-    FormalParam(Token name, std::shared_ptr<Type> type) :name(name), type(type) {}
+    FormalParam(Token name, std::shared_ptr<Type> type_ast) :name(name), type_ast(type_ast) {}
     Token get_name() { return this->name; }
-    std::shared_ptr<Type> get_type() { return this->type; }
+    std::shared_ptr<Type> get_type_ast() { return this->type_ast; }
     void accept(AstNodeVisitor* visitor);
 };
 
 class FnDecl : public AstNode {
    private:
     Token name;
-    std::list<std::shared_ptr<AstNode>> formals;
-    std::shared_ptr<AstNode> body;
+    std::list<std::shared_ptr<FormalParam>> formals;
+    std::shared_ptr<Statement> body;
    public:
-    FnDecl(Token name, std::list<std::shared_ptr<AstNode>> formals, std::shared_ptr<AstNode> body) :name(name), formals(formals), body(body) {}
+    FnDecl(Token name, std::list<std::shared_ptr<FormalParam>> formals, std::shared_ptr<Statement> body) :name(name), formals(formals), body(body) {}
     Token get_name() { return this->name; }
-    std::list<std::shared_ptr<AstNode>> get_formals() { return this->formals; }
-    std::shared_ptr<AstNode> get_body() { return this->body; }
+    std::list<std::shared_ptr<FormalParam>> get_formals() { return this->formals; }
+    std::shared_ptr<Statement> get_body() { return this->body; }
     void accept(AstNodeVisitor* visitor);
 };
 
 class LetDecl : public AstNode {
    private:
     Token name;
-    std::shared_ptr<AstNode> initializer;
+    std::shared_ptr<Expression> initializer;
    public:
-    LetDecl(Token name, std::shared_ptr<AstNode> initializer) :name(name), initializer(initializer) {}
+    LetDecl(Token name, std::shared_ptr<Expression> initializer) :name(name), initializer(initializer) {}
     Token get_name() { return this->name; }
-    std::shared_ptr<AstNode> get_initializer() { return this->initializer; }
+    std::shared_ptr<Expression> get_initializer() { return this->initializer; }
     void accept(AstNodeVisitor* visitor);
 };
 
 class ExprStmt : public Statement {
    private:
-    std::shared_ptr<AstNode> expr;
+    std::shared_ptr<Expression> expr;
    public:
-    ExprStmt(std::shared_ptr<AstNode> expr) :expr(expr) {}
-    std::shared_ptr<AstNode> get_expr() { return this->expr; }
+    ExprStmt(std::shared_ptr<Expression> expr) :expr(expr) {}
+    std::shared_ptr<Expression> get_expr() { return this->expr; }
     void accept(AstNodeVisitor* visitor);
 };
 
 class ReturnStmt : public Statement {
    private:
-    std::shared_ptr<AstNode> expr;
+    std::shared_ptr<Expression> expr;
    public:
-    ReturnStmt(std::shared_ptr<AstNode> expr) :expr(expr) {}
-    std::shared_ptr<AstNode> get_expr() { return this->expr; }
+    ReturnStmt(std::shared_ptr<Expression> expr) :expr(expr) {}
+    std::shared_ptr<Expression> get_expr() { return this->expr; }
     void accept(AstNodeVisitor* visitor);
 };
 
 class WhileStmt : public Statement {
    private:
-    std::shared_ptr<AstNode> condition;
-    std::shared_ptr<AstNode> body;
+    std::shared_ptr<Expression> condition;
+    std::shared_ptr<Statement> body;
    public:
-    WhileStmt(std::shared_ptr<AstNode> condition, std::shared_ptr<AstNode> body) :condition(condition), body(body) {}
-    std::shared_ptr<AstNode> get_condition() { return this->condition; }
-    std::shared_ptr<AstNode> get_body() { return this->body; }
+    WhileStmt(std::shared_ptr<Expression> condition, std::shared_ptr<Statement> body) :condition(condition), body(body) {}
+    std::shared_ptr<Expression> get_condition() { return this->condition; }
+    std::shared_ptr<Statement> get_body() { return this->body; }
     void accept(AstNodeVisitor* visitor);
 };
 

@@ -9,6 +9,7 @@ AST_CLASSES = []
 def fill_ast_classes(classes: list[Class]):
     for cls in classes:
         AST_CLASSES.append(cls.name)
+    AST_CLASSES.append("AstNode")
 
 def generate_ast_node_visitor_functions(classes: list[Class]):
     fs = list()
@@ -56,7 +57,9 @@ def generate_list_attr(cls: Class, attr: ClassMember) -> str:
     indent--;"""
 
 def generate_ptr_attr(cls: Class, attr: ClassMember) -> str:
-    if attr.typename not in AST_CLASSES:
+    # assume attr.typename of this form: @ptr<...>
+    inner_type = attr.typename.removeprefix("@ptr<").removesuffix(">")
+    if inner_type not in AST_CLASSES:
         # for now, skip non ast classes
         return ""
     return f"""    write_indent();
