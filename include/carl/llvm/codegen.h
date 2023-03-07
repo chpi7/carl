@@ -22,6 +22,10 @@ class LLVMCodeGenerator : public AstNodeVisitor {
 
    public:
     LLVMCodeGenerator();
+    // TODO: implement these, then load into the JIT
+    void generate_eval();
+    void generate_decl();
+
     llvm::Value* do_visit(AstNode* node) {
         node->accept(this);
         return result;
