@@ -17,6 +17,18 @@
 #include "llvm/IR/LLVMContext.h"
 
 namespace carl {
+class LLJITWrapper {
+    private:
+    std::unique_ptr<llvm::orc::LLJIT> lljit;
+
+   public:
+    LLJITWrapper() { 
+        llvm::orc::LLJITBuilder builder;
+        lljit = std::move(builder.create().get());
+        auto& m = lljit->getMainJITDylib();
+    }
+};
+
 class JIT {
    private:
     std::unique_ptr<llvm::orc::ExecutionSession> session;

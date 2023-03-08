@@ -7,12 +7,40 @@
 using namespace carl;
 
 LLVMCodeGenerator::LLVMCodeGenerator() {
+    initialize();
+}
+
+void LLVMCodeGenerator::initialize() {
+    if (context) {
+        context.release();
+        module.release();
+        builder.release();
+    }
     context = std::make_unique<llvm::LLVMContext>();
     module = std::make_unique<llvm::Module>("some module", *context);
-    builder = std::make_unique<
-        llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>>(
-        *context);
+    builder = std::make_unique<llvm::IRBuilder<>>(*context);
 }
+
+void LLVMCodeGenerator::create_dummy_function() {
+    initialize();
+
+    auto main_t = llvm::FunctionType::get(llvm::Type::getInt32Ty(*context), false);
+    auto main = llvm::Function::Create(main_t, llvm::Function::ExternalLinkage, "__main", *module);
+
+    auto bb = llvm::BasicBlock::Create(*context, "entry", main); 
+    builder->SetInsertPoint(bb);
+
+    auto result = llvm::ConstantInt::getSigned(llvm::IntegerType::getInt32Ty(*context), 1337);
+    builder->CreateRet(result);
+}
+
+llvm::orc::ThreadSafeModule LLVMCodeGenerator::take_module() {
+    module->print(llvm::outs(), nullptr);
+
+    auto tsm = llvm::orc::ThreadSafeModule(std::move(module), std::move(context));
+    return tsm;
+}
+
 
 void LLVMCodeGenerator::visit_invalid(Invalid* invalid) {}
 void LLVMCodeGenerator::visit_exprstmt(ExprStmt* exprstmt) {

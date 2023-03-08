@@ -5,6 +5,9 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Constants.h"
 
+#include "llvm/ExecutionEngine/Orc/CompileUtils.h"
+#include "llvm/ExecutionEngine/Orc/Core.h"
+
 #include <memory>
 #include <map>
 
@@ -22,9 +25,12 @@ class LLVMCodeGenerator : public AstNodeVisitor {
 
    public:
     LLVMCodeGenerator();
+    void initialize();
+    llvm::orc::ThreadSafeModule take_module();
     // TODO: implement these, then load into the JIT
-    void generate_eval();
-    void generate_decl();
+    // void generate_eval();
+    // void generate_decl();
+    void create_dummy_function();
 
     llvm::Value* do_visit(AstNode* node) {
         node->accept(this);
