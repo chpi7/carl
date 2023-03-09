@@ -2,9 +2,7 @@
 
 #include "carl/llvm/codegen.h"
 #include "carl/parser.h"
-#include "llvm/ExecutionEngine/Orc/LLJIT.h"
-#include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/raw_ostream.h"
+#include "carl/llvm/jit.h"
 
 using namespace carl;
 
@@ -26,24 +24,28 @@ TEST(llvmcodegen, compile_expression) {
     llvm::outs() << "\n";
 }
 
-TEST(llvmcodegen, basic_lljit_functionality_check) {
-    llvm::ExitOnError exitErr;
+TEST(llvmcodegen, basic_expr_compile_eval) {
+    // compile
+    auto scanner = std::make_shared<Scanner>();
+    const char* src_string = "40 + 2 == 43";
+    scanner->init(src_string);
 
-    LLVMCodeGenerator gen;
-    gen.create_dummy_function();
-    auto mod = gen.take_module();
+    Parser parser;
+    parser.set_scanner(scanner);
 
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
+    auto expr = parser.expression();
 
-    llvm::orc::LLJITBuilder builder;
+    LLVMCodeGenerator generator;
+    generator.generate_eval(expr.get());
+    auto mod = generator.take_module();
 
-    auto j = exitErr(llvm::orc::LLJITBuilder().create());
-    exitErr(j->addIRModule(std::move(mod)));
-
-    auto x = j->lookup("__main").get().toPtr<int32_t()>();
-    int32_t res = x();
-
-    ASSERT_EQ(res, 1337);
+    // run
+    LLJITWrapper jit;
+    jit.load_module(mod);
+    auto exprwrapper = jit.lookup("__expr_wrapper");
+    ASSERT_TRUE(exprwrapper.has_value());
+    
+    auto f = reinterpret_cast<bool(*)()>(exprwrapper.value());
+    ASSERT_FALSE(f());
 }
 }  // namespace

@@ -2,39 +2,44 @@
 
 #include "carl/common.h"
 #include "carl/parser.h"
-#include "carl/codegen.h"
-#include "carl/vm/vm.h"
+#include "carl/llvm/codegen.h"
+#include "carl/llvm/jit.h"
 #include "carl/ast/ast_printer.h"
 
 using namespace carl;
+LLJITWrapper jit;
 
 static void interpret(const char* line) {
     auto scanner = std::make_shared<Scanner>();
     Parser parser;
-    CodeGenerator gen;
+    LLVMCodeGenerator cg;
 #ifdef DEBUG
     AstPrinter v(std::cout);
 #endif
-    VM vm(512);
 
     scanner->init(line);
     parser.set_scanner(scanner);
+    auto decls = parser.parse();
+    // TODO: change this to check for the actual type...
+    ExprStmt* e = reinterpret_cast<ExprStmt*>(decls.front().get());
 
-    auto expr = parser.statement();
-    gen.generate(expr);
-#ifdef DEBUG
-    expr->accept(&v);
-    std::cout << std::endl;
-    gen.get_chunk()->print(std::cout);
-#endif
+    cg.generate_eval(e->get_expr().get());
+    auto mod = cg.take_module();
 
-    vm.load_chunk(gen.take_chunk());
-    vm.run(true);
+    auto tracker = jit.load_module(mod);
+    auto s = jit.lookup("__expr_wrapper");
+    if (!s) {
+        std::cerr << "could not find __expr_wrapper symbol in jit." << std::endl;
+        return;
+    }
 
-#ifdef DEBUG
-    printf("Stack top hex: %016lx\n", vm.get_stack_top());
-    printf("Stack top dec: %ld\n", vm.get_stack_top());
-#endif
+    auto wrapper = reinterpret_cast<int64_t (*)()>(s.value());
+    int64_t result = wrapper();
+    std::cout << result << std::endl;
+    // code did execute -> value will be there
+    if(tracker.value()->remove()) {
+        std::cerr << "could not unload wrapper module" << std::endl;
+    }
 }
 
 static void repl() {

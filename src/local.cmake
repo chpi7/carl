@@ -9,6 +9,7 @@ set(SRC_CC
     src/scanner.cc 
     src/codegen.cc 
     src/llvm/codegen.cc
+    src/llvm/jit.cc
 )
 
 add_library(

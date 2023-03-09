@@ -28,9 +28,8 @@ class LLVMCodeGenerator : public AstNodeVisitor {
     void initialize();
     llvm::orc::ThreadSafeModule take_module();
     // TODO: implement these, then load into the JIT
-    // void generate_eval();
+    void generate_eval(Expression* expr);
     // void generate_decl();
-    void create_dummy_function();
 
     llvm::Value* do_visit(AstNode* node) {
         node->accept(this);

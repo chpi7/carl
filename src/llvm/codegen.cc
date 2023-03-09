@@ -21,24 +21,26 @@ void LLVMCodeGenerator::initialize() {
     builder = std::make_unique<llvm::IRBuilder<>>(*context);
 }
 
-void LLVMCodeGenerator::create_dummy_function() {
+void LLVMCodeGenerator::generate_eval(Expression* expr) {
     initialize();
 
-    auto main_t = llvm::FunctionType::get(llvm::Type::getInt32Ty(*context), false);
-    auto main = llvm::Function::Create(main_t, llvm::Function::ExternalLinkage, "__main", *module);
-
-    auto bb = llvm::BasicBlock::Create(*context, "entry", main); 
+    auto wrapper_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(*context), false);
+    auto wrapper = llvm::Function::Create(wrapper_type, llvm::Function::ExternalLinkage, "__expr_wrapper", *module);
+    auto bb = llvm::BasicBlock::Create(*context, "entry", wrapper); 
     builder->SetInsertPoint(bb);
 
-    auto result = llvm::ConstantInt::getSigned(llvm::IntegerType::getInt32Ty(*context), 1337);
+    auto result = do_visit(expr);
+    auto rtype = result->getType();
+    if(!rtype->isIntegerTy()) {
+        std::cerr << "invalid expr ret type" << std::endl;
+    }
+
     builder->CreateRet(result);
 }
 
 llvm::orc::ThreadSafeModule LLVMCodeGenerator::take_module() {
     module->print(llvm::outs(), nullptr);
-
-    auto tsm = llvm::orc::ThreadSafeModule(std::move(module), std::move(context));
-    return tsm;
+    return llvm::orc::ThreadSafeModule(std::move(module), std::move(context));
 }
 
 
