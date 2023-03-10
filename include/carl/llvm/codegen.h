@@ -15,6 +15,7 @@ namespace carl {
 
 class LLVMCodeGenerator : public AstNodeVisitor {
    private:
+    bool has_error;
     llvm::Value* result;
     std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::IRBuilder<>> builder;
@@ -22,6 +23,7 @@ class LLVMCodeGenerator : public AstNodeVisitor {
     std::map<std::string, llvm::AllocaInst*> names_values;
 
    private:
+    void log_error(std::string s);
     llvm::Function* start_wrapper_function();
     void end_wrapper_function();
 

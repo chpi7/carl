@@ -52,10 +52,26 @@ TEST(llvmcodegen, let_decls_and_assign) {
     // compile
     Parser p;
     auto decls = p.parse(src);
-    AstPrinter printer(std::cout);
-    for (auto& d : decls) {
-        printer.print(d.get());
-    }
+
+    LLVMCodeGenerator generator;
+    generator.generate(decls);
+    auto mod = generator.take_module();
+
+    // run
+    LLJITWrapper jit;
+    jit.load_module(mod);
+    auto exprwrapper = jit.lookup("__main");
+    ASSERT_TRUE(exprwrapper.has_value());
+}
+
+TEST(llvmcodegen, while_stmt) {
+    std::string src =
+        "let x = 0;"
+        "while (x < 42) { x = x + 2; } ";
+
+    // compile
+    Parser p;
+    auto decls = p.parse(src);
 
     LLVMCodeGenerator generator;
     generator.generate(decls);
