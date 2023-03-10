@@ -1,17 +1,15 @@
 #ifndef carl_llvm_codegen_h
 #define carl_llvm_codegen_h
 
-#include "llvm/IR/Value.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Constants.h"
-
-#include "llvm/ExecutionEngine/Orc/CompileUtils.h"
-#include "llvm/ExecutionEngine/Orc/Core.h"
-
-#include <memory>
 #include <map>
+#include <memory>
 
 #include "carl/ast/ast.h"
+#include "llvm/ExecutionEngine/Orc/CompileUtils.h"
+#include "llvm/ExecutionEngine/Orc/Core.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Value.h"
 
 namespace carl {
 

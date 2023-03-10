@@ -2,12 +2,11 @@
 
 #include <functional>
 
+#include "carl/ast/types.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
-#include "llvm/Transforms/InstCombine/InstCombine.h"
-
-#include "carl/ast/types.h"
 
 using namespace carl;
 
@@ -15,9 +14,7 @@ static llvm::Type* getIntType(llvm::LLVMContext& context) {
     return llvm::IntegerType::getInt64Ty(context);
 }
 
-LLVMCodeGenerator::LLVMCodeGenerator() {
-    initialize();
-}
+LLVMCodeGenerator::LLVMCodeGenerator() { initialize(); }
 
 void LLVMCodeGenerator::initialize() {
     if (context) {
@@ -31,36 +28,40 @@ void LLVMCodeGenerator::initialize() {
 }
 
 llvm::Function* LLVMCodeGenerator::start_wrapper_function() {
-    auto wrapper_type = llvm::FunctionType::get(llvm::Type::getVoidTy(*context), false);
-    auto wrapper = llvm::Function::Create(wrapper_type, llvm::Function::ExternalLinkage, "__main", *module);
-    auto bb = llvm::BasicBlock::Create(*context, "entry", wrapper); 
+    auto wrapper_type =
+        llvm::FunctionType::get(llvm::Type::getVoidTy(*context), false);
+    auto wrapper = llvm::Function::Create(
+        wrapper_type, llvm::Function::ExternalLinkage, "__main", *module);
+    auto bb = llvm::BasicBlock::Create(*context, "entry", wrapper);
     builder->SetInsertPoint(bb);
 
     return wrapper;
 }
 
-void LLVMCodeGenerator::end_wrapper_function() {
-    builder->CreateRetVoid();
-}
+void LLVMCodeGenerator::end_wrapper_function() { builder->CreateRetVoid(); }
 
 void LLVMCodeGenerator::generate_eval(std::shared_ptr<Expression> expr) {
     initialize();
 
-    auto wrapper_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(*context), false);
-    auto wrapper = llvm::Function::Create(wrapper_type, llvm::Function::ExternalLinkage, "__expr_wrapper", *module);
-    auto bb = llvm::BasicBlock::Create(*context, "entry", wrapper); 
+    auto wrapper_type =
+        llvm::FunctionType::get(llvm::Type::getInt64Ty(*context), false);
+    auto wrapper =
+        llvm::Function::Create(wrapper_type, llvm::Function::ExternalLinkage,
+                               "__expr_wrapper", *module);
+    auto bb = llvm::BasicBlock::Create(*context, "entry", wrapper);
     builder->SetInsertPoint(bb);
 
     auto result = do_visit(expr);
     auto rtype = result->getType();
-    if(!rtype->isIntegerTy()) {
+    if (!rtype->isIntegerTy()) {
         std::cerr << "invalid expr ret type" << std::endl;
     }
 
     builder->CreateRet(result);
 }
 
-void LLVMCodeGenerator::generate(std::vector<std::shared_ptr<AstNode>> declarations) {
+void LLVMCodeGenerator::generate(
+    std::vector<std::shared_ptr<AstNode>> declarations) {
     initialize();
     auto wrapper_fn = start_wrapper_function();
 
@@ -84,7 +85,6 @@ llvm::orc::ThreadSafeModule LLVMCodeGenerator::take_module() {
     return llvm::orc::ThreadSafeModule(std::move(module), std::move(context));
 }
 
-
 void LLVMCodeGenerator::visit_invalid(Invalid* invalid) {}
 void LLVMCodeGenerator::visit_exprstmt(ExprStmt* exprstmt) {
     // Do nothing with the result --> statement.
@@ -97,18 +97,22 @@ void LLVMCodeGenerator::visit_fndecl(FnDecl* fndecl) {}
 void LLVMCodeGenerator::visit_formalparam(FormalParam* formalparam) {}
 
 void LLVMCodeGenerator::visit_letdecl(LetDecl* letdecl) {
-    auto name = std::string(letdecl->get_name().start, letdecl->get_name().length);
+    auto name =
+        std::string(letdecl->get_name().start, letdecl->get_name().length);
     auto initial_value = do_visit(letdecl->get_initializer());
 
-    auto inst = builder->CreateAlloca(getIntType(*context), nullptr, name.c_str());
+    auto inst =
+        builder->CreateAlloca(getIntType(*context), nullptr, name.c_str());
     names_values.insert(std::make_pair(name, inst));
     builder->CreateStore(initial_value, inst);
 }
 
 void LLVMCodeGenerator::visit_assignment(Assignment* assignment) {
     // right now the parser only allows assignment to variables.
-    auto target_variable = std::reinterpret_pointer_cast<Variable>(assignment->get_target());
-    auto name = std::string(target_variable->get_name().start, target_variable->get_name().length);
+    auto target_variable =
+        std::reinterpret_pointer_cast<Variable>(assignment->get_target());
+    auto name = std::string(target_variable->get_name().start,
+                            target_variable->get_name().length);
 
     if (!names_values.contains(name)) {
         std::cerr << "named value " << name << " not found." << std::endl;
@@ -135,31 +139,73 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
 
     if (is_float) {
         switch (op_token) {
-            case TOKEN_PLUS: result = builder->CreateFAdd(lhs, rhs, "fadd"); break;
-            case TOKEN_MINUS: result = builder->CreateFSub(lhs, rhs, "fsub"); break;
-            case TOKEN_STAR: result = builder->CreateFMul(lhs, rhs, "fmul"); break;
-            case TOKEN_SLASH: result = builder->CreateFDiv(lhs, rhs, "fdiv"); break;
-            case TOKEN_EQUAL_EQUAL: result = builder->CreateFCmpUEQ(lhs, rhs, "fcmp"); break;
-            case TOKEN_LESS: result = builder->CreateFCmpULT(lhs, rhs, "fcmp"); break;
-            case TOKEN_LESS_EQUAL: result = builder->CreateFCmpULE(lhs, rhs, "fcmp"); break;
-            case TOKEN_GREATER: result = builder->CreateFCmpUGT(lhs, rhs, "fcmp"); break;
-            case TOKEN_GREATER_EQUAL: result = builder->CreateFCmpUGE(lhs, rhs, "fcmp"); break;
-            default: std::cerr << "unsupported float binop found" << std::endl; break;
+            case TOKEN_PLUS:
+                result = builder->CreateFAdd(lhs, rhs, "fadd");
+                break;
+            case TOKEN_MINUS:
+                result = builder->CreateFSub(lhs, rhs, "fsub");
+                break;
+            case TOKEN_STAR:
+                result = builder->CreateFMul(lhs, rhs, "fmul");
+                break;
+            case TOKEN_SLASH:
+                result = builder->CreateFDiv(lhs, rhs, "fdiv");
+                break;
+            case TOKEN_EQUAL_EQUAL:
+                result = builder->CreateFCmpUEQ(lhs, rhs, "fcmp");
+                break;
+            case TOKEN_LESS:
+                result = builder->CreateFCmpULT(lhs, rhs, "fcmp");
+                break;
+            case TOKEN_LESS_EQUAL:
+                result = builder->CreateFCmpULE(lhs, rhs, "fcmp");
+                break;
+            case TOKEN_GREATER:
+                result = builder->CreateFCmpUGT(lhs, rhs, "fcmp");
+                break;
+            case TOKEN_GREATER_EQUAL:
+                result = builder->CreateFCmpUGE(lhs, rhs, "fcmp");
+                break;
+            default:
+                std::cerr << "unsupported float binop found" << std::endl;
+                break;
         }
     } else if (is_int) {
         // Always choose signed operations.
         switch (op_token) {
-            case TOKEN_PLUS: result = builder->CreateAdd(lhs, rhs, "fadd"); break;
-            case TOKEN_MINUS: result = builder->CreateSub(lhs, rhs, "fsub"); break;
-            case TOKEN_STAR: result = builder->CreateMul(lhs, rhs, "fmul"); break;
-            case TOKEN_SLASH: result = builder->CreateSDiv(lhs, rhs, "fdiv"); break;
-            case TOKEN_PERC: result = builder->CreateSRem(lhs, rhs, "frem"); break;
-            case TOKEN_EQUAL_EQUAL: result = builder->CreateICmpEQ(lhs, rhs, "fcmp"); break;
-            case TOKEN_LESS: result = builder->CreateICmpSLT(lhs, rhs, "fcmp"); break;
-            case TOKEN_LESS_EQUAL: result = builder->CreateICmpSLE(lhs, rhs, "fcmp"); break;
-            case TOKEN_GREATER: result = builder->CreateICmpSGT(lhs, rhs, "fcmp"); break;
-            case TOKEN_GREATER_EQUAL: result = builder->CreateICmpSGE(lhs, rhs, "fcmp"); break;
-            default: std::cerr << "unsupported int binop found" << std::endl; break;
+            case TOKEN_PLUS:
+                result = builder->CreateAdd(lhs, rhs, "fadd");
+                break;
+            case TOKEN_MINUS:
+                result = builder->CreateSub(lhs, rhs, "fsub");
+                break;
+            case TOKEN_STAR:
+                result = builder->CreateMul(lhs, rhs, "fmul");
+                break;
+            case TOKEN_SLASH:
+                result = builder->CreateSDiv(lhs, rhs, "fdiv");
+                break;
+            case TOKEN_PERC:
+                result = builder->CreateSRem(lhs, rhs, "frem");
+                break;
+            case TOKEN_EQUAL_EQUAL:
+                result = builder->CreateICmpEQ(lhs, rhs, "fcmp");
+                break;
+            case TOKEN_LESS:
+                result = builder->CreateICmpSLT(lhs, rhs, "fcmp");
+                break;
+            case TOKEN_LESS_EQUAL:
+                result = builder->CreateICmpSLE(lhs, rhs, "fcmp");
+                break;
+            case TOKEN_GREATER:
+                result = builder->CreateICmpSGT(lhs, rhs, "fcmp");
+                break;
+            case TOKEN_GREATER_EQUAL:
+                result = builder->CreateICmpSGE(lhs, rhs, "fcmp");
+                break;
+            default:
+                std::cerr << "unsupported int binop found" << std::endl;
+                break;
         }
     } else {
         // unsupported.
@@ -170,14 +216,16 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
 void LLVMCodeGenerator::visit_unary(Unary* unary) {}
 
 void LLVMCodeGenerator::visit_variable(Variable* variable) {
-    auto name = std::string(variable->get_name().start, variable->get_name().length);
+    auto name =
+        std::string(variable->get_name().start, variable->get_name().length);
     if (!names_values.contains(name)) {
         std::cerr << "named value " << name << " not found." << std::endl;
         result = nullptr;
         return;
     }
     auto alloca = names_values.at(name);
-    result = builder->CreateLoad(alloca->getAllocatedType(), alloca, name.c_str());
+    result =
+        builder->CreateLoad(alloca->getAllocatedType(), alloca, name.c_str());
 }
 
 void LLVMCodeGenerator::visit_literal(Literal* literal) {}
