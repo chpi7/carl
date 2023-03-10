@@ -151,7 +151,19 @@ void Parser::synchronize() {
     }
 }
 
+std::vector<std::shared_ptr<AstNode>> Parser::parse(std::string& src) {
+    auto scanner = std::make_shared<Scanner>();
+    scanner->init(src.c_str());
+    set_scanner(scanner);
+    
+    return parse();
+}
+
 std::vector<std::shared_ptr<AstNode>> Parser::parse() {
+    if (!scanner) {
+        std::cerr << "scanner not set." << std::endl;
+        return {}; // std::vector<std::shared_ptr<AstNode>>();
+    }
     std::vector<std::shared_ptr<AstNode>> result;
     while (current.type != TOKEN_EOF) {
         result.push_back(declaration());

@@ -2,9 +2,18 @@
 
 #include <functional>
 
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+
 #include "carl/ast/types.h"
 
 using namespace carl;
+
+static llvm::Type* getIntType(llvm::LLVMContext& context) {
+    return llvm::IntegerType::getInt64Ty(context);
+}
 
 LLVMCodeGenerator::LLVMCodeGenerator() {
     initialize();
@@ -21,7 +30,20 @@ void LLVMCodeGenerator::initialize() {
     builder = std::make_unique<llvm::IRBuilder<>>(*context);
 }
 
-void LLVMCodeGenerator::generate_eval(Expression* expr) {
+llvm::Function* LLVMCodeGenerator::start_wrapper_function() {
+    auto wrapper_type = llvm::FunctionType::get(llvm::Type::getVoidTy(*context), false);
+    auto wrapper = llvm::Function::Create(wrapper_type, llvm::Function::ExternalLinkage, "__main", *module);
+    auto bb = llvm::BasicBlock::Create(*context, "entry", wrapper); 
+    builder->SetInsertPoint(bb);
+
+    return wrapper;
+}
+
+void LLVMCodeGenerator::end_wrapper_function() {
+    builder->CreateRetVoid();
+}
+
+void LLVMCodeGenerator::generate_eval(std::shared_ptr<Expression> expr) {
     initialize();
 
     auto wrapper_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(*context), false);
@@ -38,6 +60,25 @@ void LLVMCodeGenerator::generate_eval(Expression* expr) {
     builder->CreateRet(result);
 }
 
+void LLVMCodeGenerator::generate(std::vector<std::shared_ptr<AstNode>> declarations) {
+    initialize();
+    auto wrapper_fn = start_wrapper_function();
+
+    for (auto& decl : declarations) {
+        do_visit(decl);
+    }
+
+    end_wrapper_function();
+
+    llvm::legacy::FunctionPassManager fpm(module.get());
+    // fpm.add(llvm::createInstructionCombiningPass());
+    // fpm.add(llvm::createReassociatePass());
+    // fpm.add(llvm::createGVNPass());
+    // fpm.add(llvm::createCFGSimplificationPass());
+    fpm.doInitialization();
+    fpm.run(*wrapper_fn);
+}
+
 llvm::orc::ThreadSafeModule LLVMCodeGenerator::take_module() {
     module->print(llvm::outs(), nullptr);
     return llvm::orc::ThreadSafeModule(std::move(module), std::move(context));
@@ -46,18 +87,43 @@ llvm::orc::ThreadSafeModule LLVMCodeGenerator::take_module() {
 
 void LLVMCodeGenerator::visit_invalid(Invalid* invalid) {}
 void LLVMCodeGenerator::visit_exprstmt(ExprStmt* exprstmt) {
-    result = do_visit(exprstmt->get_expr().get());
+    // Do nothing with the result --> statement.
+    do_visit(exprstmt->get_expr());
 }
 void LLVMCodeGenerator::visit_returnstmt(ReturnStmt* returnstmt) {}
 void LLVMCodeGenerator::visit_whilestmt(WhileStmt* whilestmt) {}
 void LLVMCodeGenerator::visit_block(Block* block) {}
 void LLVMCodeGenerator::visit_fndecl(FnDecl* fndecl) {}
 void LLVMCodeGenerator::visit_formalparam(FormalParam* formalparam) {}
-void LLVMCodeGenerator::visit_letdecl(LetDecl* letdecl) {}
-void LLVMCodeGenerator::visit_assignment(Assignment* assignment) {}
+
+void LLVMCodeGenerator::visit_letdecl(LetDecl* letdecl) {
+    auto name = std::string(letdecl->get_name().start, letdecl->get_name().length);
+    auto initial_value = do_visit(letdecl->get_initializer());
+
+    auto inst = builder->CreateAlloca(getIntType(*context), nullptr, name.c_str());
+    names_values.insert(std::make_pair(name, inst));
+    builder->CreateStore(initial_value, inst);
+}
+
+void LLVMCodeGenerator::visit_assignment(Assignment* assignment) {
+    // right now the parser only allows assignment to variables.
+    auto target_variable = std::reinterpret_pointer_cast<Variable>(assignment->get_target());
+    auto name = std::string(target_variable->get_name().start, target_variable->get_name().length);
+
+    if (!names_values.contains(name)) {
+        std::cerr << "named value " << name << " not found." << std::endl;
+        return;
+    }
+    auto target_alloca = names_values.at(name);
+
+    auto value = do_visit(assignment->get_expr());
+
+    result = builder->CreateStore(value, target_alloca);
+}
+
 void LLVMCodeGenerator::visit_binary(Binary* binary) {
-    auto lhs = do_visit(binary->get_lhs().get());
-    auto rhs = do_visit(binary->get_rhs().get());
+    auto lhs = do_visit(binary->get_lhs());
+    auto rhs = do_visit(binary->get_rhs());
     auto op_token = binary->get_op().type;
 
     // TODO cast if types are not equal here.
@@ -102,7 +168,18 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
 }
 
 void LLVMCodeGenerator::visit_unary(Unary* unary) {}
-void LLVMCodeGenerator::visit_variable(Variable* variable) {}
+
+void LLVMCodeGenerator::visit_variable(Variable* variable) {
+    auto name = std::string(variable->get_name().start, variable->get_name().length);
+    if (!names_values.contains(name)) {
+        std::cerr << "named value " << name << " not found." << std::endl;
+        result = nullptr;
+        return;
+    }
+    auto alloca = names_values.at(name);
+    result = builder->CreateLoad(alloca->getAllocatedType(), alloca, name.c_str());
+}
+
 void LLVMCodeGenerator::visit_literal(Literal* literal) {}
 void LLVMCodeGenerator::visit_string(String* string) {}
 void LLVMCodeGenerator::visit_number(Number* number) {
@@ -111,6 +188,6 @@ void LLVMCodeGenerator::visit_number(Number* number) {
         result = llvm::ConstantFP::get(*context, llvm::APFloat(num));
     } else if (number->get_type()->get_base_type() == types::BaseType::INT) {
         auto num = atoi(number->get_value().start);
-        result = llvm::ConstantInt::getSigned(llvm::IntegerType::getInt64Ty(*context), num);
+        result = llvm::ConstantInt::getSigned(getIntType(*context), num);
     }
 }

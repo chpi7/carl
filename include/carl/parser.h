@@ -47,6 +47,7 @@ class Parser {
     void set_scanner(std::shared_ptr<Scanner> scanner);
 
     std::vector<std::shared_ptr<AstNode>> parse();
+    std::vector<std::shared_ptr<AstNode>> parse(std::string& src);
     std::shared_ptr<AstNode> declaration();
     std::shared_ptr<LetDecl> let_decl();
     std::shared_ptr<Type> type();

@@ -21,17 +21,21 @@ class LLVMCodeGenerator : public AstNodeVisitor {
     std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::IRBuilder<>> builder;
     std::unique_ptr<llvm::Module> module;
-    std::map<std::string, llvm::Value*> names_values;
+    std::map<std::string, llvm::AllocaInst*> names_values;
+
+   private:
+    llvm::Function* start_wrapper_function();
+    void end_wrapper_function();
 
    public:
     LLVMCodeGenerator();
     void initialize();
     llvm::orc::ThreadSafeModule take_module();
     // TODO: implement these, then load into the JIT
-    void generate_eval(Expression* expr);
-    // void generate_decl();
+    void generate_eval(std::shared_ptr<Expression> expr);
+    void generate(std::vector<std::shared_ptr<AstNode>> declarations);
 
-    llvm::Value* do_visit(AstNode* node) {
+    llvm::Value* do_visit(std::shared_ptr<AstNode> node) {
         node->accept(this);
         return result;
     }

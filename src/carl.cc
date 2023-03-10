@@ -23,7 +23,7 @@ static void interpret(const char* line) {
     // TODO: change this to check for the actual type...
     ExprStmt* e = reinterpret_cast<ExprStmt*>(decls.front().get());
 
-    cg.generate_eval(e->get_expr().get());
+    cg.generate_eval(e->get_expr());
     auto mod = cg.take_module();
 
     auto tracker = jit.load_module(mod);

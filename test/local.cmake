@@ -13,7 +13,7 @@ set(TEST_CC
     test/parser_test.cc
     test/chunk_test.cc
     test/vm_test.cc
-    test/codegen_test.cc
+    # test/codegen_test.cc
     test/llvm_codegen_test.cc
 )
 

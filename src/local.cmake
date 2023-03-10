@@ -7,7 +7,7 @@ set(SRC_CC
     src/ast/ast_printer.cc
     src/parser.cc 
     src/scanner.cc 
-    src/codegen.cc 
+    src/basic_codegen.cc 
     src/llvm/codegen.cc
     src/llvm/jit.cc
 )
