@@ -37,7 +37,9 @@ class Expression : public AstNode {
     private:
     std::shared_ptr<types::Type> type;
    public:
-    Expression() {}
+    Expression() {
+        this->type = std::make_shared<types::Unknown>();
+    }
     std::shared_ptr<types::Type> get_type() { return this->type; }
     void set_type(std::shared_ptr<types::Type> type) { this->type = type;}
     void accept(AstNodeVisitor* visitor);

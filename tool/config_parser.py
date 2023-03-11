@@ -5,6 +5,7 @@ class ClassMember:
     typename: str
     name: str
     is_optional: bool = False
+    default: str | None = None
 
 @dataclass
 class Class:
@@ -19,7 +20,7 @@ def parse_class_decl(decl: str) -> Class:
     rem, parent = decl.split(" : ")
     parent = parent.strip()
 
-    name, rem = rem.split("(")
+    name, rem = rem.split("(", maxsplit=1)
     name = name.strip()
     rem = rem.strip()
     assert rem[-1] == ")", f"Expected variable list to have a ) at the end. is: {rem}"
@@ -31,10 +32,13 @@ def parse_class_decl(decl: str) -> Class:
 
     def parse_member(m: str) -> ClassMember:
         type_, name = m.strip().split(" ")
+        default = None
+        if "=" in name:
+            name, default = name.split("=")
         is_optional = name.endswith("?")
         if is_optional:
             name = name[:-1]
-        return ClassMember(type_, name, is_optional)
+        return ClassMember(type_, name, is_optional, default)
 
     pcls = KNOWN_CLASSES.get(parent)
 

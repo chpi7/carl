@@ -9,8 +9,16 @@ def generate_constructor(cls: Class):
     r += f")"
     if constructur_members:
         r += " :"
-        r += ", ".join(map(lambda m: f"{m.name}({m.name})", constructur_members))
-    r += " {}"
+        r += ", ".join(map(lambda m: f"{m.name}({m.name if not m.default else m.default})", constructur_members))
+
+    default_members = list(filter(lambda m: m.default is not None, cls.members))
+    if not default_members:
+        r += " {}"
+    else:
+        r += " {\n"
+        for dm in default_members:
+            r += f"        this->{dm.name} = {dm.default};\n"
+        r += "    }"
     return r
 
 

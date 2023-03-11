@@ -14,7 +14,7 @@ TYPES = [
     "Invalid() : AstNode",
 
     "Statement() : AstNode",
-    "Expression(@ptr<types::Type> type?) : AstNode",
+    "Expression(@ptr<types::Type> type?=std::make_shared<types::Unknown>()) : AstNode",
 
     "Type(Token name) : AstNode",
     "FormalParam(Token name, @ptr<Type> type) : AstNode",
