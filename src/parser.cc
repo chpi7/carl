@@ -347,9 +347,14 @@ std::shared_ptr<Expression> Parser::number() {
     advance();
     auto num_str = std::string(previous.start, previous.length);
     bool is_float = num_str.find('.') != std::string::npos;
-    return std::make_shared<Number>(previous, is_float ? 
-        static_cast<std::shared_ptr<types::Number>>(std::make_shared<types::Float>()) : 
-        static_cast<std::shared_ptr<types::Number>>(std::make_shared<types::Int>()));
+
+    auto number = std::make_shared<Number>(previous);
+    if (is_float) {
+        number->set_type(std::make_shared<types::Float>());
+    } else {
+        number->set_type(std::make_shared<types::Int>());
+    }
+    return number;
 }
 
 std::shared_ptr<Expression> Parser::string() {

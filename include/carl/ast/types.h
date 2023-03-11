@@ -13,6 +13,10 @@ class Type {
     virtual BaseType get_base_type() = 0;
 };
 
+class Unknown : public Type {
+    BaseType get_base_type() { return BaseType::UNKNOWN; };
+};
+
 class Number : public Type {};
 
 class Int : public Number {

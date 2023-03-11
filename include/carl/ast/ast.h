@@ -20,34 +20,31 @@ class AstNode {
 };
 
 class Invalid : public AstNode {
-   private:
-
+    
    public:
     Invalid() {}
-
     void accept(AstNodeVisitor* visitor);
 };
 
 class Statement : public AstNode {
-   private:
-
+    
    public:
     Statement() {}
-
     void accept(AstNodeVisitor* visitor);
 };
 
 class Expression : public AstNode {
-   private:
-
+    private:
+    std::shared_ptr<types::Type> type;
    public:
     Expression() {}
-
+    std::shared_ptr<types::Type> get_type() { return this->type; }
+    void set_type(std::shared_ptr<types::Type> type) { this->type = type;}
     void accept(AstNodeVisitor* visitor);
 };
 
 class Type : public AstNode {
-   private:
+    private:
     Token name;
    public:
     Type(Token name) :name(name) {}
@@ -56,18 +53,18 @@ class Type : public AstNode {
 };
 
 class FormalParam : public AstNode {
-   private:
+    private:
     Token name;
-    std::shared_ptr<Type> type_ast;
+    std::shared_ptr<Type> type;
    public:
-    FormalParam(Token name, std::shared_ptr<Type> type_ast) :name(name), type_ast(type_ast) {}
+    FormalParam(Token name, std::shared_ptr<Type> type) :name(name), type(type) {}
     Token get_name() { return this->name; }
-    std::shared_ptr<Type> get_type_ast() { return this->type_ast; }
+    std::shared_ptr<Type> get_type() { return this->type; }
     void accept(AstNodeVisitor* visitor);
 };
 
 class FnDecl : public AstNode {
-   private:
+    private:
     Token name;
     std::list<std::shared_ptr<FormalParam>> formals;
     std::shared_ptr<Statement> body;
@@ -80,7 +77,7 @@ class FnDecl : public AstNode {
 };
 
 class LetDecl : public AstNode {
-   private:
+    private:
     Token name;
     std::shared_ptr<Expression> initializer;
    public:
@@ -91,7 +88,7 @@ class LetDecl : public AstNode {
 };
 
 class ExprStmt : public Statement {
-   private:
+    private:
     std::shared_ptr<Expression> expr;
    public:
     ExprStmt(std::shared_ptr<Expression> expr) :expr(expr) {}
@@ -100,7 +97,7 @@ class ExprStmt : public Statement {
 };
 
 class ReturnStmt : public Statement {
-   private:
+    private:
     std::shared_ptr<Expression> expr;
    public:
     ReturnStmt(std::shared_ptr<Expression> expr) :expr(expr) {}
@@ -109,7 +106,7 @@ class ReturnStmt : public Statement {
 };
 
 class WhileStmt : public Statement {
-   private:
+    private:
     std::shared_ptr<Expression> condition;
     std::shared_ptr<Statement> body;
    public:
@@ -120,7 +117,7 @@ class WhileStmt : public Statement {
 };
 
 class Block : public Statement {
-   private:
+    private:
     std::list<std::shared_ptr<AstNode>> declarations;
    public:
     Block(std::list<std::shared_ptr<AstNode>> declarations) :declarations(declarations) {}
@@ -129,7 +126,7 @@ class Block : public Statement {
 };
 
 class Assignment : public Expression {
-   private:
+    private:
     std::shared_ptr<AstNode> target;
     std::shared_ptr<Expression> expr;
    public:
@@ -140,7 +137,7 @@ class Assignment : public Expression {
 };
 
 class Binary : public Expression {
-   private:
+    private:
     Token op;
     std::shared_ptr<Expression> lhs;
     std::shared_ptr<Expression> rhs;
@@ -153,7 +150,7 @@ class Binary : public Expression {
 };
 
 class Unary : public Expression {
-   private:
+    private:
     Token op;
     std::shared_ptr<Expression> operand;
    public:
@@ -164,7 +161,7 @@ class Unary : public Expression {
 };
 
 class Variable : public Expression {
-   private:
+    private:
     Token name;
    public:
     Variable(Token name) :name(name) {}
@@ -173,7 +170,7 @@ class Variable : public Expression {
 };
 
 class Literal : public Expression {
-   private:
+    private:
     Token value;
    public:
     Literal(Token value) :value(value) {}
@@ -182,7 +179,7 @@ class Literal : public Expression {
 };
 
 class String : public Expression {
-   private:
+    private:
     Token value;
    public:
     String(Token value) :value(value) {}
@@ -191,18 +188,16 @@ class String : public Expression {
 };
 
 class Number : public Expression {
-   private:
+    private:
     Token value;
-    std::shared_ptr<types::Type> type;
    public:
-    Number(Token value, std::shared_ptr<types::Type> type) :value(value), type(type) {}
+    Number(Token value) :value(value) {}
     Token get_value() { return this->value; }
-    std::shared_ptr<types::Type> get_type() { return this->type; }
     void accept(AstNodeVisitor* visitor);
 };
 
 class Call : public Expression {
-   private:
+    private:
     Token fname;
     std::list<std::shared_ptr<Expression>> arguments;
    public:

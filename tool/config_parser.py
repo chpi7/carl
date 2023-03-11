@@ -1,17 +1,19 @@
 from dataclasses import dataclass
 
 @dataclass
-class Class:
-    name: str
-    parent: str
-    members: list["ClassMember"]
-
-
-@dataclass
 class ClassMember:
     typename: str
     name: str
+    is_optional: bool = False
 
+@dataclass
+class Class:
+    name: str
+    parent_cls: "Class"
+    parent: str
+    members: list[ClassMember]
+
+KNOWN_CLASSES = {}
 
 def parse_class_decl(decl: str) -> Class:
     rem, parent = decl.split(" : ")
@@ -28,10 +30,20 @@ def parse_class_decl(decl: str) -> Class:
         members = list()
 
     def parse_member(m: str) -> ClassMember:
-        return ClassMember(*m.strip().split(" "))
+        type_, name = m.strip().split(" ")
+        is_optional = name.endswith("?")
+        if is_optional:
+            name = name[:-1]
+        return ClassMember(type_, name, is_optional)
 
-    return Class(name, parent, list(map(parse_member, members)))
+    pcls = KNOWN_CLASSES.get(parent)
+
+    r = Class(name, pcls, parent, list(map(parse_member, members)))
+    KNOWN_CLASSES[name] = r
+
+    return r
 
 
 def parse_classes(decls: list[str]) -> list[Class]:
+    KNOWN_CLASSES.clear()
     return list(map(parse_class_decl, decls))

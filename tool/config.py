@@ -14,10 +14,10 @@ TYPES = [
     "Invalid() : AstNode",
 
     "Statement() : AstNode",
-    "Expression() : AstNode",
+    "Expression(@ptr<types::Type> type?) : AstNode",
 
     "Type(Token name) : AstNode",
-    "FormalParam(Token name, @ptr<Type> type_ast) : AstNode",
+    "FormalParam(Token name, @ptr<Type> type) : AstNode",
     "FnDecl(Token name, @list<@ptr<FormalParam>> formals, @ptr<Statement> body) : AstNode",
     "LetDecl(Token name, @ptr<Expression> initializer) : AstNode",
 
@@ -26,12 +26,12 @@ TYPES = [
     "WhileStmt(@ptr<Expression> condition, @ptr<Statement> body) : Statement",
     "Block(@list<@ptr<AstNode>> declarations) : Statement",
 
-    "Assignment(@ptr<Variable> target, @ptr<Expression> expr) : Expression",
+    "Assignment(@ptr<AstNode> target, @ptr<Expression> expr) : Expression",
     "Binary(Token op, @ptr<Expression> lhs, @ptr<Expression> rhs) : Expression",
     "Unary(Token op, @ptr<Expression> operand) : Expression",
     "Variable(Token name) : Expression",
     "Literal(Token value) : Expression",
     "String(Token value) : Expression",
-    "Number(Token value, @ptr<types::Type> type) : Expression",
+    "Number(Token value) : Expression",
     "Call(Token fname, @list<@ptr<Expression>> arguments) : Expression",
 ]

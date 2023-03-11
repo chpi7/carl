@@ -26,9 +26,9 @@ void AstPrinter::visit_formalparam(FormalParam* formalparam) {
     write_indent();
     os << "name = " << std::string(formalparam->get_name().start, formalparam->get_name().length) << "\n";
     write_indent();
-    os << "type_ast\n";
+    os << "type\n";
     indent++;
-    formalparam->get_type_ast()->accept(this);
+    formalparam->get_type()->accept(this);
     indent--;
     indent--;
 }
@@ -206,7 +206,6 @@ void AstPrinter::visit_number(Number* number) {
     indent++;
     write_indent();
     os << "value = " << std::string(number->get_value().start, number->get_value().length) << "\n";
-
     indent--;
 }
 

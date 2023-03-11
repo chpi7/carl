@@ -2,13 +2,14 @@ from config import *
 from config_parser import Class, ClassMember
 
 def generate_constructor(cls: Class):
+    constructur_members = list(filter(lambda m: not m.is_optional, cls.members))
     r = cls.name
     r += "("
-    r += ", ".join(map(lambda m: f"{m.typename} {m.name}", cls.members))
+    r += ", ".join(map(lambda m: f"{m.typename} {m.name}", constructur_members))
     r += f")"
-    if cls.members:
+    if constructur_members:
         r += " :"
-        r += ", ".join(map(lambda m: f"{m.name}({m.name})", cls.members))
+        r += ", ".join(map(lambda m: f"{m.name}({m.name})", constructur_members))
     r += " {}"
     return r
 
@@ -28,18 +29,26 @@ def generate_member_getters(members: list[ClassMember]):
         ds.append(d)
     return "\n".join(ds)
 
+def generate_member_setters(members: list[ClassMember]):
+    non_opt_members = list(filter(lambda m: m.is_optional, members))
+    ds = list()
+    for m in non_opt_members:
+        d = f"    void set_{m.name}({m.typename} {m.name.lower()}) {{ this->{m.name} = {m.name.lower()};}}"
+        ds.append(d)
+    return "\n".join(ds)
 
 def generate_class_definition(cls: Class):
     template = f"""class {cls.name} : public {cls.parent} {{
-   private:
+    {"private:" if cls.members else ""}
 {generate_member_decls(cls.members)}
    public:
     {generate_constructor(cls)}
 {generate_member_getters(cls.members)}
+{generate_member_setters(cls.members)}
     void accept(AstNodeVisitor* visitor);
 }};
 """
-    return template
+    return "\n".join(filter(lambda l: l != "", template.splitlines())) + "\n"
 
 
 def generate_ast_node_visitor_functions(classes: list[Class]):
