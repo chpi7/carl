@@ -31,7 +31,6 @@ class LLVMCodeGenerator : public AstNodeVisitor {
     LLVMCodeGenerator();
     void initialize();
     llvm::orc::ThreadSafeModule take_module();
-    // TODO: implement these, then load into the JIT
     void generate_eval(std::shared_ptr<Expression> expr);
     void generate(std::vector<std::shared_ptr<AstNode>> declarations);
 

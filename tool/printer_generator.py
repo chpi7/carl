@@ -1,10 +1,20 @@
 from config import *
-from config_parser import Class, ClassMember
+from config_parser import Class, ClassMember, KNOWN_CLASSES
 
 EXCLUDE_CLASSES = ["Statement", "Expression"]
 
 # this is filled when calling a function here
 AST_CLASSES = []
+
+def is_subclass(cls: Class, *args: tuple[str]):
+    if cls.name in args:
+        return True
+    while cls:
+        if cls.parent in args:
+            return True
+        else:
+            cls = KNOWN_CLASSES.get(cls.parent)
+    return False
 
 def fill_ast_classes(classes: list[Class]):
     for cls in classes:
@@ -49,7 +59,7 @@ private:
 
 def generate_list_attr(cls: Class, attr: ClassMember) -> str:
     return f"""    write_indent();
-    os << "{attr.name}\\n";
+    os << ".{attr.name}\\n";
     indent++;
     for (auto& elem : {cls.name.lower()}->get_{attr.name.lower()}()) {{
         elem->accept(this);
@@ -63,14 +73,14 @@ def generate_ptr_attr(cls: Class, attr: ClassMember) -> str:
         # for now, skip non ast classes
         return ""
     return f"""    write_indent();
-    os << "{attr.name}\\n";
+    os << ".{attr.name}\\n";
     indent++;
     {cls.name.lower()}->get_{attr.name.lower()}()->accept(this);
     indent--;"""
 
 def generate_token_attr(cls: Class, attr: ClassMember) -> str:
     return f"""    write_indent();
-    os << "{attr.name} = " << std::string({cls.name.lower()}->get_{attr.name}().start, {cls.name.lower()}->get_{attr.name}().length) << "\\n";"""
+    os << ".{attr.name} = " << std::string({cls.name.lower()}->get_{attr.name}().start, {cls.name.lower()}->get_{attr.name}().length) << "\\n";"""
 
 def generate_attr(cls: Class, attr: ClassMember) -> str:
     is_list = "@list" in attr.typename
@@ -83,12 +93,14 @@ def generate_attr(cls: Class, attr: ClassMember) -> str:
     else:
         return generate_ptr_attr(cls, attr)
 
-
 def generate_impl(cls: Class) -> str:
+    print_type = is_subclass(cls, "Expression", "FormalParam", "LetDecl", "FnDecl")
+    cls_name_with_type = f"""os << "{cls.name} [" << {cls.name.lower()}->get_type()->str() << "]\\n";"""
+    cls_name = f"""os << "{cls.name}" << "\\n";"""
     attrs = "\n".join(map(lambda m: generate_attr(cls, m), cls.members))
     return f"""void AstPrinter::visit_{cls.name.lower()}({cls.name}* {cls.name.lower()}) {{
     write_indent();
-    os << "{cls.name}" << "\\n";
+    {cls_name_with_type if print_type else cls_name} 
     indent++;
 {attrs}
     indent--;

@@ -228,6 +228,21 @@ std::shared_ptr<LetDecl> Parser::let_decl() {
     }
 }
 
+static std::shared_ptr<types::Type> type_from_identifier(std::string& s) {
+    if (s == std::string("int")) {
+        return std::make_shared<types::Int>();
+    } else if (s == std::string("float")) {
+        return std::make_shared<types::Float>();
+    } else if (s == std::string("bool")) {
+        return std::make_shared<types::Bool>();
+    } else if (s == std::string("string")) {
+        return std::make_shared<types::String>();
+    } else {
+        // Todo function types
+        return std::make_shared<types::Unknown>();
+    }
+}
+
 std::shared_ptr<FnDecl> Parser::fn_decl() {
 
     consume(TOKEN_IDENTIFIER, "Expected function name after fn keyword.");
@@ -252,11 +267,15 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
             return make_error_node<FnDecl>();
         }
         auto fp_name = std::string(previous.start, previous.length);
+        environment->set_variable(fp_name);
 
         consume(TOKEN_COLON, "Expected ':' between formal param name and formal param type.");
         auto type_ = type();
-        environment->set_variable(fp_name);
-        formal_params.push_back(std::make_shared<FormalParam>(previous, type_));
+        auto type_str = std::string(type_->get_name().start, type_->get_name().length);
+        auto fp = std::make_shared<FormalParam>(previous);
+        fp->set_type(type_from_identifier(type_str));
+
+        formal_params.push_back(fp);
     }
     consume(TOKEN_RIGHT_PAREN, "Expected ) after fn formal parameters.");
 
@@ -340,7 +359,23 @@ std::shared_ptr<Call> Parser::call() {
 
 std::shared_ptr<Expression> Parser::literal() {
     advance();
-    return std::make_shared<Literal>(previous);
+
+    auto literal = std::make_shared<Literal>(previous);
+
+    switch (previous.type) {
+        case TOKEN_TRUE:
+        case TOKEN_FALSE:
+            literal->set_type(std::make_shared<types::Bool>());
+            break;
+        case TOKEN_NIL:
+            error_at(previous, "there is no support for nil atm.");
+            break;
+        default:
+            error_at(previous, "Can not determine literal type.");
+            break;
+    }
+
+    return literal;
 }
 
 std::shared_ptr<Expression> Parser::number() {
@@ -359,7 +394,9 @@ std::shared_ptr<Expression> Parser::number() {
 
 std::shared_ptr<Expression> Parser::string() {
     advance();
-    return std::make_shared<String>(previous);
+    auto s = std::make_shared<String>(previous);
+    s->set_type(std::make_shared<types::String>());
+    return s;
 }
 
 std::shared_ptr<Expression> Parser::unary() {

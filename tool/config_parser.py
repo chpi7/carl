@@ -17,6 +17,7 @@ class Class:
 KNOWN_CLASSES = {}
 
 def parse_class_decl(decl: str) -> Class:
+    decl.replace("\n", " ")
     rem, parent = decl.split(" : ")
     parent = parent.strip()
 

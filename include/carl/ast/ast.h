@@ -49,11 +49,14 @@ class Type : public AstNode {
 class FormalParam : public AstNode {
    private:
     Token name;
-    std::shared_ptr<Type> type;
+    std::shared_ptr<types::Type> type;
    public:
-    FormalParam(Token name, std::shared_ptr<Type> type) : name(name), type(type) {}
+    FormalParam(Token name) : name(name) {
+        this->type = std::make_shared<types::Unknown>();
+    }
     Token get_name() { return this->name; }
-    std::shared_ptr<Type> get_type() { return this->type; }
+    std::shared_ptr<types::Type> get_type() { return this->type; }
+    void set_type(std::shared_ptr<types::Type> type) { this->type = type;}
     void accept(AstNodeVisitor* visitor);
 };
 
@@ -62,11 +65,16 @@ class FnDecl : public AstNode {
     Token name;
     std::list<std::shared_ptr<FormalParam>> formals;
     std::shared_ptr<Statement> body;
+    std::shared_ptr<types::Type> type;
    public:
-    FnDecl(Token name, std::list<std::shared_ptr<FormalParam>> formals, std::shared_ptr<Statement> body) : name(name), formals(formals), body(body) {}
+    FnDecl(Token name, std::list<std::shared_ptr<FormalParam>> formals, std::shared_ptr<Statement> body) : name(name), formals(formals), body(body) {
+        this->type = std::make_shared<types::Unknown>();
+    }
     Token get_name() { return this->name; }
     std::list<std::shared_ptr<FormalParam>> get_formals() { return this->formals; }
     std::shared_ptr<Statement> get_body() { return this->body; }
+    std::shared_ptr<types::Type> get_type() { return this->type; }
+    void set_type(std::shared_ptr<types::Type> type) { this->type = type;}
     void accept(AstNodeVisitor* visitor);
 };
 
@@ -74,10 +82,15 @@ class LetDecl : public AstNode {
    private:
     Token name;
     std::shared_ptr<Expression> initializer;
+    std::shared_ptr<types::Type> type;
    public:
-    LetDecl(Token name, std::shared_ptr<Expression> initializer) : name(name), initializer(initializer) {}
+    LetDecl(Token name, std::shared_ptr<Expression> initializer) : name(name), initializer(initializer) {
+        this->type = std::make_shared<types::Unknown>();
+    }
     Token get_name() { return this->name; }
     std::shared_ptr<Expression> get_initializer() { return this->initializer; }
+    std::shared_ptr<types::Type> get_type() { return this->type; }
+    void set_type(std::shared_ptr<types::Type> type) { this->type = type;}
     void accept(AstNodeVisitor* visitor);
 };
 

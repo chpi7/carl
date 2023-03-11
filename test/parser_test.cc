@@ -259,10 +259,10 @@ TEST(Parser, parse_fndecl) {
     ASSERT_TRUE(result);
 
     auto decls = *result;
-    // AstPrinter printer(std::cout);
-    // for (auto& node : decls) {
-    //     printer.print(node.get());
-    // }
+    AstPrinter printer(std::cout);
+    for (auto& node : decls) {
+        printer.print(node.get());
+    }
 
     ASSERT_EQ(decls.size(), 4);
 }

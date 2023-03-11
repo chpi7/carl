@@ -15,9 +15,14 @@ TYPES = [
     "Expression(@ptr<types::Type> type?=std::make_shared<types::Unknown>()) : AstNode",
 
     "Type(Token name) : AstNode",
-    "FormalParam(Token name, @ptr<Type> type) : AstNode",
-    "FnDecl(Token name, @list<@ptr<FormalParam>> formals, @ptr<Statement> body) : AstNode",
-    "LetDecl(Token name, @ptr<Expression> initializer) : AstNode",
+    "FormalParam(Token name, @ptr<types::Type> type?=std::make_shared<types::Unknown>()) : AstNode",
+    """FnDecl(
+        Token name, 
+        @list<@ptr<FormalParam>> formals, 
+        @ptr<Statement> body, 
+        @ptr<types::Type> type?=std::make_shared<types::Unknown>()
+    ) : AstNode""",
+    "LetDecl(Token name, @ptr<Expression> initializer, @ptr<types::Type> type?=std::make_shared<types::Unknown>()) : AstNode",
 
     "ExprStmt(@ptr<Expression> expr) : Statement",
     "ReturnStmt(@ptr<Expression> expr) : Statement",
