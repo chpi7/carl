@@ -244,23 +244,11 @@ TEST(Parser, parse_while_stmt) {
 }
 
 TEST(Parser, parse_assign_to_call_is_error) {
-    auto scanner = std::make_shared<Scanner>();
-    const char* src_string = 
-    "foo(a) = 1234;";
-    scanner->init(src_string);
-
     Parser parser;
-    parser.set_scanner(scanner);
+    std::string src = "foo(a) = 1234;";
 
-    std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
-
-    ASSERT_EQ(decls.size(), 1);
-    ASSERT_TRUE(parser.has_error);
-
-    AstPrinter printer(std::cout);
-    for (auto& decl : decls) {
-        printer.print(decl.get());
-    }
+    ParseResult r = parser.parse_r(src);
+    ASSERT_FALSE(r);
 }
 
 TEST(Parser, parse_call_in_binop) {

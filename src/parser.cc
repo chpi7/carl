@@ -151,6 +151,15 @@ void Parser::synchronize() {
     }
 }
 
+ParseResult Parser::parse_r(std::string& src) {
+    auto decls = parse(src);
+    if (has_error) {
+        return ParseResult::make_error(ParseError{"some error occured"});
+    } else {
+        return ParseResult::make_result(decls);
+    }
+}
+
 std::vector<std::shared_ptr<AstNode>> Parser::parse(std::string& src) {
     auto scanner = std::make_shared<Scanner>();
     scanner->init(src.c_str());

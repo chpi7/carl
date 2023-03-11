@@ -33,6 +33,12 @@ struct ParseRule {
     ParseFn infix;
 };
 
+struct ParseError {
+    std::string message;
+};
+
+using ParseResult = Result<std::vector<std::shared_ptr<AstNode>>, ParseError>;
+
 class Parser {
    private:
     bool panic_mode;
@@ -46,6 +52,7 @@ class Parser {
     Parser();
     void set_scanner(std::shared_ptr<Scanner> scanner);
 
+    ParseResult parse_r(std::string& src);
     std::vector<std::shared_ptr<AstNode>> parse();
     std::vector<std::shared_ptr<AstNode>> parse(std::string& src);
     std::shared_ptr<AstNode> declaration();
