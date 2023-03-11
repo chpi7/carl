@@ -59,12 +59,20 @@ struct Environment {
         return std::move(parent);
     };
 
+    bool can_set_variable(std::string& name) {
+        return !variables.contains(name);
+    }
+
     void set_variable(std::string& name) {
         variables[name] = nullptr;
     }
 
     bool has_variable(std::string& name) {
         return variables.contains(name) || (parent && parent->has_variable(name));
+    }
+
+    bool can_set_function(std::string& name) {
+        return !functions.contains(name);
     }
 
     void set_function(std::string& name) {

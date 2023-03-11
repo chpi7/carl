@@ -204,8 +204,8 @@ std::shared_ptr<LetDecl> Parser::let_decl() {
             "Expected identifier as variable name after let.");
     auto identifier = previous;
     auto name = std::string(identifier.start, identifier.length);
-    if (environment->has_variable(name)) {
-        error_at(previous, "Redeclaration of name not allowed.");
+    if (!environment->can_set_variable(name)) {
+        error_at(previous, "Redeclaration of variable not allowed.");
     } else {
         // safe the type here when we have it?
         environment->set_variable(name);
@@ -340,18 +340,18 @@ std::shared_ptr<Call> Parser::call() {
     auto fname = previous;
 
     auto fname_str = std::string(fname.start, fname.length);
-    if (!environment->has_function(fname_str)) {
+    // var can hold a function --> check both:
+    if (!environment->has_function(fname_str) && !environment->has_variable(fname_str)) {
         error_at(previous, "Function name not found in environment");
     }
 
     consume(TOKEN_LEFT_PAREN, "Expected '(' after function identifier.");
 
     auto args = std::list<std::shared_ptr<Expression>>();
-    bool first = true;
-    do {
+    while (current.type != TOKEN_ERROR && current.type != TOKEN_EOF && current.type != TOKEN_RIGHT_PAREN) {
         args.push_back(expression());
         if (!match(TOKEN_COMMA)) break;
-    } while (current.type != TOKEN_ERROR && current.type != TOKEN_EOF);
+    }
     consume(TOKEN_RIGHT_PAREN, "Expected ) at the end of function argument list.");
 
     return std::make_shared<Call>(fname, args);
@@ -408,7 +408,7 @@ std::shared_ptr<Expression> Parser::unary() {
 std::shared_ptr<Expression> Parser::variable() {
     consume(TOKEN_IDENTIFIER, "Expected identifier as variable name.");
     std::string name = std::string(previous.start, previous.length);
-    if (!environment->has_variable(name)) {
+    if (!environment->has_variable(name) && !environment->has_function(name)) {
         error_at(previous, "name not found in environment");
     }
     return std::make_shared<Variable>(previous);

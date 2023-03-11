@@ -224,7 +224,7 @@ TEST(Parser, parse_while_stmt) {
 
 TEST(Parser, parse_assign_to_call_is_error) {
     Parser parser;
-    std::string src = "foo(a) = 1234;";
+    std::string src = "fn foo() {} foo() = 1234;";
 
     ParseResult r = parser.parse_r(src);
     ASSERT_FALSE(r);
@@ -244,14 +244,18 @@ TEST(Parser, parse_call_in_binop) {
     ASSERT_EQ(decls.size(), 1);
 }
 
-TEST(Parser, parse_fndecl) {
+TEST(Parser, parse_nested_fndecls) {
     std::string src_string = 
-    "fn foo (a: int, b: int) {"
-        "let sq = a * a;"
-        "return sq + b;"
-    "}"
-    "let a = 2;"
-    "let result_foo = foo(a, 3);"
+    "fn foo (a: int, b: int) {\n"
+        "fn bar() {\n"
+        "   let a = foo(1, 2);\n"
+        "}\n"
+        "let bar_ref = bar;\n"
+        "let sq = a * a + bar_ref();\n"
+        "return sq + b;\n"
+    "}\n"
+    "let a = 2;\n"
+    "let result_foo = foo(a, 3);\n"
     "let check = result_foo == 7;";
     
     Parser parser;
