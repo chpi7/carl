@@ -15,7 +15,6 @@ class AstPrinter : public AstNodeVisitor {
         node->accept(this);
         os << "\n";
     }
-    void visit_invalid(Invalid* invalid);
     void visit_type(Type* type);
     void visit_formalparam(FormalParam* formalparam);
     void visit_fndecl(FnDecl* fndecl);

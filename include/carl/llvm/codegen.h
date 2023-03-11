@@ -39,7 +39,6 @@ class LLVMCodeGenerator : public AstNodeVisitor {
         node->accept(this);
         return result;
     }
-    void visit_invalid(Invalid* invalid);
     void visit_exprstmt(ExprStmt* exprstmt);
     void visit_returnstmt(ReturnStmt* returnstmt);
     void visit_whilestmt(WhileStmt* whilestmt);

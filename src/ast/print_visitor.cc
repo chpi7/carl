@@ -7,10 +7,6 @@ static void stringify_token(char* buf, carl::Token token) {
     sprintf(buf, "%.*s", token.length, token.start);
 }
 
-void PrintAstNodeVisitor::visit_invalid(Invalid* invalid) {
-    os << "<invalid>";
-}
-
 void PrintAstNodeVisitor::visit_block(Block* block) {
     os << "{";
     bool first = true;

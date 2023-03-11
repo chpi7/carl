@@ -11,8 +11,6 @@ ASTNODE = """class AstNode {
 };"""
 
 TYPES = [
-    "Invalid() : AstNode",
-
     "Statement() : AstNode",
     "Expression(@ptr<types::Type> type?=std::make_shared<types::Unknown>()) : AstNode",
 

@@ -43,12 +43,6 @@ std::unique_ptr<Chunk> CodeGenerator::take_chunk() {
     return std::move(chunk);
 }
 
-void CodeGenerator::visit_invalid(Invalid* invalid) {
-    std::cerr << "code generator visiting invalid node is not allowed."
-              << std::endl;
-    return;
-}
-
 void CodeGenerator::visit_binary(Binary* binary) {
     binary->get_lhs()->accept(this);
     chunk->write_byte(OP_GTBASIC);

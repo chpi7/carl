@@ -2,14 +2,6 @@
 
 using namespace carl;
 
-void AstPrinter::visit_invalid(Invalid* invalid) {
-    write_indent();
-    os << "Invalid" << "\n";
-    indent++;
-
-    indent--;
-}
-
 void AstPrinter::visit_type(Type* type) {
     write_indent();
     os << "Type" << "\n";

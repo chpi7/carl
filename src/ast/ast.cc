@@ -2,7 +2,6 @@
 
 namespace carl {
 
-void Invalid::accept(AstNodeVisitor* visitor) { visitor->visit_invalid(this); }
 void Statement::accept(AstNodeVisitor* visitor) { visitor->visit_statement(this); }
 void Expression::accept(AstNodeVisitor* visitor) { visitor->visit_expression(this); }
 void Type::accept(AstNodeVisitor* visitor) { visitor->visit_type(this); }

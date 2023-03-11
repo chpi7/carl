@@ -10,7 +10,6 @@ class PrintAstNodeVisitor : public AstNodeVisitor {
 
    public:
     PrintAstNodeVisitor(std::ostream& os) : os(os){};
-    void visit_invalid(Invalid* invalid);
     void visit_block(Block* block);
     void visit_whilestmt(WhileStmt* whilestmt);
     void visit_letdecl(LetDecl* letdecl);

@@ -8,7 +8,7 @@ def generate_constructor(cls: Class):
     r += ", ".join(map(lambda m: f"{m.typename} {m.name}", constructur_members))
     r += f")"
     if constructur_members:
-        r += " :"
+        r += " : "
         r += ", ".join(map(lambda m: f"{m.name}({m.name if not m.default else m.default})", constructur_members))
 
     default_members = list(filter(lambda m: m.default is not None, cls.members))
@@ -47,7 +47,7 @@ def generate_member_setters(members: list[ClassMember]):
 
 def generate_class_definition(cls: Class):
     template = f"""class {cls.name} : public {cls.parent} {{
-    {"private:" if cls.members else ""}
+{"   private:" if cls.members else ""}
 {generate_member_decls(cls.members)}
    public:
     {generate_constructor(cls)}

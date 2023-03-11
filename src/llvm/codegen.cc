@@ -91,8 +91,6 @@ llvm::orc::ThreadSafeModule LLVMCodeGenerator::take_module() {
     return llvm::orc::ThreadSafeModule(std::move(module), std::move(context));
 }
 
-void LLVMCodeGenerator::visit_invalid(Invalid* invalid) {}
-
 void LLVMCodeGenerator::visit_exprstmt(ExprStmt* exprstmt) {
     // Do nothing with the result --> statement.
     do_visit(exprstmt->get_expr());
