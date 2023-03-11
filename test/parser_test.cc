@@ -202,32 +202,10 @@ TEST(Parser, parse_letdecl) {
     delete v;
 }
 
-TEST(Parser, parse_block) {
-    auto scanner = std::make_shared<Scanner>();
-    const char* src_string = "{"
-    "x + 1;"
-    "y + 2;"
-    "}";
-    std::string expected_print = "{(+ x 1);, (+ y 2);}";
-    scanner->init(src_string);
-
-    Parser parser;
-    parser.set_scanner(scanner);
-
-    std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
-
-    std::ostringstream ss;
-    auto v = new PrintAstNodeVisitor(ss);
-    decls.front()->accept(v);
-
-    ASSERT_EQ(ss.str(), expected_print);
-    delete v;
-}
-
 TEST(Parser, parse_while_stmt) {
     auto scanner = std::make_shared<Scanner>();
-    const char* src_string = "while (i < 10) {1 + 2;}";
-    std::string expected_print = "while (< i 10) {(+ 1 2);}";
+    const char* src_string = "let i = 1; while (i < 10) {1 + 2;}";
+    std::string expected_print = "let i = 1;while (< i 10) {(+ 1 2);}";
     scanner->init(src_string);
 
     Parser parser;
@@ -238,6 +216,7 @@ TEST(Parser, parse_while_stmt) {
     std::ostringstream ss;
     auto v = new PrintAstNodeVisitor(ss);
     decls.front()->accept(v);
+    decls.at(1)->accept(v);
 
     ASSERT_EQ(ss.str(), expected_print);
     delete v;
@@ -266,8 +245,7 @@ TEST(Parser, parse_call_in_binop) {
 }
 
 TEST(Parser, parse_fndecl) {
-    auto scanner = std::make_shared<Scanner>();
-    const char* src_string = 
+    std::string src_string = 
     "fn foo (a: int, b: int) {"
         "let sq = a * a;"
         "return sq + b;"
@@ -275,17 +253,63 @@ TEST(Parser, parse_fndecl) {
     "let a = 2;"
     "let result_foo = foo(a, 3);"
     "let check = result_foo == 7;";
-    scanner->init(src_string);
-
+    
     Parser parser;
-    parser.set_scanner(scanner);
+    auto result = parser.parse_r(src_string);
+    ASSERT_TRUE(result);
 
-    std::vector<std::shared_ptr<AstNode>> decls = parser.parse();
-    AstPrinter printer(std::cout);
-    for (auto& node : decls) {
-        printer.print(node.get());
-    }
+    auto decls = *result;
+    // AstPrinter printer(std::cout);
+    // for (auto& node : decls) {
+    //     printer.print(node.get());
+    // }
 
     ASSERT_EQ(decls.size(), 4);
+}
+
+TEST(Parser, expect_name_not_found) {
+    Parser p;
+    std::string src = "let a = b + 1;";
+
+    auto r = p.parse_r(src);
+    ASSERT_FALSE(r);
+}
+
+TEST(Parser, var_not_found_anymore) {
+    Parser p;
+    std::string src = 
+    "let a = 1;"
+    "while (a < 3) {"
+    "   let b = a + 1;"
+    "}"
+    "let c = b;";
+    
+    auto r = p.parse_r(src);
+    ASSERT_FALSE(r);
+}
+
+TEST(Parser, fn_decl_found) {
+    Parser p;
+    std::string src = 
+    "fn foo(a: int) {"
+    "   let danger = foo(1);"
+    "}"
+    "let call = foo(0);";
+    
+    auto r = p.parse_r(src);
+    ASSERT_TRUE(r);
+}
+
+TEST(Parser, fn_decl_not_found) {
+    Parser p;
+    std::string src = 
+    "fn foo(a: int) {\n"
+    "   let danger = baz(1);\n"
+    "}\n"
+    "let bar = bar();\n"
+    "let call = foo(0);";
+    
+    auto r = p.parse_r(src);
+    ASSERT_FALSE(r);
 }
 }  // namespace

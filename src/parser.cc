@@ -117,6 +117,7 @@ std::shared_ptr<Expression> Parser::parse_precedence(Precedence precedence) {
 }
 
 Parser::Parser() : scanner(nullptr) {
+    environment = std::make_unique<Environment>(nullptr);
     panic_mode = false;
     has_error = false;
 }
@@ -202,6 +203,14 @@ std::shared_ptr<LetDecl> Parser::let_decl() {
     consume(TOKEN_IDENTIFIER,
             "Expected identifier as variable name after let.");
     auto identifier = previous;
+    auto name = std::string(identifier.start, identifier.length);
+    if (environment->has_variable(name)) {
+        error_at(previous, "Redeclaration of name not allowed.");
+    } else {
+        // safe the type here when we have it?
+        environment->set_variable(name);
+    }
+
     if (peek(TOKEN_SEMICOLON)) {
         error_at(current,
                  "Expected initialization after variable declaration.");
@@ -220,10 +229,17 @@ std::shared_ptr<LetDecl> Parser::let_decl() {
 }
 
 std::shared_ptr<FnDecl> Parser::fn_decl() {
+
     consume(TOKEN_IDENTIFIER, "Expected function name after fn keyword.");
     auto name = previous;
 
+    // add to env immediatly to allow recursive calls
+    auto fn_name = std::string(name.start, name.length);
+    environment->set_function(fn_name);
+
     consume(TOKEN_LEFT_PAREN, "Expected ( after fn name.");
+
+    UseNewEnv eh(this);
 
     std::list<std::shared_ptr<FormalParam>> formal_params;
     while (!peek(TOKEN_RIGHT_PAREN)) {
@@ -235,14 +251,15 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
             error_at(current, "Expected identifier as formal parameter.");
             return make_error_node<FnDecl>();
         }
+        auto fp_name = std::string(previous.start, previous.length);
 
         consume(TOKEN_COLON, "Expected ':' between formal param name and formal param type.");
         auto type_ = type();
+        environment->set_variable(fp_name);
         formal_params.push_back(std::make_shared<FormalParam>(previous, type_));
     }
     consume(TOKEN_RIGHT_PAREN, "Expected ) after fn formal parameters.");
 
-    // does this make sense? maybe ... :)
     auto body = statement();
     if (has_error) {
         return make_error_node<FnDecl>();
@@ -278,6 +295,8 @@ std::shared_ptr<WhileStmt> Parser::while_stmt() {
 }
 
 std::shared_ptr<Block> Parser::block() {
+    UseNewEnv eh(this);
+
     std::list<std::shared_ptr<AstNode>> decls;
     while (!peek(TOKEN_RIGHT_BRACE)) {
         decls.push_back(declaration());
@@ -300,6 +319,11 @@ std::shared_ptr<Expression> Parser::expression() {
 std::shared_ptr<Call> Parser::call() {
     consume(TOKEN_IDENTIFIER, "Expected function identifier.");
     auto fname = previous;
+
+    auto fname_str = std::string(fname.start, fname.length);
+    if (!environment->has_function(fname_str)) {
+        error_at(previous, "Function name not found in environment");
+    }
 
     consume(TOKEN_LEFT_PAREN, "Expected '(' after function identifier.");
 
@@ -341,6 +365,10 @@ std::shared_ptr<Expression> Parser::unary() {
 
 std::shared_ptr<Expression> Parser::variable() {
     consume(TOKEN_IDENTIFIER, "Expected identifier as variable name.");
+    std::string name = std::string(previous.start, previous.length);
+    if (!environment->has_variable(name)) {
+        error_at(previous, "name not found in environment");
+    }
     return std::make_shared<Variable>(previous);
 }
 
@@ -407,5 +435,14 @@ void Parser::error_at(Token token, const char* message) {
     }
 
     fprintf(stderr, ": %s\n", message);
+}
+
+void Parser::push_env() {
+    auto new_env = std::make_unique<Environment>(std::move(environment));
+    environment = std::move(new_env);
+}
+
+void Parser::pop_env() {
+    if (environment) environment = environment->destroy(); 
 }
 }  // namespace carl
