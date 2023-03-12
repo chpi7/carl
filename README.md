@@ -2,7 +2,7 @@
 
 A statically typed, jit compiled scripting language built for fun (wip).
 
-```
+```rust
 fn add(a: float, b: float) : float {
     let result = a + 2;
     return result;
