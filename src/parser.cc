@@ -5,6 +5,7 @@
 
 #include "carl/common.h"
 #include "carl/ast/types.h"
+#include "carl/ast/type_inference.h"
 
 /* Grammar Excerpt
 
@@ -154,11 +155,18 @@ void Parser::synchronize() {
 
 ParseResult Parser::parse_r(std::string& src) {
     auto decls = parse(src);
+
     if (has_error) {
         return ParseResult::make_error(ParseError{"some error occured"});
-    } else {
-        return ParseResult::make_result(decls);
     }
+
+    TypeInference ti;
+    auto r = ti.run(decls);
+    if (!r) {
+        return ParseResult::make_error(ParseError {.message = "type check failed."});
+    }
+
+    return ParseResult::make_result(decls);
 }
 
 std::vector<std::shared_ptr<AstNode>> Parser::parse(std::string& src) {
@@ -257,6 +265,7 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
     UseNewEnv eh(this);
 
     std::list<std::shared_ptr<FormalParam>> formal_params;
+    std::vector<std::shared_ptr<types::Type>> formal_param_types;
     while (!peek(TOKEN_RIGHT_PAREN)) {
         if (formal_params.size() > 0) {
             consume(TOKEN_COMMA, "Expected ',' after formal parameter.");
@@ -273,17 +282,31 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
         auto type_ = type();
         auto type_str = std::string(type_->get_name().start, type_->get_name().length);
         auto fp = std::make_shared<FormalParam>(previous);
-        fp->set_type(type_from_identifier(type_str));
+        auto fp_type = type_from_identifier(type_str);
+        formal_param_types.push_back(fp_type);
+        fp->set_type(fp_type);
 
         formal_params.push_back(fp);
     }
     consume(TOKEN_RIGHT_PAREN, "Expected ) after fn formal parameters.");
 
+    // return type
+    std::optional<std::shared_ptr<types::Type>> fn_ret_type;
+    if (match(TOKEN_COLON)) {
+        auto ret_type = type();
+        auto ret_type_str = std::string(ret_type->get_name().start, ret_type->get_name().length);
+        fn_ret_type = type_from_identifier(ret_type_str);
+    }
+
+    // body
     auto body = statement();
     if (has_error) {
         return make_error_node<FnDecl>();
     } else {
-        return std::make_shared<FnDecl>(name, formal_params, body);
+        auto fn = std::make_shared<FnDecl>(name, formal_params, body);
+        auto fn_type = std::make_shared<types::Fn>(formal_param_types, fn_ret_type);
+        fn->set_type(fn_type);
+        return fn;
     }
 }
 

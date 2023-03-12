@@ -5,6 +5,7 @@ set(SRC_CC
     src/ast/ast.cc
     src/ast/print_visitor.cc
     src/ast/ast_printer.cc
+    src/ast/type_inference.cc
     src/parser.cc 
     src/scanner.cc 
     src/basic_codegen.cc 

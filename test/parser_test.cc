@@ -247,14 +247,14 @@ TEST(Parser, parse_call_in_binop) {
 TEST(Parser, parse_nested_fndecls) {
     std::string src_string = 
     "fn foo (a: int, b: int) {\n"
-        "fn bar() {\n"
-        "   let a = foo(1, 2);\n"
+        "fn bar() : string {\n"
+        "   let a = foo(1, 2.);\n"
         "}\n"
         "let bar_ref = bar;\n"
         "let sq = a * a + bar_ref();\n"
         "return sq + b;\n"
     "}\n"
-    "let a = 2;\n"
+    "let a = 2 + 3.;\n"
     "let result_foo = foo(a, 3);\n"
     "let check = result_foo == 7;";
     
@@ -263,10 +263,10 @@ TEST(Parser, parse_nested_fndecls) {
     ASSERT_TRUE(result);
 
     auto decls = *result;
-    // AstPrinter printer(std::cout);
-    // for (auto& node : decls) {
-    //     printer.print(node.get());
-    // }
+    AstPrinter printer(std::cout);
+    for (auto& node : decls) {
+        printer.print(node.get());
+    }
 
     ASSERT_EQ(decls.size(), 4);
 }

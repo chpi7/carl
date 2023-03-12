@@ -22,14 +22,18 @@ TYPES = [
         @ptr<Statement> body, 
         @ptr<types::Type> type?=std::make_shared<types::Unknown>()
     ) : AstNode""",
-    "LetDecl(Token name, @ptr<Expression> initializer, @ptr<types::Type> type?=std::make_shared<types::Unknown>()) : AstNode",
+    """LetDecl(
+        Token name,
+        @ptr<Expression> initializer,
+        @ptr<types::Type> type?=std::make_shared<types::Unknown>()
+    ) : AstNode""",
 
     "ExprStmt(@ptr<Expression> expr) : Statement",
     "ReturnStmt(@ptr<Expression> expr) : Statement",
     "WhileStmt(@ptr<Expression> condition, @ptr<Statement> body) : Statement",
     "Block(@list<@ptr<AstNode>> declarations) : Statement",
 
-    "Assignment(@ptr<AstNode> target, @ptr<Expression> expr) : Expression",
+    "Assignment(@ptr<Expression> target, @ptr<Expression> expr) : Expression",
     "Binary(Token op, @ptr<Expression> lhs, @ptr<Expression> rhs) : Expression",
     "Unary(Token op, @ptr<Expression> operand) : Expression",
     "Variable(Token name) : Expression",

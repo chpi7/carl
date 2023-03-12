@@ -134,11 +134,11 @@ class Block : public Statement {
 
 class Assignment : public Expression {
    private:
-    std::shared_ptr<AstNode> target;
+    std::shared_ptr<Expression> target;
     std::shared_ptr<Expression> expr;
    public:
-    Assignment(std::shared_ptr<AstNode> target, std::shared_ptr<Expression> expr) : target(target), expr(expr) {}
-    std::shared_ptr<AstNode> get_target() { return this->target; }
+    Assignment(std::shared_ptr<Expression> target, std::shared_ptr<Expression> expr) : target(target), expr(expr) {}
+    std::shared_ptr<Expression> get_target() { return this->target; }
     std::shared_ptr<Expression> get_expr() { return this->expr; }
     void accept(AstNodeVisitor* visitor);
 };

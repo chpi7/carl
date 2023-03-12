@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include <optional>
 
 namespace carl {
@@ -13,6 +14,10 @@ enum class BaseType { UNKNOWN, BOOL, STRING, INT, FLOAT, FN };
 class Type {
    public:
     virtual BaseType get_base_type() = 0;
+    virtual bool equals(Type* other) { return get_base_type() == other->get_base_type(); }
+    virtual bool is_number() { return false; }
+    virtual bool can_assign(Type* other) { return get_base_type() == other->get_base_type(); }
+    virtual bool can_cast_to(Type* other) { return get_base_type() == other->get_base_type(); }
     virtual std::string str() = 0;
 };
 
@@ -23,10 +28,16 @@ class Unknown : public Type {
     }
 };
 
-class Number : public Type {};
+class Number : public Type {
+    bool is_number() { return true; }
+};
 
 class Int : public Number {
     BaseType get_base_type() { return BaseType::INT; };
+    bool can_cast_to(Type* other) {
+        if (other->get_base_type() == BaseType::FLOAT) return true;
+        return get_base_type() == other->get_base_type();
+    }
     std::string str() {
         return std::string("int");
     }
@@ -64,9 +75,25 @@ class Fn : public Type {
         : parameters(parameters), ret({}){};
     Fn(std::vector<std::shared_ptr<Type>> parameters, std::shared_ptr<Type> ret)
         : parameters(parameters), ret(ret){};
+    Fn(std::vector<std::shared_ptr<Type>> parameters, std::optional<std::shared_ptr<Type>> ret)
+        : parameters(parameters), ret(ret){};
     BaseType get_base_type() { return BaseType::FN; };
+
+    const std::vector<std::shared_ptr<Type>> get_parameters() {
+        return parameters;
+    };
+    const std::optional<std::shared_ptr<Type>> get_ret() { return ret; };
+
     std::string str() {
-        return std::string("fn(TODO)");
+        auto result = std::string("(");
+        bool first = true;
+        for (auto& param : parameters) {
+            if (!first) result += ", ";
+            result += param->str();
+            first = false;
+        }
+        result += ") -> " + (ret ? ret.value()->str() : "void");
+        return result;
     }
 };
 }  // namespace types
