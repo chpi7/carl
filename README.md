@@ -1,30 +1,16 @@
 # Carl
 
-A work in progress (experimental) language that:
-- Has partial function application
-- Has nice chaining function applications via the `|` operator
-- Compiles to bytecode
-- Easly understandable handwritten table-driven operator precedence parser
-
+A statically typed, jit compiled scripting language built for fun (wip).
 
 ```
-struct Cat {
-    name: string,
-    age: int
+fn add(a: float, b: float) : float {
+    let result = a + 2;
+    return result;
 }
 
-fn changeName(cat: Cat, to: string) : Cat {
-    Cat {
-        name: to,
-        age: cat.age
-    }
-}
+let add_two = add(_, 2);
+let add_three = add(_, 3);
+let add_five = add_three . add_two;
 
-nameTom = changeName(_, to);
-
-anonymous = Cat {
-        name: name,
-        age: 5 
-    };
-tom = anonymous | nameTom;
+let result = add_five(1) == 6;
 ```
