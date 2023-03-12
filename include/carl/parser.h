@@ -8,6 +8,7 @@
 
 #include "carl/ast/ast.h"
 #include "carl/scanner.h"
+#include "carl/name_environment.h"
 
 namespace carl {
 
@@ -41,56 +42,11 @@ struct ParseError {
 
 using ParseResult = Result<std::vector<std::shared_ptr<AstNode>>, ParseError>;
 
-struct Environment {
-    int id = 0;
-    std::unique_ptr<Environment> parent;
-    std::map<std::string, Variable*> variables; // maybe safe the type in here later instead of variable ref?
-    std::map<std::string, FnDecl*> functions;
-
-    Environment(std::unique_ptr<Environment> env) : parent(std::move(env)) {
-        if (parent) {
-            id = parent->id + 1; 
-        } else {
-            id = 0;
-        }
-    };
-
-    std::unique_ptr<Environment> destroy() { 
-        return std::move(parent);
-    };
-
-    bool can_set_variable(std::string& name) {
-        return !variables.contains(name);
-    }
-
-    void set_variable(std::string& name) {
-        variables[name] = nullptr;
-    }
-
-    bool has_variable(std::string& name) {
-        return variables.contains(name) || (parent && parent->has_variable(name));
-    }
-
-    bool can_set_function(std::string& name) {
-        return !functions.contains(name);
-    }
-
-    void set_function(std::string& name) {
-        functions[name] = nullptr;
-    }
-
-    bool has_function(std::string& name) {
-        return functions.contains(name) || (parent && parent->has_function(name));
-    }
-};
-
 class Parser {
-    friend class UseNewEnv;
-
    private:
     bool panic_mode;
     std::shared_ptr<Scanner> scanner;
-    std::unique_ptr<Environment> environment;
+    std::unique_ptr<Environment<Variable*, FnDecl*>> environment;
     Token current;
     Token previous;
 
@@ -138,19 +94,5 @@ class Parser {
     void push_env();
     void pop_env();
 };
-
-/** Calls push_env() in the constructor and pop_env() in the destructor. */
-struct UseNewEnv {
-    Parser* owner;
-
-    UseNewEnv(Parser* owner) : owner(owner) {
-        owner->push_env();
-    }
-
-    ~UseNewEnv() {
-        owner->pop_env();
-    }
-};
-
 }  // namespace carl
 #endif

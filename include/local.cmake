@@ -14,5 +14,6 @@ set(
     include/carl/llvm/jit.h
     include/carl/scanner.h
     include/carl/parser.h
+    include/carl/name_environment.h
     include/carl/common.h
 )

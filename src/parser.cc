@@ -118,7 +118,7 @@ std::shared_ptr<Expression> Parser::parse_precedence(Precedence precedence) {
 }
 
 Parser::Parser() : scanner(nullptr) {
-    environment = std::make_unique<Environment>(nullptr);
+    environment = std::make_unique<Environment<Variable*, FnDecl*>>(nullptr);
     panic_mode = false;
     has_error = false;
 }
@@ -262,7 +262,7 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
 
     consume(TOKEN_LEFT_PAREN, "Expected ( after fn name.");
 
-    UseNewEnv eh(this);
+    UseNewEnv eh(environment.get());
 
     std::list<std::shared_ptr<FormalParam>> formal_params;
     std::vector<std::shared_ptr<types::Type>> formal_param_types;
@@ -337,7 +337,7 @@ std::shared_ptr<WhileStmt> Parser::while_stmt() {
 }
 
 std::shared_ptr<Block> Parser::block() {
-    UseNewEnv eh(this);
+    UseNewEnv eh(environment.get());
 
     std::list<std::shared_ptr<AstNode>> decls;
     while (!peek(TOKEN_RIGHT_BRACE)) {
@@ -500,14 +500,5 @@ void Parser::error_at(Token token, const char* message) {
     }
 
     fprintf(stderr, ": %s\n", message);
-}
-
-void Parser::push_env() {
-    auto new_env = std::make_unique<Environment>(std::move(environment));
-    environment = std::move(new_env);
-}
-
-void Parser::pop_env() {
-    if (environment) environment = environment->destroy(); 
 }
 }  // namespace carl
