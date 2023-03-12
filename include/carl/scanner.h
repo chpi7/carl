@@ -23,6 +23,7 @@ enum TokenType {
     TOKEN_STAR,
     TOKEN_PIPE,
     TOKEN_PERC,
+    TOKEN_UNDERSCORE,
 
     // single and double char tokens
     TOKEN_BANG,
@@ -104,6 +105,8 @@ static bool is_alpha(char c) {
 }
 
 static bool is_digit(char c) { return c >= '0' && c <= '9'; }
+
+static bool is_alpha_num(char c) { return is_alpha(c) || is_digit(c); }
 }  // namespace carl
 
 #endif

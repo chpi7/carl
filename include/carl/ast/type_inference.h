@@ -33,7 +33,10 @@ class TypeInference : public AstNodeVisitor {
         report_error(std::string(msg));
     }
 
-    void report_error(std::string msg) {
+    void report_error(std::string msg, Token token = {}) {
+        if (token.length > 0) {
+            std::cerr << "[line " << token.line << "] Error at '" << std::string(token) << "': ";
+        }
         std::cerr << msg << std::endl;
         result = std::make_shared<types::Unknown>();
         if (error) return;  // keep initial error.
@@ -62,6 +65,7 @@ class TypeInference : public AstNodeVisitor {
     void visit_string(String* string);
     void visit_number(Number* number);
     void visit_call(Call* call);
+    void visit_partialapp(PartialApp* partialapp);
 };
 }  // namespace carl
 #endif

@@ -214,3 +214,27 @@ void AstPrinter::visit_call(Call* call) {
     indent--;
     indent--;
 }
+
+void AstPrinter::visit_partialapp(PartialApp* partialapp) {
+    write_indent();
+    os << "PartialApp [" << partialapp->get_type()->str() << "]\n"; 
+    indent++;
+    write_indent();
+    os << ".fname = " << std::string(partialapp->get_fname().start, partialapp->get_fname().length) << "\n";
+    write_indent();
+    os << ".placeholder_positions = ";
+    indent++;
+    for (auto& elem : partialapp->get_placeholder_positions()) {
+        os << elem << " ";
+    }
+    os << "\n";
+    indent--;
+    write_indent();
+    os << ".arguments\n";
+    indent++;
+    for (auto& elem : partialapp->get_arguments()) {
+        elem->accept(this);
+    }
+    indent--;
+    indent--;
+}

@@ -58,13 +58,25 @@ private:
     """
 
 def generate_list_attr(cls: Class, attr: ClassMember) -> str:
-    return f"""    write_indent();
+    is_printable = "<int>" in attr.typename
+    multi_line = f"""    write_indent();
     os << ".{attr.name}\\n";
     indent++;
     for (auto& elem : {cls.name.lower()}->get_{attr.name.lower()}()) {{
         elem->accept(this);
     }}
     indent--;"""
+
+    one_line = f"""    write_indent();
+    os << ".{attr.name} = ";
+    indent++;
+    for (auto& elem : {cls.name.lower()}->get_{attr.name.lower()}()) {{
+        os << elem << " ";
+    }}
+    os << "\\n";
+    indent--;"""
+
+    return one_line if is_printable else multi_line
 
 def generate_ptr_attr(cls: Class, attr: ClassMember) -> str:
     # assume attr.typename of this form: @ptr<...>
@@ -83,7 +95,7 @@ def generate_token_attr(cls: Class, attr: ClassMember) -> str:
     os << ".{attr.name} = " << std::string({cls.name.lower()}->get_{attr.name}().start, {cls.name.lower()}->get_{attr.name}().length) << "\\n";"""
 
 def generate_attr(cls: Class, attr: ClassMember) -> str:
-    is_list = "@list" in attr.typename
+    is_list = "@list" in attr.typename or "@vec" in attr.typename
     is_token = "Token" in attr.typename
     
     if is_list:

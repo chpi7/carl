@@ -20,5 +20,6 @@ void Literal::accept(AstNodeVisitor* visitor) { visitor->visit_literal(this); }
 void String::accept(AstNodeVisitor* visitor) { visitor->visit_string(this); }
 void Number::accept(AstNodeVisitor* visitor) { visitor->visit_number(this); }
 void Call::accept(AstNodeVisitor* visitor) { visitor->visit_call(this); }
+void PartialApp::accept(AstNodeVisitor* visitor) { visitor->visit_partialapp(this); }
 
 } // namespace carl

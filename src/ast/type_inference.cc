@@ -161,8 +161,7 @@ void TypeInference::visit_binary(Binary* binary) {
             auto fntl = std::reinterpret_pointer_cast<types::Fn>(type_l);
             auto fntr = std::reinterpret_pointer_cast<types::Fn>(type_r);
             if (!fntl->can_apply_to(std::vector{fntr->get_ret()})) {
-                report_error("Can not pass return type " +
-                             fntr->get_ret()->str() + " into " + fntl->str());
+                report_error("Can not compose " + fntl->str() + " . " + fntr->str(), binary->get_op());
             }
             result = std::make_shared<types::Fn>(fntr->get_parameters(), fntl->get_ret());
             break;
@@ -240,4 +239,49 @@ void TypeInference::visit_call(Call* call) {
 
     call->set_type(fn_type->get_ret());
     result = call->get_type();
+}
+
+void TypeInference::visit_partialapp(PartialApp* partialapp) {
+    std::string target_name = partialapp->get_fname();
+    std::shared_ptr<types::Fn> orig_fn_type;
+    if (env->has_variable(target_name)) {
+        auto x = env->get_variable(target_name);
+        if (x->get_base_type() != types::BaseType::FN) {
+            report_error("partial app target name is not a function, it is " + x->str());
+        } else {
+            orig_fn_type = std::reinterpret_pointer_cast<types::Fn>(x);
+        }
+    } else if (env->has_function(target_name)) {
+        orig_fn_type = std::reinterpret_pointer_cast<types::Fn>(
+            env->get_function(target_name));
+    } else {
+        report_error("Name " + target_name + " not found in env for partialapp.");
+    }
+
+    std::vector<std::shared_ptr<types::Type>> new_params;
+    std::vector<int> defined_param_indices;
+    int current_idx = 0;
+    for (auto idx : partialapp->get_placeholder_positions()) {
+        while (current_idx < idx) defined_param_indices.push_back(current_idx++);
+        new_params.push_back(orig_fn_type->get_parameters().at(idx));
+        current_idx = idx + 1;
+    }
+    while (current_idx < orig_fn_type->get_parameters().size())
+        defined_param_indices.push_back(current_idx++);
+
+    current_idx = 0;
+    for (auto& given_arg: partialapp->get_arguments()) {
+        auto orig_param_idx = defined_param_indices.at(0);
+        auto& required_type = orig_fn_type->get_parameters().at(orig_param_idx);
+        if (!given_arg->get_type()->can_cast_to(required_type.get())) {
+            report_error("Can not cast " + given_arg->get_type()->str() +
+                         " to " + required_type->str() + " at arg idx " +
+                         std::to_string(orig_param_idx) + " of " +
+                         orig_fn_type->str());
+        }
+        current_idx++;
+    }
+    if (!error) {
+        result = std::make_shared<types::Fn>(new_params, orig_fn_type->get_ret());
+    }
 }

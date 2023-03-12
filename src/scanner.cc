@@ -39,7 +39,7 @@ Token Scanner::scan_token_internal() {
 
     char c = advance();
 
-    if (is_alpha(c) || c == '_') return identifier();
+    if (is_alpha(c) || (c == '_' && (is_alpha_num(peek_next())))) return identifier();
     if (is_digit(c)) return number();
     if (c == '"') return string();
 
@@ -70,6 +70,8 @@ Token Scanner::scan_token_internal() {
             return make_token(TOKEN_SLASH);
         case '%':
             return make_token(TOKEN_PERC);
+        case '_':
+            return make_token(TOKEN_UNDERSCORE);
         case '&':
             return match('&') ? make_token(TOKEN_AND) : make_token(TOKEN_ERROR);
         case '|':

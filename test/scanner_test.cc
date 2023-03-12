@@ -34,7 +34,7 @@ TEST(Scanner, scanSingle) {
 TEST(Scanner, scanManyTokens) {
     Scanner scanner;
     auto test =
-        "1 + 2.3 hey { _ ) \"this is a let if >= = string\" abcdef_gf1234_h "
+        "1 + 2.3 hey { _ ) \"this is a let if >= = string\" _abcdef_gf1234_h "
         "let for if - //blubb this is a comment\n*; !test/ <= == !=>=fn";
     scanner.init(test);
 
@@ -47,7 +47,7 @@ TEST(Scanner, scanManyTokens) {
 
     std::vector<TokenType> expected = {
         TOKEN_NUMBER,        TOKEN_PLUS,        TOKEN_NUMBER,
-        TOKEN_IDENTIFIER,    TOKEN_LEFT_BRACE,  TOKEN_IDENTIFIER,
+        TOKEN_IDENTIFIER,    TOKEN_LEFT_BRACE,  TOKEN_UNDERSCORE,
         TOKEN_RIGHT_PAREN,   TOKEN_STRING,      TOKEN_IDENTIFIER,
         TOKEN_LET,           TOKEN_FOR,         TOKEN_IF,
         TOKEN_MINUS,         TOKEN_STAR,        TOKEN_SEMICOLON,

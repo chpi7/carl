@@ -1,8 +1,8 @@
 IFDEF_NAME = "carl_ast_h"
-INCLUDES = ["<sstream>", "<fstream>", "<memory>", "<list>", '"carl/scanner.h"', '"carl/common.h"', '"carl/ast/types.h"']
+INCLUDES = ["<sstream>", "<fstream>", "<memory>", "<list>", "<vector>", '"carl/scanner.h"', '"carl/common.h"', '"carl/ast/types.h"']
 NAMESPACE = "carl"
 FORWARD_DECLS = ["class AstNodeVisitor;"]
-REPLACEMENTS = {"@ptr": "std::shared_ptr", "@list": "std::list"}
+REPLACEMENTS = {"@ptr": "std::shared_ptr", "@list": "std::list", "@vec": "std::vector"}
 
 ASTNODE = """class AstNode {
    public:
@@ -41,4 +41,9 @@ TYPES = [
     "String(Token value) : Expression",
     "Number(Token value) : Expression",
     "Call(Token fname, @list<@ptr<Expression>> arguments) : Expression",
+    """PartialApp(
+        Token fname,
+        @vec<int> placeholder_positions,
+        @list<@ptr<Expression>> arguments
+    ) : Expression""",
 ]

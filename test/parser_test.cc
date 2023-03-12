@@ -329,10 +329,38 @@ TEST(Parser, parse_composition) {
 
     ParseResult r = parser.parse_r(src);
     ASSERT_TRUE(r);
+}
 
-    AstPrinter printer(std::cout);
-    for (auto& node : *r) {
-        printer.print(node.get());
-    }
+TEST(Parser, parse_composition_invalid) {
+    Parser parser;
+    std::string src = 
+    "fn foo(a: float) : string { return \"foo\"; }"
+    "fn baz(a: bool) : bool { return false; }"
+    "let foo2 = foo . baz;";
+
+    ParseResult r = parser.parse_r(src);
+    ASSERT_FALSE(r);
+}
+
+TEST(Parser, parse_partial_app) {
+    Parser parser;
+    std::string src = 
+    "fn foo(a: int, b: float, c: string) : float { return a + b + 2.; }"
+    "let part_foo = foo(_, 1., _);"
+    "let result = part_foo(2, \"test\");";
+
+    ParseResult r = parser.parse_r(src);
+    ASSERT_TRUE(r);
+}
+
+TEST(Parser, parse_partial_app_invalid_type) {
+    Parser parser;
+    std::string src = 
+    "fn foo(a: int, b: float, c: string) : float { return a + b + 2.; }"
+    "let part_foo = foo(_, false, _);"
+    "let result = part_foo(2, \"test\");";
+
+    ParseResult r = parser.parse_r(src);
+    ASSERT_FALSE(r);
 }
 }  // namespace

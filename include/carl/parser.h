@@ -72,7 +72,7 @@ class Parser {
 
     std::shared_ptr<Expression> expression();
     std::shared_ptr<Expression> grouping();
-    std::shared_ptr<Call> call();
+    std::shared_ptr<Expression> call();
     // can be Assignment or Binary
     std::shared_ptr<Expression> binary();
     std::shared_ptr<Expression> unary();

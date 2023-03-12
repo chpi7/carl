@@ -5,6 +5,7 @@
 #include <fstream>
 #include <memory>
 #include <list>
+#include <vector>
 #include "carl/scanner.h"
 #include "carl/common.h"
 #include "carl/ast/types.h"
@@ -214,6 +215,19 @@ class Call : public Expression {
     void accept(AstNodeVisitor* visitor);
 };
 
+class PartialApp : public Expression {
+   private:
+    Token fname;
+    std::vector<int> placeholder_positions;
+    std::list<std::shared_ptr<Expression>> arguments;
+   public:
+    PartialApp(Token fname, std::vector<int> placeholder_positions, std::list<std::shared_ptr<Expression>> arguments) : fname(fname), placeholder_positions(placeholder_positions), arguments(arguments) {}
+    Token get_fname() { return this->fname; }
+    std::vector<int> get_placeholder_positions() { return this->placeholder_positions; }
+    std::list<std::shared_ptr<Expression>> get_arguments() { return this->arguments; }
+    void accept(AstNodeVisitor* visitor);
+};
+
 class AstNodeVisitor {
    public:
     virtual void visit_statement(Statement* statement) { assert(false && "visit statement not overwritten"); };
@@ -234,6 +248,7 @@ class AstNodeVisitor {
     virtual void visit_string(String* string) { assert(false && "visit string not overwritten"); };
     virtual void visit_number(Number* number) { assert(false && "visit number not overwritten"); };
     virtual void visit_call(Call* call) { assert(false && "visit call not overwritten"); };
+    virtual void visit_partialapp(PartialApp* partialapp) { assert(false && "visit partialapp not overwritten"); };
 };
 
 } // namespace carl

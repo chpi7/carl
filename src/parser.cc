@@ -358,11 +358,16 @@ std::shared_ptr<Expression> Parser::expression() {
     return parse_precedence(PREC_ASSIGNMENT);
 }
 
-std::shared_ptr<Call> Parser::call() {
-    consume(TOKEN_IDENTIFIER, "Expected function identifier.");
-    auto fname = previous;
+static std::shared_ptr<PartialApp> build_partial_app(
+    Token fname, std::vector<int> pl, std::list<std::shared_ptr<Expression>> args) {
+    return std::make_shared<PartialApp>(fname, pl, args);
+}
 
-    auto fname_str = std::string(fname.start, fname.length);
+std::shared_ptr<Expression> Parser::call() {
+    consume(TOKEN_IDENTIFIER, "Expected function identifier.");
+    Token fname = previous;
+    std::string fname_str = fname;
+
     // var can hold a function --> check both:
     if (!environment->has_function(fname_str) && !environment->has_variable(fname_str)) {
         error_at(previous, "Function name not found in environment");
@@ -371,13 +376,22 @@ std::shared_ptr<Call> Parser::call() {
     consume(TOKEN_LEFT_PAREN, "Expected '(' after function identifier.");
 
     auto args = std::list<std::shared_ptr<Expression>>();
+    std::vector<int> placeholder_positions;
     while (current.type != TOKEN_ERROR && current.type != TOKEN_EOF && current.type != TOKEN_RIGHT_PAREN) {
-        args.push_back(expression());
+        if (match(TOKEN_UNDERSCORE)) {
+            placeholder_positions.push_back(args.size() + placeholder_positions.size());
+        } else {
+            args.push_back(expression());
+        }
         if (!match(TOKEN_COMMA)) break;
     }
     consume(TOKEN_RIGHT_PAREN, "Expected ) at the end of function argument list.");
 
-    return std::make_shared<Call>(fname, args);
+    if (placeholder_positions.empty()) {
+        return std::make_shared<Call>(fname, args);
+    } else {
+        return build_partial_app(fname, placeholder_positions, args);
+    }
 }
 
 std::shared_ptr<Expression> Parser::literal() {
