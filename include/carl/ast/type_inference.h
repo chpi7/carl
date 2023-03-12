@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "carl/ast/ast.h"
+#include "carl/name_environment.h"
 
 namespace carl {
 
@@ -18,6 +19,7 @@ using TypeInferenceResult = Result<nullptr_t, TypeInferenceError>;
 
 class TypeInference : public AstNodeVisitor {
    private:
+    std::unique_ptr<Environment<std::shared_ptr<types::Type>, std::shared_ptr<types::Type>>> env;
     std::shared_ptr<types::Type> result;
     std::optional<TypeInferenceError> error;
 
@@ -32,6 +34,7 @@ class TypeInference : public AstNodeVisitor {
     }
 
     void report_error(std::string msg) {
+        std::cerr << msg << std::endl;
         result = std::make_shared<types::Unknown>();
         if (error) return;  // keep initial error.
         error = TypeInferenceError{.message = msg};
@@ -40,7 +43,7 @@ class TypeInference : public AstNodeVisitor {
     void clear_error() { error = std::nullopt; }
 
    public:
-    TypeInference() = default;
+    TypeInference();
     TypeInferenceResult run(std::shared_ptr<AstNode> decl);
     TypeInferenceResult run(std::vector<std::shared_ptr<AstNode>> decls);
     void visit_type(Type* type);

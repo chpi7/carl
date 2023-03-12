@@ -244,33 +244,6 @@ TEST(Parser, parse_call_in_binop) {
     ASSERT_EQ(decls.size(), 1);
 }
 
-TEST(Parser, parse_nested_fndecls) {
-    std::string src_string = 
-    "fn foo (a: int, b: int) {\n"
-        "fn bar() : string {\n"
-        "   let a = foo(1, 2.);\n"
-        "}\n"
-        "let bar_ref = bar;\n"
-        "let sq = a * a + bar_ref();\n"
-        "return sq + b;\n"
-    "}\n"
-    "let a = 2 + 3.;\n"
-    "let result_foo = foo(a, 3);\n"
-    "let check = result_foo == 7;";
-    
-    Parser parser;
-    auto result = parser.parse_r(src_string);
-    ASSERT_TRUE(result);
-
-    auto decls = *result;
-    AstPrinter printer(std::cout);
-    for (auto& node : decls) {
-        printer.print(node.get());
-    }
-
-    ASSERT_EQ(decls.size(), 4);
-}
-
 TEST(Parser, expect_name_not_found) {
     Parser p;
     std::string src = "let a = b + 1;";
@@ -295,8 +268,9 @@ TEST(Parser, var_not_found_anymore) {
 TEST(Parser, fn_decl_found) {
     Parser p;
     std::string src = 
-    "fn foo(a: int) {"
+    "fn foo(a: int) : int {"
     "   let danger = foo(1);"
+    "   return 1;"
     "}"
     "let call = foo(0);";
     
@@ -315,5 +289,33 @@ TEST(Parser, fn_decl_not_found) {
     
     auto r = p.parse_r(src);
     ASSERT_FALSE(r);
+}
+
+TEST(Parser, parse_nested_fndecls) {
+    std::string src_string = 
+    "fn foo (a: int, b: float) : int {\n"
+        "fn bar() : float {\n"
+        "   let a = foo(1, 2.);\n"
+        "   return 1.0;\n"
+        "}\n"
+        "let bar_ref = bar;\n"
+        "let sq = a * a + bar_ref();\n"
+        "return sq + b;\n"
+    "}\n"
+    "let a = 2 + 3;\n"
+    "let result_foo = foo(a, 3);\n"
+    "let check = result_foo == 7;";
+    
+    Parser parser;
+    auto result = parser.parse_r(src_string);
+    ASSERT_TRUE(result);
+
+    auto decls = *result;
+    // AstPrinter printer(std::cout);
+    // for (auto& node : decls) {
+    //     printer.print(node.get());
+    // }
+
+    ASSERT_EQ(decls.size(), 4);
 }
 }  // namespace

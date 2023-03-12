@@ -51,27 +51,51 @@ class Environment {
         parent = std::move(parent->parent);
     }
 
-    bool can_set_variable(std::string& name) {
+    V& get_variable(const std::string& name) {
+        if (variables.contains(name)) {
+            return variables[name];
+        } else {
+            return parent->get_variable(name);
+        }
+    }
+
+    bool can_set_variable(const std::string& name) {
         return !variables.contains(name);
     }
 
-    void set_variable(std::string& name) {
+    void set_variable(const std::string& name) {
         variables[name] = nullptr;
     }
 
-    bool has_variable(std::string& name) {
+    void set_variable(const std::string& name, V v) {
+        variables[name] = v;
+    }
+
+    bool has_variable(const std::string& name) {
         return variables.contains(name) || (parent && parent->has_variable(name));
     }
 
-    bool can_set_function(std::string& name) {
+    F& get_function(const std::string& name) {
+        if (functions.contains(name)) {
+            return functions[name];
+        } else {
+            return parent->get_function(name);
+        }
+    }
+
+    bool can_set_function(const std::string& name) {
         return !functions.contains(name);
     }
 
-    void set_function(std::string& name) {
+    void set_function(const std::string& name) {
         functions[name] = nullptr;
     }
 
-    bool has_function(std::string& name) {
+    void set_function(const std::string& name, F f) {
+        functions[name] = f;
+    }
+
+    bool has_function(const std::string& name) {
         return functions.contains(name) || (parent && parent->has_function(name));
     }
 };

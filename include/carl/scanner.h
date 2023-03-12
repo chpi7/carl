@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
 
 namespace carl {
 
@@ -61,6 +62,8 @@ struct Token {
     const char *start;
     int length;
     int line;
+    
+    operator std::string() const noexcept { return std::string(start, length); }
 };
 
 class Scanner {

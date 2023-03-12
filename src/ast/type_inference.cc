@@ -2,6 +2,11 @@
 
 using namespace carl;
 
+TypeInference::TypeInference() {
+    env = std::make_unique<Environment<std::shared_ptr<types::Type>,
+                                       std::shared_ptr<types::Type>>>(nullptr);
+}
+
 TypeInferenceResult TypeInference::run(
     std::vector<std::shared_ptr<AstNode>> decls) {
     clear_error();
@@ -14,27 +19,46 @@ TypeInferenceResult TypeInference::run(
 
 TypeInferenceResult TypeInference::run(std::shared_ptr<AstNode> decl) {
     do_visit(decl);
+    if (error) {
+        return TypeInferenceResult::make_error(error.value());
+    }
     return TypeInferenceResult::make_result(nullptr);
 }
 
 void TypeInference::visit_type(Type* type) {}
 
 void TypeInference::visit_formalparam(FormalParam* formalparam) {
-    // n.a. (happens during parsing)
+    auto name = std::string(formalparam->get_name().start, formalparam->get_name().length);
+    env->set_variable(name, formalparam->get_type());
 }
 
 void TypeInference::visit_fndecl(FnDecl* fndecl) {
-    // n.a. (happens during parsing)
+    // register fn in current env
+    auto fname = std::string(fndecl->get_name().start, fndecl->get_name().length);
+    env->set_function(fname, fndecl->get_type());
+
+    // then go into inside env for the function where the formals are known
+    UseNewEnv _(env.get());
+
+    for (auto& fp : fndecl->get_formals()) do_visit(fp);
+    do_visit(fndecl->get_body());
+
     result = fndecl->get_type();
 }
 
 void TypeInference::visit_letdecl(LetDecl* letdecl) {
     auto initializer_type = do_visit(letdecl->get_initializer());
+    env->set_variable(letdecl->get_name(), letdecl->get_type());
     if (initializer_type->get_base_type() == types::BaseType::UNKNOWN) {
         report_error("Could not get let initializer type");
         return;
     }
+    if (initializer_type->get_base_type() == types::BaseType::VOID) {
+        report_error("Invalid initializer type " + initializer_type->str());
+        return;
+    }
     letdecl->set_type(initializer_type);
+    env->set_variable(letdecl->get_name(), letdecl->get_type());
 }
 
 void TypeInference::visit_exprstmt(ExprStmt* exprstmt) {
@@ -55,9 +79,8 @@ void TypeInference::visit_whilestmt(WhileStmt* whilestmt) {
 }
 
 void TypeInference::visit_block(Block* block) {
-    for (auto& decl : block->get_declarations()) {
-        do_visit(decl);
-    }
+    UseNewEnv _(env.get());
+    for (auto& decl : block->get_declarations()) do_visit(decl);
 }
 
 void TypeInference::visit_assignment(Assignment* assignment) {
@@ -109,13 +132,13 @@ void TypeInference::visit_binary(Binary* binary) {
         case TOKEN_GREATER_EQUAL:
             // logic op --> only allow comparison of equal types or numbers
             if (type_l->equals(type_r.get())) {
-                result = type_l;
+                result = std::make_shared<types::Bool>();
             } else if (type_l->is_number() && type_r->is_number()) {
                 // non equal number types
                 if (type_r->can_cast_to(type_l.get())) {
-                    result = type_l;
+                    result = std::make_shared<types::Bool>();
                 } else if (type_l->can_cast_to(type_r.get())) {
-                    result = type_r;
+                    result = std::make_shared<types::Bool>();
                 } else {
                     report_error("Can not cast number types in logic binop.");
                     return;
@@ -137,7 +160,18 @@ void TypeInference::visit_unary(Unary* unary) {
 }
 
 void TypeInference::visit_variable(Variable* variable) {
-    result = std::make_shared<types::Unknown>();
+    std::string vname = variable->get_name();
+    std::shared_ptr<types::Type> vtype;
+    if (env->has_function(vname)) {
+        vtype = env->get_function(vname);
+    } else if (env->has_variable(vname)) {
+        vtype = env->get_variable(vname);
+    } else {
+        report_error("Can not find variable or function with name " + vname);
+        return;
+    }
+    variable->set_type(vtype);
+    result = vtype;
 }
 
 void TypeInference::visit_literal(Literal* literal) {
@@ -153,10 +187,38 @@ void TypeInference::visit_number(Number* number) {
 }
 
 void TypeInference::visit_call(Call* call) {
-    result = std::make_shared<types::Unknown>();
-    // auto call_type = std::reinterpret_pointer_cast<types::Fn>(call->get_type());
-    // if (call_type->get_ret().has_value()) {
-    //     result = call_type->get_ret().value();
-    // } else {
-    // }
+    std::string callee_name = call->get_fname();
+    std::shared_ptr<types::Type> callee_type;
+    if (env->has_function(callee_name)) {
+        callee_type = env->get_function(callee_name);
+    } else if (env->has_variable(callee_name)) {
+        callee_type = env->get_variable(callee_name);
+    } else {
+        report_error("Can not find callable with name " + callee_name);
+        return;
+    }
+
+    if (callee_type->get_base_type() != types::BaseType::FN) {
+        report_error(std::string(callee_name) + "is not of basetype fn.");
+        return;
+    }
+
+    auto fn_type = std::reinterpret_pointer_cast<types::Fn>(callee_type);
+
+    if (fn_type->get_parameters().size() != call->get_arguments().size()) {
+        report_error("Argument number mismatch.");
+    }
+
+    std::vector<std::shared_ptr<types::Type>> arg_types;
+    for (auto& arg : call->get_arguments()) {
+        do_visit(arg);
+        arg_types.push_back(arg->get_type());
+    }
+
+    if (!fn_type->can_apply_to(arg_types)) {
+        report_error("Arguments are not of the expected type for " + fn_type->str());
+    }
+
+    call->set_type(fn_type->get_ret().value_or(std::make_unique<types::Unknown>()));
+    result = call->get_type();
 }

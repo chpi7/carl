@@ -163,7 +163,7 @@ ParseResult Parser::parse_r(std::string& src) {
     TypeInference ti;
     auto r = ti.run(decls);
     if (!r) {
-        return ParseResult::make_error(ParseError {.message = "type check failed."});
+        return ParseResult::make_error(ParseError {.message = r.get_error().message});
     }
 
     return ParseResult::make_result(decls);
@@ -275,13 +275,13 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
             error_at(current, "Expected identifier as formal parameter.");
             return make_error_node<FnDecl>();
         }
+        auto fp = std::make_shared<FormalParam>(previous);
         auto fp_name = std::string(previous.start, previous.length);
         environment->set_variable(fp_name);
 
         consume(TOKEN_COLON, "Expected ':' between formal param name and formal param type.");
         auto type_ = type();
         auto type_str = std::string(type_->get_name().start, type_->get_name().length);
-        auto fp = std::make_shared<FormalParam>(previous);
         auto fp_type = type_from_identifier(type_str);
         formal_param_types.push_back(fp_type);
         fp->set_type(fp_type);
@@ -291,7 +291,7 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
     consume(TOKEN_RIGHT_PAREN, "Expected ) after fn formal parameters.");
 
     // return type
-    std::optional<std::shared_ptr<types::Type>> fn_ret_type;
+    std::shared_ptr<types::Type> fn_ret_type = std::make_shared<types::Void>();
     if (match(TOKEN_COLON)) {
         auto ret_type = type();
         auto ret_type_str = std::string(ret_type->get_name().start, ret_type->get_name().length);
