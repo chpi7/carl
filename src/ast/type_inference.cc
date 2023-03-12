@@ -148,8 +148,27 @@ void TypeInference::visit_binary(Binary* binary) {
                 return;
             }
             break;
-        default:
+        case TOKEN_DOT: {
+            // function composition f(g(x)) = (f . g)(x) (like haskell)
+            // so . does (b -> c) -> (a -> b) -> (a -> c)
+            if (type_l->get_base_type() != types::BaseType::FN) {
+                report_error("lhs of . needs to a function but it is " + type_l->str());
+            }
+            if (type_r->get_base_type() != types::BaseType::FN) {
+                report_error("rhs of . needs to a function but it is " + type_r->str());
+            }
+            if (error) break; // dont cast if there is an error --> will segfault
+            auto fntl = std::reinterpret_pointer_cast<types::Fn>(type_l);
+            auto fntr = std::reinterpret_pointer_cast<types::Fn>(type_r);
+            if (!fntl->can_apply_to(std::vector{fntr->get_ret()})) {
+                report_error("Can not pass return type " +
+                             fntr->get_ret()->str() + " into " + fntl->str());
+            }
+            result = std::make_shared<types::Fn>(fntr->get_parameters(), fntl->get_ret());
             break;
+        }
+        default:
+            report_error("unsupported binop " + std::string(binary->get_op()) + " for type inference");
     }
     binary->set_type(result);
 }
@@ -219,6 +238,6 @@ void TypeInference::visit_call(Call* call) {
         report_error("Arguments are not of the expected type for " + fn_type->str());
     }
 
-    call->set_type(fn_type->get_ret().value_or(std::make_unique<types::Unknown>()));
+    call->set_type(fn_type->get_ret());
     result = call->get_type();
 }

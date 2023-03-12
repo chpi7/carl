@@ -72,13 +72,11 @@ class Fn : public Type {
     Fn(std::vector<std::shared_ptr<Type>> parameters);
     Fn(std::vector<std::shared_ptr<Type>> parameters,
        std::shared_ptr<Type> ret);
-    Fn(std::vector<std::shared_ptr<Type>> parameters,
-       std::optional<std::shared_ptr<Type>> ret);
     BaseType get_base_type();
 
     bool can_apply_to(std::vector<std::shared_ptr<Type>> arguments);
     const std::vector<std::shared_ptr<Type>> get_parameters();
-    const std::optional<std::shared_ptr<Type>> get_ret();
+    const std::shared_ptr<Type> get_ret();
     std::string str();
 };
 }  // namespace types

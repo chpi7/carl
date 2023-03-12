@@ -22,7 +22,7 @@ enum Precedence {
     PREC_TERM,
     PREC_FACTOR,
     PREC_UNARY,
-    PREC_CALL,
+    PREC_COMPOSITION,
     PREC_PRIMARY,
 };
 

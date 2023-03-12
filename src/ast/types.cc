@@ -37,7 +37,7 @@ BaseType Fn::get_base_type() { return BaseType::FN; }
 const std::vector<std::shared_ptr<Type>> Fn::get_parameters() {
     return parameters;
 }
-const std::optional<std::shared_ptr<Type>> Fn::get_ret() { return ret; }
+const std::shared_ptr<Type> Fn::get_ret() { return ret; }
 
 bool Fn::can_apply_to(std::vector<std::shared_ptr<Type>> arguments) {
     // allow exact types only for now:

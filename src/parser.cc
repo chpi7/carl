@@ -32,7 +32,7 @@ static const std::unordered_map<TokenType, ParseRule> parse_rules = {
     {TOKEN_LEFT_BRACE, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_RIGHT_BRACE, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_COMMA, {PREC_NONE, nullptr, nullptr}},
-    {TOKEN_DOT, {PREC_NONE, nullptr, nullptr}},
+    {TOKEN_DOT, {PREC_COMPOSITION, nullptr, &Parser::binary}},
     {TOKEN_MINUS, {PREC_TERM, &Parser::unary, &Parser::binary}},
     {TOKEN_PLUS, {PREC_TERM, nullptr, &Parser::binary}},
     {TOKEN_SEMICOLON, {PREC_NONE, nullptr, nullptr}},
@@ -440,9 +440,16 @@ std::shared_ptr<Expression> Parser::variable() {
 std::shared_ptr<Expression> Parser::binary() {
     const ParseRule* current_rule = get_rule(previous.type);
 
-    // small trick to make assignment right associative
+    // make some operator right associative
     int prec_offset = 0;
-    if (current_rule->prec != PREC_ASSIGNMENT) prec_offset++;
+    Precedence current = current_rule->prec;
+    switch(current) {
+        case PREC_ASSIGNMENT:
+        case PREC_COMPOSITION:
+            break;
+        default:
+            prec_offset += 1;
+    }
 
     return parse_precedence(
         static_cast<Precedence>(current_rule->prec + prec_offset));
