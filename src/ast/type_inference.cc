@@ -2,6 +2,16 @@
 
 using namespace carl;
 
+static std::vector<std::shared_ptr<ReturnStmt>> find_returns(std::shared_ptr<Block> block) {
+    std::vector<std::shared_ptr<ReturnStmt>> result;
+    for (auto& decl : block->get_declarations()) {
+        if (decl->get_node_type() == AstNodeType::ReturnStmt) {
+            result.push_back(std::reinterpret_pointer_cast<ReturnStmt>(decl));
+        }
+    }
+    return result;
+}
+
 TypeInference::TypeInference() {
     env = std::make_unique<Environment<std::shared_ptr<types::Type>,
                                        std::shared_ptr<types::Type>>>(nullptr);
@@ -37,13 +47,29 @@ void TypeInference::visit_fndecl(FnDecl* fndecl) {
     auto fname = std::string(fndecl->get_name().start, fndecl->get_name().length);
     env->set_function(fname, fndecl->get_type());
 
+    result = fndecl->get_type();
+
     // then go into inside env for the function where the formals are known
     UseNewEnv _(env.get());
 
     for (auto& fp : fndecl->get_formals()) do_visit(fp);
     do_visit(fndecl->get_body());
 
-    result = fndecl->get_type();
+    auto fntype = std::reinterpret_pointer_cast<types::Fn>(fndecl->get_type());
+    auto returns = find_returns(fndecl->get_body());
+    if (fntype->get_ret()->get_base_type() != types::BaseType::VOID) {
+        auto expected_ret_type = fntype->get_ret();
+        for (auto& ret : returns) {
+            auto returned_type = ret->get_expr()->get_type();
+            if (!returned_type->can_cast_to(expected_ret_type.get())) {
+                report_error("Return type of " + fname + " is " + expected_ret_type->str() + " but return gives " + returned_type->str());
+            }
+        }
+    } else if (!returns.size() == 0) {
+        report_error("Return statement found in function with return type void.");
+    } else {
+        // void with no returns --> okay
+    }
 }
 
 void TypeInference::visit_letdecl(LetDecl* letdecl) {

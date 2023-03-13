@@ -15,6 +15,7 @@ class AstPrinter : public AstNodeVisitor {
         node->accept(this);
         os << "\n";
     }
+    void visit_block(Block* block);
     void visit_type(Type* type);
     void visit_formalparam(FormalParam* formalparam);
     void visit_fndecl(FnDecl* fndecl);
@@ -22,7 +23,6 @@ class AstPrinter : public AstNodeVisitor {
     void visit_exprstmt(ExprStmt* exprstmt);
     void visit_returnstmt(ReturnStmt* returnstmt);
     void visit_whilestmt(WhileStmt* whilestmt);
-    void visit_block(Block* block);
     void visit_assignment(Assignment* assignment);
     void visit_binary(Binary* binary);
     void visit_unary(Unary* unary);

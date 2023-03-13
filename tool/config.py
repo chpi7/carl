@@ -8,10 +8,12 @@ ASTNODE = """class AstNode {
    public:
     virtual ~AstNode() = default;
     virtual void accept(AstNodeVisitor* visitor) = 0;
+    virtual AstNodeType get_node_type() = 0;
 };"""
 
 TYPES = [
     "Statement() : AstNode",
+    "Block(@list<@ptr<AstNode>> declarations) : Statement",
     "Expression(@ptr<types::Type> type?=std::make_shared<types::Unknown>()) : AstNode",
 
     "Type(Token name) : AstNode",
@@ -19,7 +21,7 @@ TYPES = [
     """FnDecl(
         Token name, 
         @list<@ptr<FormalParam>> formals, 
-        @ptr<Statement> body, 
+        @ptr<Block> body, 
         @ptr<types::Type> type?=std::make_shared<types::Unknown>()
     ) : AstNode""",
     """LetDecl(
@@ -31,7 +33,6 @@ TYPES = [
     "ExprStmt(@ptr<Expression> expr) : Statement",
     "ReturnStmt(@ptr<Expression> expr) : Statement",
     "WhileStmt(@ptr<Expression> condition, @ptr<Statement> body) : Statement",
-    "Block(@list<@ptr<AstNode>> declarations) : Statement",
 
     "Assignment(@ptr<Expression> target, @ptr<Expression> expr) : Expression",
     "Binary(Token op, @ptr<Expression> lhs, @ptr<Expression> rhs) : Expression",

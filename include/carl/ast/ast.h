@@ -14,15 +14,29 @@ namespace carl {
 
 class AstNodeVisitor;
 
+enum class AstNodeType { Statement, Block, Expression, Type, FormalParam, FnDecl, LetDecl, ExprStmt, ReturnStmt, WhileStmt, Assignment, Binary, Unary, Variable, Literal, String, Number, Call, PartialApp };
+
 class AstNode {
    public:
     virtual ~AstNode() = default;
     virtual void accept(AstNodeVisitor* visitor) = 0;
+    virtual AstNodeType get_node_type() = 0;
 };
 
 class Statement : public AstNode {
    public:
+    AstNodeType get_node_type();
     Statement() {}
+    void accept(AstNodeVisitor* visitor);
+};
+
+class Block : public Statement {
+   private:
+    std::list<std::shared_ptr<AstNode>> declarations;
+   public:
+    AstNodeType get_node_type();
+    Block(std::list<std::shared_ptr<AstNode>> declarations) : declarations(declarations) {}
+    std::list<std::shared_ptr<AstNode>> get_declarations() { return this->declarations; }
     void accept(AstNodeVisitor* visitor);
 };
 
@@ -30,6 +44,7 @@ class Expression : public AstNode {
    private:
     std::shared_ptr<types::Type> type;
    public:
+    AstNodeType get_node_type();
     Expression() {
         this->type = std::make_shared<types::Unknown>();
     }
@@ -42,6 +57,7 @@ class Type : public AstNode {
    private:
     Token name;
    public:
+    AstNodeType get_node_type();
     Type(Token name) : name(name) {}
     Token get_name() { return this->name; }
     void accept(AstNodeVisitor* visitor);
@@ -52,6 +68,7 @@ class FormalParam : public AstNode {
     Token name;
     std::shared_ptr<types::Type> type;
    public:
+    AstNodeType get_node_type();
     FormalParam(Token name) : name(name) {
         this->type = std::make_shared<types::Unknown>();
     }
@@ -65,15 +82,16 @@ class FnDecl : public AstNode {
    private:
     Token name;
     std::list<std::shared_ptr<FormalParam>> formals;
-    std::shared_ptr<Statement> body;
+    std::shared_ptr<Block> body;
     std::shared_ptr<types::Type> type;
    public:
-    FnDecl(Token name, std::list<std::shared_ptr<FormalParam>> formals, std::shared_ptr<Statement> body) : name(name), formals(formals), body(body) {
+    AstNodeType get_node_type();
+    FnDecl(Token name, std::list<std::shared_ptr<FormalParam>> formals, std::shared_ptr<Block> body) : name(name), formals(formals), body(body) {
         this->type = std::make_shared<types::Unknown>();
     }
     Token get_name() { return this->name; }
     std::list<std::shared_ptr<FormalParam>> get_formals() { return this->formals; }
-    std::shared_ptr<Statement> get_body() { return this->body; }
+    std::shared_ptr<Block> get_body() { return this->body; }
     std::shared_ptr<types::Type> get_type() { return this->type; }
     void set_type(std::shared_ptr<types::Type> type) { this->type = type;}
     void accept(AstNodeVisitor* visitor);
@@ -85,6 +103,7 @@ class LetDecl : public AstNode {
     std::shared_ptr<Expression> initializer;
     std::shared_ptr<types::Type> type;
    public:
+    AstNodeType get_node_type();
     LetDecl(Token name, std::shared_ptr<Expression> initializer) : name(name), initializer(initializer) {
         this->type = std::make_shared<types::Unknown>();
     }
@@ -99,6 +118,7 @@ class ExprStmt : public Statement {
    private:
     std::shared_ptr<Expression> expr;
    public:
+    AstNodeType get_node_type();
     ExprStmt(std::shared_ptr<Expression> expr) : expr(expr) {}
     std::shared_ptr<Expression> get_expr() { return this->expr; }
     void accept(AstNodeVisitor* visitor);
@@ -108,6 +128,7 @@ class ReturnStmt : public Statement {
    private:
     std::shared_ptr<Expression> expr;
    public:
+    AstNodeType get_node_type();
     ReturnStmt(std::shared_ptr<Expression> expr) : expr(expr) {}
     std::shared_ptr<Expression> get_expr() { return this->expr; }
     void accept(AstNodeVisitor* visitor);
@@ -118,18 +139,10 @@ class WhileStmt : public Statement {
     std::shared_ptr<Expression> condition;
     std::shared_ptr<Statement> body;
    public:
+    AstNodeType get_node_type();
     WhileStmt(std::shared_ptr<Expression> condition, std::shared_ptr<Statement> body) : condition(condition), body(body) {}
     std::shared_ptr<Expression> get_condition() { return this->condition; }
     std::shared_ptr<Statement> get_body() { return this->body; }
-    void accept(AstNodeVisitor* visitor);
-};
-
-class Block : public Statement {
-   private:
-    std::list<std::shared_ptr<AstNode>> declarations;
-   public:
-    Block(std::list<std::shared_ptr<AstNode>> declarations) : declarations(declarations) {}
-    std::list<std::shared_ptr<AstNode>> get_declarations() { return this->declarations; }
     void accept(AstNodeVisitor* visitor);
 };
 
@@ -138,6 +151,7 @@ class Assignment : public Expression {
     std::shared_ptr<Expression> target;
     std::shared_ptr<Expression> expr;
    public:
+    AstNodeType get_node_type();
     Assignment(std::shared_ptr<Expression> target, std::shared_ptr<Expression> expr) : target(target), expr(expr) {}
     std::shared_ptr<Expression> get_target() { return this->target; }
     std::shared_ptr<Expression> get_expr() { return this->expr; }
@@ -150,6 +164,7 @@ class Binary : public Expression {
     std::shared_ptr<Expression> lhs;
     std::shared_ptr<Expression> rhs;
    public:
+    AstNodeType get_node_type();
     Binary(Token op, std::shared_ptr<Expression> lhs, std::shared_ptr<Expression> rhs) : op(op), lhs(lhs), rhs(rhs) {}
     Token get_op() { return this->op; }
     std::shared_ptr<Expression> get_lhs() { return this->lhs; }
@@ -162,6 +177,7 @@ class Unary : public Expression {
     Token op;
     std::shared_ptr<Expression> operand;
    public:
+    AstNodeType get_node_type();
     Unary(Token op, std::shared_ptr<Expression> operand) : op(op), operand(operand) {}
     Token get_op() { return this->op; }
     std::shared_ptr<Expression> get_operand() { return this->operand; }
@@ -172,6 +188,7 @@ class Variable : public Expression {
    private:
     Token name;
    public:
+    AstNodeType get_node_type();
     Variable(Token name) : name(name) {}
     Token get_name() { return this->name; }
     void accept(AstNodeVisitor* visitor);
@@ -181,6 +198,7 @@ class Literal : public Expression {
    private:
     Token value;
    public:
+    AstNodeType get_node_type();
     Literal(Token value) : value(value) {}
     Token get_value() { return this->value; }
     void accept(AstNodeVisitor* visitor);
@@ -190,6 +208,7 @@ class String : public Expression {
    private:
     Token value;
    public:
+    AstNodeType get_node_type();
     String(Token value) : value(value) {}
     Token get_value() { return this->value; }
     void accept(AstNodeVisitor* visitor);
@@ -199,6 +218,7 @@ class Number : public Expression {
    private:
     Token value;
    public:
+    AstNodeType get_node_type();
     Number(Token value) : value(value) {}
     Token get_value() { return this->value; }
     void accept(AstNodeVisitor* visitor);
@@ -209,6 +229,7 @@ class Call : public Expression {
     Token fname;
     std::list<std::shared_ptr<Expression>> arguments;
    public:
+    AstNodeType get_node_type();
     Call(Token fname, std::list<std::shared_ptr<Expression>> arguments) : fname(fname), arguments(arguments) {}
     Token get_fname() { return this->fname; }
     std::list<std::shared_ptr<Expression>> get_arguments() { return this->arguments; }
@@ -221,6 +242,7 @@ class PartialApp : public Expression {
     std::vector<int> placeholder_positions;
     std::list<std::shared_ptr<Expression>> arguments;
    public:
+    AstNodeType get_node_type();
     PartialApp(Token fname, std::vector<int> placeholder_positions, std::list<std::shared_ptr<Expression>> arguments) : fname(fname), placeholder_positions(placeholder_positions), arguments(arguments) {}
     Token get_fname() { return this->fname; }
     std::vector<int> get_placeholder_positions() { return this->placeholder_positions; }
@@ -231,6 +253,7 @@ class PartialApp : public Expression {
 class AstNodeVisitor {
    public:
     virtual void visit_statement(Statement* statement) { assert(false && "visit statement not overwritten"); };
+    virtual void visit_block(Block* block) { assert(false && "visit block not overwritten"); };
     virtual void visit_expression(Expression* expression) { assert(false && "visit expression not overwritten"); };
     virtual void visit_type(Type* type) { assert(false && "visit type not overwritten"); };
     virtual void visit_formalparam(FormalParam* formalparam) { assert(false && "visit formalparam not overwritten"); };
@@ -239,7 +262,6 @@ class AstNodeVisitor {
     virtual void visit_exprstmt(ExprStmt* exprstmt) { assert(false && "visit exprstmt not overwritten"); };
     virtual void visit_returnstmt(ReturnStmt* returnstmt) { assert(false && "visit returnstmt not overwritten"); };
     virtual void visit_whilestmt(WhileStmt* whilestmt) { assert(false && "visit whilestmt not overwritten"); };
-    virtual void visit_block(Block* block) { assert(false && "visit block not overwritten"); };
     virtual void visit_assignment(Assignment* assignment) { assert(false && "visit assignment not overwritten"); };
     virtual void visit_binary(Binary* binary) { assert(false && "visit binary not overwritten"); };
     virtual void visit_unary(Unary* unary) { assert(false && "visit unary not overwritten"); };

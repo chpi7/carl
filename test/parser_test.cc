@@ -293,7 +293,7 @@ TEST(Parser, fn_decl_not_found) {
 
 TEST(Parser, parse_nested_fndecls) {
     std::string src_string = 
-    "fn foo (a: int, b: float) : int {\n"
+    "fn foo (a: int, b: float) : float {\n"
         "fn bar() : float {\n"
         "   let a = foo(1, 2.);\n"
         "   return 1.0;\n"
@@ -311,10 +311,10 @@ TEST(Parser, parse_nested_fndecls) {
     ASSERT_TRUE(result);
 
     auto decls = *result;
-    // AstPrinter printer(std::cout);
-    // for (auto& node : decls) {
-    //     printer.print(node.get());
-    // }
+    AstPrinter printer(std::cout);
+    for (auto& node : decls) {
+        printer.print(node.get());
+    }
 
     ASSERT_EQ(decls.size(), 4);
 }

@@ -1,6 +1,11 @@
 from config import *
 from config_parser import Class, ClassMember
 
+def generate_node_type_enum_class(classes: list[Class]):
+    cls_names = map(lambda c: c.name, classes)
+    cls_name_list = ", ".join(cls_names)
+    return f"enum class AstNodeType {{ {cls_name_list} }};"
+
 def generate_constructor(cls: Class):
     constructur_members = list(filter(lambda m: not m.is_optional, cls.members))
     r = cls.name
@@ -50,6 +55,7 @@ def generate_class_definition(cls: Class):
 {"   private:" if cls.members else ""}
 {generate_member_decls(cls.members)}
    public:
+    AstNodeType get_node_type();
     {generate_constructor(cls)}
 {generate_member_getters(cls.members)}
 {generate_member_setters(cls.members)}
@@ -83,6 +89,13 @@ def generate_ast_node_accept_impls(classes: list[Class]):
         )
     return "\n".join(l)
 
+def generate_ast_node_get_node_type_impls(classes: list[Class]):
+    l = list()
+    for cls in classes:
+        l.append(
+            f"AstNodeType {cls.name}::get_node_type() {{ return AstNodeType::{cls.name}; }}"
+        )
+    return "\n".join(l)
 
 def gen_header_header(name: str):
     return f"""#ifndef {name}
@@ -109,6 +122,10 @@ def generate_header_file(classes: list[Class]):
     file_content += "\n"
     file_content += "\n".join(FORWARD_DECLS)
     file_content += "\n\n"
+
+    file_content += generate_node_type_enum_class(classes)
+    file_content += "\n\n"
+
     file_content += ASTNODE
     file_content += "\n\n"
 
@@ -132,6 +149,9 @@ def generate_cc_file(classes: list[Class]):
     file_content += f"namespace {NAMESPACE} {{\n\n"
 
     file_content += generate_ast_node_accept_impls(classes)
+    file_content += "\n\n"
+
+    file_content += generate_ast_node_get_node_type_impls(classes)
     file_content += "\n\n"
 
     file_content += f"}} // namespace {NAMESPACE}\n"

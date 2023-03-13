@@ -2,6 +2,20 @@
 
 using namespace carl;
 
+void AstPrinter::visit_block(Block* block) {
+    write_indent();
+    os << "Block" << "\n"; 
+    indent++;
+    write_indent();
+    os << ".declarations\n";
+    indent++;
+    for (auto& elem : block->get_declarations()) {
+        elem->accept(this);
+    }
+    indent--;
+    indent--;
+}
+
 void AstPrinter::visit_type(Type* type) {
     write_indent();
     os << "Type" << "\n"; 
@@ -95,20 +109,6 @@ void AstPrinter::visit_whilestmt(WhileStmt* whilestmt) {
     os << ".body\n";
     indent++;
     whilestmt->get_body()->accept(this);
-    indent--;
-    indent--;
-}
-
-void AstPrinter::visit_block(Block* block) {
-    write_indent();
-    os << "Block" << "\n"; 
-    indent++;
-    write_indent();
-    os << ".declarations\n";
-    indent++;
-    for (auto& elem : block->get_declarations()) {
-        elem->accept(this);
-    }
     indent--;
     indent--;
 }

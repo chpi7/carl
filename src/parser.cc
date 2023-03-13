@@ -299,15 +299,19 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
     }
 
     // body
-    auto body = statement();
+    consume(TOKEN_LEFT_BRACE, "Expected block as function body.");
     if (has_error) {
         return make_error_node<FnDecl>();
-    } else {
-        auto fn = std::make_shared<FnDecl>(name, formal_params, body);
-        auto fn_type = std::make_shared<types::Fn>(formal_param_types, fn_ret_type);
-        fn->set_type(fn_type);
-        return fn;
     }
+
+    auto body = block();
+    if (has_error) {
+        return make_error_node<FnDecl>();
+    }
+    auto fn = std::make_shared<FnDecl>(name, formal_params, body);
+    auto fn_type = std::make_shared<types::Fn>(formal_param_types, fn_ret_type);
+    fn->set_type(fn_type);
+    return fn;
 }
 
 std::shared_ptr<Statement> Parser::statement() {
