@@ -12,10 +12,10 @@ namespace carl {
 class LLJITWrapper {
     private:
     std::unique_ptr<llvm::orc::LLJIT> lljit;
+    llvm::ExitOnError exitErr;
 
    public:
     LLJITWrapper() {
-        llvm::ExitOnError exitErr;
         llvm::orc::LLJITBuilder builder;
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
@@ -23,7 +23,9 @@ class LLJITWrapper {
         lljit = exitErr(llvm::orc::LLJITBuilder().create());
     }
 
+    void register_host_function(const char* name, void *addr);
     std::optional<llvm::orc::ResourceTrackerSP> load_module(llvm::orc::ThreadSafeModule &module);
+    std::optional<llvm::orc::ExecutorAddr> lookup_ea(const char* name);
     std::optional<void*> lookup(const char* name);
 };
 }  // namespace carl

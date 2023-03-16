@@ -311,10 +311,10 @@ TEST(Parser, parse_nested_fndecls) {
     ASSERT_TRUE(result);
 
     auto decls = *result;
-    AstPrinter printer(std::cout);
-    for (auto& node : decls) {
-        printer.print(node.get());
-    }
+    // AstPrinter printer(std::cout);
+    // for (auto& node : decls) {
+    //     printer.print(node.get());
+    // }
 
     ASSERT_EQ(decls.size(), 4);
 }
@@ -322,7 +322,7 @@ TEST(Parser, parse_nested_fndecls) {
 TEST(Parser, parse_composition) {
     Parser parser;
     std::string src = 
-    "fn foo(a: bool) : string { return \"foo\"; }"
+    "fn foo(a: bool) : string { return \"foo\" + \"bar\"; }"
     "fn baz(a: float) : bool { return a > 0.; }"
     "fn bar(a: int) : float { return a + 2.; }"
     "let foo2 = foo . baz . bar;";

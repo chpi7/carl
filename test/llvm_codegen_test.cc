@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <cstdio>
+
 #include "carl/ast/ast_printer.h"
 #include "carl/llvm/codegen.h"
 #include "carl/llvm/jit.h"
@@ -82,5 +84,74 @@ TEST(llvmcodegen, while_stmt) {
     jit.load_module(mod);
     auto exprwrapper = jit.lookup("__main");
     ASSERT_TRUE(exprwrapper.has_value());
+    auto __main = (void(*)())(exprwrapper.value());
+    __main();
+}
+
+TEST(llvmcodegen, string) {
+    std::string src = "let s = \"test\";";
+
+    // compile
+    Parser p;
+    auto decls = p.parse(src);
+
+    LLVMCodeGenerator generator;
+    generator.generate(decls);
+    auto mod = generator.take_module();
+
+    // run
+    LLJITWrapper jit;
+    jit.load_module(mod);
+    auto exprwrapper = jit.lookup("__main");
+    ASSERT_TRUE(exprwrapper.has_value());
+}
+
+int VAL = 0;
+extern "C" {
+    void set_val() {
+        VAL = 1;
+    }
+
+    int inc_val(int x) {
+        VAL += x;
+        return VAL;
+    }
+}
+
+TEST(llvmcodegen, register_and_call_host_functions) {
+    LLJITWrapper jit;
+
+    jit.register_host_function("set_val", (void*)(set_val));
+    jit.register_host_function("inc_val", (void*)(inc_val));
+    jit.register_host_function("printf", (void*)(printf));
+    auto pf = jit.lookup_ea("printf").value().toPtr<int(const char*, ...)>();
+    pf("test %i\n", 1);
+
+    LLVMCodeGenerator gen;
+    gen.generate_dummy();
+    auto m = gen.take_module();
+    jit.load_module(m);
+
+    auto r = jit.lookup_ea("__main");
+    auto __main = r.value().toPtr<void()>();
+
+    VAL = 0;
+    __main();
+    ASSERT_EQ(VAL, 3);
+}
+
+TEST(llvmcodegen, register_host_puts) {
+    LLJITWrapper jit;
+
+    jit.register_host_function("puts", (void*)(puts));
+    auto lr = jit.lookup_ea("puts");
+    ASSERT_TRUE(lr.has_value());
+
+    auto& x = lr.value();
+    auto __puts = x.toPtr<int(const char*)>();
+    auto __puts1 = puts;
+    const char* test = "hello world";
+    __puts1(test);
+    __puts(test);
 }
 }  // namespace

@@ -46,6 +46,28 @@ llvm::Function* LLVMCodeGenerator::start_wrapper_function() {
 
 void LLVMCodeGenerator::end_wrapper_function() { builder->CreateRetVoid(); }
 
+static llvm::Function* createExtCall(llvm::LLVMContext& context, llvm::Module& mod) {
+    auto voidType = llvm::Type::getVoidTy(context);
+    llvm::FunctionType* voidFunType = llvm::FunctionType::get(voidType, false);
+    llvm::Function* voidFun = llvm::Function::Create(voidFunType, llvm::Function::ExternalLinkage, "set_val", mod);
+    return voidFun;
+}
+
+void LLVMCodeGenerator::generate_dummy() {
+    start_wrapper_function();    
+    auto f = createExtCall(*context, *module);
+    builder->CreateCall(f, llvm::None, "set_val_call");
+
+    auto intType = llvm::Type::getInt32Ty(*context);
+    llvm::FunctionType* incType = llvm::FunctionType::get(intType, intType, false);
+    llvm::Function* incFun = llvm::Function::Create(incType, llvm::Function::ExternalLinkage, "inc_val", *module);
+
+    auto intConst = llvm::ConstantInt::getSigned(intType, 2);
+    builder->CreateCall(incFun, intConst, "inc_call");
+
+    end_wrapper_function();
+}
+
 void LLVMCodeGenerator::generate_eval(std::shared_ptr<Expression> expr) {
     initialize();
 
@@ -269,7 +291,15 @@ void LLVMCodeGenerator::visit_variable(Variable* variable) {
 }
 
 void LLVMCodeGenerator::visit_literal(Literal* literal) {}
-void LLVMCodeGenerator::visit_string(String* string) {}
+
+void LLVMCodeGenerator::visit_string(String* string) {
+    // token still has the '"'
+    const char* start = string->get_value().start + 1;
+    int len = string->get_value().length - 2;
+    auto x = llvm::StringRef(start, len);
+    result = llvm::ConstantDataArray::getString(*context, x);
+}
+
 void LLVMCodeGenerator::visit_number(Number* number) {
     if (number->get_type()->get_base_type() == types::BaseType::FLOAT) {
         auto num = (double)atoi(number->get_value().start);

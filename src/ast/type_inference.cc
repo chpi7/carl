@@ -126,6 +126,12 @@ void TypeInference::visit_binary(Binary* binary) {
 
     switch (op_token) {
         case TOKEN_PLUS:
+            // for + we accept string as well
+            if (type_l->get_base_type() == types::BaseType::STRING &&
+                type_r->get_base_type() == types::BaseType::STRING) {
+                result = type_l;
+                break;
+            }
         case TOKEN_MINUS:
         case TOKEN_STAR:
         case TOKEN_SLASH:
