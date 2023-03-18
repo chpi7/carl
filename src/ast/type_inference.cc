@@ -205,7 +205,22 @@ void TypeInference::visit_binary(Binary* binary) {
 }
 
 void TypeInference::visit_unary(Unary* unary) {
+    auto op_tok = unary->get_op();
     result = do_visit(unary->get_operand());
+    switch (op_tok.type) {
+        case TOKEN_MINUS: {
+            if (!result->is_number()) {
+                report_error("Expected number as unary - operand.", op_tok);
+            }
+            break;
+        }
+        case TOKEN_BANG: {
+            if (result->get_base_type() != types::BaseType::BOOL) {
+                report_error("Expected bool as unary ! operand.", op_tok);
+            }
+            break;
+        }
+    }
     unary->set_type(result);
 }
 

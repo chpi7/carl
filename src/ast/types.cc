@@ -1,5 +1,7 @@
 #include "carl/ast/types.h"
 
+#include <vector>
+
 using namespace carl;
 using namespace carl::types;
 
@@ -17,15 +19,33 @@ bool Int::can_cast_to(Type* other) {
     return get_base_type() == other->get_base_type();
 }
 std::string Int::str() { return std::string("int"); }
+llvm::Type* Int::get_llvm_type(llvm::LLVMContext& ctx) {
+    return llvm::Type::getInt64Ty(ctx);
+}
 
 BaseType Float::get_base_type() { return BaseType::FLOAT; }
 std::string Float::str() { return std::string("float"); }
+llvm::Type* Float::get_llvm_type(llvm::LLVMContext& ctx) {
+    return llvm::Type::getDoubleTy(ctx);
+}
 
 BaseType Bool::get_base_type() { return BaseType::BOOL; }
 std::string Bool::str() { return std::string("bool"); }
+llvm::Type* Bool::get_llvm_type(llvm::LLVMContext& ctx) {
+    return llvm::Type::getInt1Ty(ctx);
+}
 
 BaseType String::get_base_type() { return BaseType::STRING; }
 std::string String::str() { return std::string("string"); }
+llvm::Type* String::get_llvm_type(llvm::LLVMContext& ctx) {
+    llvm::Type* t = llvm::StructType::getTypeByName(ctx, llvm_type_name);
+    if (t == nullptr) {
+        t = llvm::StructType::create(llvm_type_name,
+                                     llvm::Type::getInt64Ty(ctx),
+                                     llvm::Type::getInt8PtrTy(ctx));
+    }
+    return t;
+}
 
 Fn::Fn() : parameters({}), ret(std::make_shared<Void>()) {}
 Fn::Fn(std::vector<std::shared_ptr<Type>> parameters)
@@ -33,6 +53,12 @@ Fn::Fn(std::vector<std::shared_ptr<Type>> parameters)
 Fn::Fn(std::vector<std::shared_ptr<Type>> parameters, std::shared_ptr<Type> ret)
     : parameters(parameters), ret(ret){};
 BaseType Fn::get_base_type() { return BaseType::FN; }
+llvm::Type* Fn::get_llvm_type(llvm::LLVMContext& ctx) {
+    auto ret_type = ret->get_llvm_type(ctx);
+    std::vector<llvm::Type*> fps;
+    for (auto& param : parameters) fps.push_back(param->get_llvm_type(ctx));
+    return llvm::FunctionType::get(ret_type, fps, false);
+}
 
 const std::vector<std::shared_ptr<Type>> Fn::get_parameters() {
     return parameters;

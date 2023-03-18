@@ -118,7 +118,15 @@ void LLVMCodeGenerator::visit_exprstmt(ExprStmt* exprstmt) {
     do_visit(exprstmt->get_expr());
 }
 
-void LLVMCodeGenerator::visit_returnstmt(ReturnStmt* returnstmt) {}
+void LLVMCodeGenerator::visit_returnstmt(ReturnStmt* returnstmt) {
+    auto ret_type = returnstmt->get_expr()->get_type()->get_llvm_type(*context);
+    if (ret_type->isVoidTy()) {
+        result = builder->CreateRetVoid();
+    } else {
+        auto ret_val = do_visit(returnstmt->get_expr());
+        result = builder->CreateRet(ret_val);
+    }
+}
 
 void LLVMCodeGenerator::visit_whilestmt(WhileStmt* whilestmt) {
     auto parent_fn = builder->GetInsertBlock()->getParent();
@@ -154,17 +162,28 @@ void LLVMCodeGenerator::visit_block(Block* block) {
     }
 }
 
-void LLVMCodeGenerator::visit_fndecl(FnDecl* fndecl) {}
+void LLVMCodeGenerator::visit_fndecl(FnDecl* fndecl) {
+    for (auto& arg : fndecl->get_formals()) do_visit(arg);
 
-void LLVMCodeGenerator::visit_formalparam(FormalParam* formalparam) {}
+    auto t = static_cast<llvm::FunctionType*>(
+        fndecl->get_type()->get_llvm_type(*context));
+    auto name = std::string(fndecl->get_name());
+    auto f = llvm::Function::Create(t, llvm::Function::ExternalLinkage, name,
+                                    *module);
+}
+
+void LLVMCodeGenerator::visit_formalparam(FormalParam* formalparam) {
+    // nothing to do here atm.
+}
 
 void LLVMCodeGenerator::visit_letdecl(LetDecl* letdecl) {
     auto name =
         std::string(letdecl->get_name().start, letdecl->get_name().length);
-    auto initial_value = do_visit(letdecl->get_initializer());
+    auto init = letdecl->get_initializer();
+    auto initial_value = do_visit(init);
 
-    auto inst =
-        builder->CreateAlloca(getIntType(*context), nullptr, name.c_str());
+    auto inst = builder->CreateAlloca(init->get_type()->get_llvm_type(*context),
+                                      nullptr, name.c_str());
     names_values.insert(std::make_pair(name, inst));
     builder->CreateStore(initial_value, inst);
 }
@@ -198,6 +217,10 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
         lhs->getType()->isDoubleTy() && rhs->getType()->isDoubleTy();
     auto is_int =
         lhs->getType()->isIntegerTy() && rhs->getType()->isIntegerTy();
+
+    auto str_type = types::String().get_llvm_type(*context);
+    auto is_string =
+        lhs->getType() == str_type && rhs->getType() == str_type;
 
     if (is_float) {
         switch (op_token) {
@@ -269,13 +292,29 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
                 log_error("unsupported int binop found");
                 break;
         }
+    } else if (is_string && op_token == TOKEN_PLUS) {
+        // TODO implement string concatenation
     } else {
         // unsupported.
         result = nullptr;
     }
 }
 
-void LLVMCodeGenerator::visit_unary(Unary* unary) {}
+void LLVMCodeGenerator::visit_unary(Unary* unary) {
+    auto op = unary->get_op().type;
+    auto operand = do_visit(unary->get_operand());
+    switch (op) {
+        case TOKEN_MINUS: {
+            result = builder->CreateNeg(operand);
+            break;
+        }
+        case TOKEN_BANG: {
+            result = builder->CreateNot(operand);
+            break;
+        }
+        default: log_error("unsupported binop " + std::string(unary->get_op()));
+    }
+}
 
 void LLVMCodeGenerator::visit_variable(Variable* variable) {
     auto name =
@@ -290,9 +329,17 @@ void LLVMCodeGenerator::visit_variable(Variable* variable) {
         builder->CreateLoad(alloca->getAllocatedType(), alloca, name.c_str());
 }
 
-void LLVMCodeGenerator::visit_literal(Literal* literal) {}
+void LLVMCodeGenerator::visit_literal(Literal* literal) {
+    if (literal->get_type()->get_base_type() == types::BaseType::BOOL) {
+        bool val = std::string(literal->get_value()) == "true";
+        result = llvm::ConstantInt::getBool(literal->get_type()->get_llvm_type(*context), val);
+    } else {
+        log_error("unsupported base type for literal");
+    }
+}
 
 void LLVMCodeGenerator::visit_string(String* string) {
+    // TODO: change to heap allocation + implement + as concat
     // token still has the '"'
     const char* start = string->get_value().start + 1;
     int len = string->get_value().length - 2;
@@ -301,11 +348,12 @@ void LLVMCodeGenerator::visit_string(String* string) {
 }
 
 void LLVMCodeGenerator::visit_number(Number* number) {
+    auto num_type = number->get_type()->get_llvm_type(*context);
     if (number->get_type()->get_base_type() == types::BaseType::FLOAT) {
         auto num = (double)atoi(number->get_value().start);
-        result = llvm::ConstantFP::get(*context, llvm::APFloat(num));
+        result = llvm::ConstantFP::get(num_type, num);
     } else if (number->get_type()->get_base_type() == types::BaseType::INT) {
         auto num = atoi(number->get_value().start);
-        result = llvm::ConstantInt::getSigned(getIntType(*context), num);
+        result = llvm::ConstantInt::getSigned(num_type, num);
     }
 }
