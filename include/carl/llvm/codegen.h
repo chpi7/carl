@@ -30,7 +30,7 @@ class LLVMCodeGenerator : public AstNodeVisitor {
    public:
     LLVMCodeGenerator();
     void initialize();
-    llvm::orc::ThreadSafeModule take_module();
+    llvm::orc::ThreadSafeModule take_module(bool print_module = false);
     void generate_dummy();
     void generate_eval(std::shared_ptr<Expression> expr);
     void generate(std::vector<std::shared_ptr<AstNode>> declarations);
@@ -53,6 +53,7 @@ class LLVMCodeGenerator : public AstNodeVisitor {
     void visit_literal(Literal* literal);
     void visit_string(String* string);
     void visit_number(Number* number);
+    void visit_call(Call* call);
 };
 }  // namespace carl
 

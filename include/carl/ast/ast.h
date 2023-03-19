@@ -6,6 +6,7 @@
 #include <memory>
 #include <list>
 #include <vector>
+#include <string>
 #include "carl/scanner.h"
 #include "carl/common.h"
 #include "carl/ast/types.h"
@@ -81,19 +82,27 @@ class FormalParam : public AstNode {
 class FnDecl : public AstNode {
    private:
     Token name;
+    std::string sname;
     std::list<std::shared_ptr<FormalParam>> formals;
     std::shared_ptr<Block> body;
     std::shared_ptr<types::Type> type;
+    bool is_extern;
    public:
     AstNodeType get_node_type();
     FnDecl(Token name, std::list<std::shared_ptr<FormalParam>> formals, std::shared_ptr<Block> body) : name(name), formals(formals), body(body) {
+        this->sname = std::string(name.start,name.length);
         this->type = std::make_shared<types::Unknown>();
+        this->is_extern = false;
     }
     Token get_name() { return this->name; }
+    std::string get_sname() { return this->sname; }
     std::list<std::shared_ptr<FormalParam>> get_formals() { return this->formals; }
     std::shared_ptr<Block> get_body() { return this->body; }
     std::shared_ptr<types::Type> get_type() { return this->type; }
+    bool get_is_extern() { return this->is_extern; }
+    void set_sname(std::string sname) { this->sname = sname;}
     void set_type(std::shared_ptr<types::Type> type) { this->type = type;}
+    void set_is_extern(bool is_extern) { this->is_extern = is_extern;}
     void accept(AstNodeVisitor* visitor);
 };
 

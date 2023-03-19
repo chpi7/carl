@@ -154,7 +154,24 @@ void Parser::synchronize() {
 }
 
 ParseResult Parser::parse_r(std::string& src) {
+
+    const char* n = "__puts";
+    Token t;
+    t.start = n;
+    t.length = 6;
+    auto fp1 = std::make_shared<FormalParam>(t);
+    fp1->set_type(std::make_shared<types::String>());
+    std::list<std::shared_ptr<FormalParam>> p {fp1};
+    std::list<std::shared_ptr<AstNode>> d;
+    auto puts_decl = std::make_shared<FnDecl>(t, p, std::make_shared<Block>(d));
+    puts_decl->set_is_extern(true);
+    std::vector<std::shared_ptr<types::Type>> y = {std::make_shared<types::String>()};
+    auto x = std::make_shared<types::Fn>(y, std::make_shared<types::Int>());
+    puts_decl->set_type(x);
+    environment->set_function("__puts", puts_decl.get());
+
     auto decls = parse(src);
+    decls.insert(decls.begin(), puts_decl);
 
     if (has_error) {
         return ParseResult::make_error(ParseError{"some error occured"});

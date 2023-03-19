@@ -1,8 +1,9 @@
 IFDEF_NAME = "carl_ast_h"
-INCLUDES = ["<sstream>", "<fstream>", "<memory>", "<list>", "<vector>", '"carl/scanner.h"', '"carl/common.h"', '"carl/ast/types.h"']
+INCLUDES = ["<sstream>", "<fstream>", "<memory>", "<list>", "<vector>", "<string>", '"carl/scanner.h"', '"carl/common.h"', '"carl/ast/types.h"']
 NAMESPACE = "carl"
 FORWARD_DECLS = ["class AstNodeVisitor;"]
-REPLACEMENTS = {"@ptr": "std::shared_ptr", "@list": "std::list", "@vec": "std::vector"}
+REPLACEMENTS = {"@ptr": "std::shared_ptr", "@list": "std::list", "@vec": "std::vector", 
+                "@tok_to_sname_init": "std::string(name.start,name.length)"}
 
 ASTNODE = """class AstNode {
    public:
@@ -20,9 +21,11 @@ TYPES = [
     "FormalParam(Token name, @ptr<types::Type> type?=std::make_shared<types::Unknown>()) : AstNode",
     """FnDecl(
         Token name, 
+        std::string sname?=@tok_to_sname_init,
         @list<@ptr<FormalParam>> formals, 
         @ptr<Block> body, 
-        @ptr<types::Type> type?=std::make_shared<types::Unknown>()
+        @ptr<types::Type> type?=std::make_shared<types::Unknown>(),
+        bool is_extern?=false
     ) : AstNode""",
     """LetDecl(
         Token name,

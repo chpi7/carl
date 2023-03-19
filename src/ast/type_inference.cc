@@ -44,8 +44,13 @@ void TypeInference::visit_formalparam(FormalParam* formalparam) {
 
 void TypeInference::visit_fndecl(FnDecl* fndecl) {
     // register fn in current env
-    auto fname = std::string(fndecl->get_name().start, fndecl->get_name().length);
+    auto fname = fndecl->get_sname();
     env->set_function(fname, fndecl->get_type());
+
+    // dont typecheck anything here for now :)
+    if (fndecl->get_is_extern()) {
+        return;
+    }
 
     result = fndecl->get_type();
 

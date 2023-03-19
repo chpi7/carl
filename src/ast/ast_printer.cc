@@ -41,6 +41,7 @@ void AstPrinter::visit_fndecl(FnDecl* fndecl) {
     indent++;
     write_indent();
     os << ".name = " << std::string(fndecl->get_name().start, fndecl->get_name().length) << "\n";
+
     write_indent();
     os << ".formals\n";
     indent++;
@@ -53,6 +54,7 @@ void AstPrinter::visit_fndecl(FnDecl* fndecl) {
     indent++;
     fndecl->get_body()->accept(this);
     indent--;
+
 
     indent--;
 }

@@ -140,18 +140,37 @@ TEST(llvmcodegen, register_and_call_host_functions) {
     ASSERT_EQ(VAL, 3);
 }
 
-TEST(llvmcodegen, register_host_puts) {
+TEST(llvmcodegen, use_host_puts) {
     LLJITWrapper jit;
 
-    jit.register_host_function("puts", (void*)(puts));
-    auto lr = jit.lookup_ea("puts");
+    auto lr = jit.lookup_ea("__puts");
     ASSERT_TRUE(lr.has_value());
 
     auto& x = lr.value();
     auto __puts = x.toPtr<int(const char*)>();
-    auto __puts1 = puts;
-    const char* test = "hello world";
-    __puts1(test);
+    const char* test = "hello world from host fn";
     __puts(test);
+}
+
+TEST(llvmcodegen, let_string_while_puts) {
+    LLJITWrapper jit;
+    LLVMCodeGenerator cg;
+    Parser p;
+
+    std::string src = 
+        "let s = \"Hello World from carl!\";"
+        "let c = 2;"
+        "while (c > 0) {"
+        "   __puts(s);"
+        "   c = c - 1;"
+        "}";
+    auto decls = p.parse_r(src);
+
+    cg.generate(*decls);
+    auto mod = cg.take_module();
+
+    jit.load_module(mod);
+    auto __main = jit.lookup_ea("__main")->toPtr<void()>();
+    __main();
 }
 }  // namespace

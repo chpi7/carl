@@ -2,8 +2,23 @@
 
 using namespace carl;
 
+LLJITWrapper::LLJITWrapper() {
+    llvm::orc::LLJITBuilder builder;
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+
+    lljit = exitErr(llvm::orc::LLJITBuilder().create());
+
+    // register mandatory external functions:
+    register_host_function("__malloc", (void*)malloc);
+    register_host_function("__free", (void*)free);
+    register_host_function("__puts", (void*)(puts));
+}
+
 void LLJITWrapper::register_host_function(const char* name, void *addr) {
+    // more or less this:
     // https://llvm.org/docs/ORCv2.html#how-to-add-process-and-library-symbols-to-jitdylibs
+
     llvm::orc::MangleAndInterner mangler(lljit->getExecutionSession(), lljit->getDataLayout());
 
     llvm::orc::SymbolStringPtr sym_name = lljit->getExecutionSession().intern(name);

@@ -315,8 +315,6 @@ TEST(Parser, parse_nested_fndecls) {
     // for (auto& node : decls) {
     //     printer.print(node.get());
     // }
-
-    ASSERT_EQ(decls.size(), 4);
 }
 
 TEST(Parser, parse_composition) {

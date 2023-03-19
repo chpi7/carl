@@ -31,6 +31,7 @@ class Type {
     virtual llvm::Type* get_llvm_type(llvm::LLVMContext& ctx) {
         return llvm::Type::getVoidTy(ctx);
     }
+    virtual bool is_rt_heap_obj() { return false; }
 };
 
 class Void : public Type {
@@ -80,6 +81,7 @@ class String : public Type {
     BaseType get_base_type();
     std::string str();
     llvm::Type* get_llvm_type(llvm::LLVMContext& ctx);
+    bool is_rt_heap_obj();
 };
 
 class Fn : public Type {

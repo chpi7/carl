@@ -15,14 +15,7 @@ class LLJITWrapper {
     llvm::ExitOnError exitErr;
 
    public:
-    LLJITWrapper() {
-        llvm::orc::LLJITBuilder builder;
-        llvm::InitializeNativeTarget();
-        llvm::InitializeNativeTargetAsmPrinter();
-
-        lljit = exitErr(llvm::orc::LLJITBuilder().create());
-    }
-
+    LLJITWrapper();
     void register_host_function(const char* name, void *addr);
     std::optional<llvm::orc::ResourceTrackerSP> load_module(llvm::orc::ThreadSafeModule &module);
     std::optional<llvm::orc::ExecutorAddr> lookup_ea(const char* name);

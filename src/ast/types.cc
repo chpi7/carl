@@ -46,6 +46,7 @@ llvm::Type* String::get_llvm_type(llvm::LLVMContext& ctx) {
     }
     return t;
 }
+bool String::is_rt_heap_obj() { return true; }
 
 Fn::Fn() : parameters({}), ret(std::make_shared<Void>()) {}
 Fn::Fn(std::vector<std::shared_ptr<Type>> parameters)
