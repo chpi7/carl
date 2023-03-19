@@ -9,6 +9,13 @@
 #include "llvm/Support/TargetSelect.h"
 
 namespace carl {
+extern "C" {
+    typedef struct {
+        uint64_t len;
+        const char* str;
+    } __carl_string;
+}
+
 class LLJITWrapper {
     private:
     std::unique_ptr<llvm::orc::LLJIT> lljit;

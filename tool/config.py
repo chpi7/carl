@@ -9,7 +9,7 @@ ASTNODE = """class AstNode {
    public:
     virtual ~AstNode() = default;
     virtual void accept(AstNodeVisitor* visitor) = 0;
-    virtual AstNodeType get_node_type() = 0;
+    virtual AstNodeType get_node_type() const = 0;
 };"""
 
 TYPES = [

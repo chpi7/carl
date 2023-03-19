@@ -1,6 +1,24 @@
 #include "carl/llvm/jit.h"
 
+#include <cstdint>
+
 using namespace carl;
+
+extern "C" {
+    void* my_malloc(size_t s) {
+        auto m = malloc(s);
+        return m;
+    }
+
+    void debug(int(*memory)(const char*)) {
+        return;
+    }
+
+    int my_puts(__carl_string* s) {
+        int m = puts(s->str);
+        return m;
+    }
+}
 
 LLJITWrapper::LLJITWrapper() {
     llvm::orc::LLJITBuilder builder;
@@ -10,9 +28,10 @@ LLJITWrapper::LLJITWrapper() {
     lljit = exitErr(llvm::orc::LLJITBuilder().create());
 
     // register mandatory external functions:
-    register_host_function("__malloc", (void*)malloc);
+    register_host_function("__malloc", (void*)my_malloc);
+    register_host_function("__debug", (void*)debug);
     register_host_function("__free", (void*)free);
-    register_host_function("__puts", (void*)(puts));
+    register_host_function("__puts", (void*)(my_puts));
 }
 
 void LLJITWrapper::register_host_function(const char* name, void *addr) {

@@ -97,7 +97,7 @@ TEST(llvmcodegen, string) {
 
     LLVMCodeGenerator generator;
     generator.generate(decls);
-    auto mod = generator.take_module();
+    auto mod = generator.take_module(true);
 
     // run
     LLJITWrapper jit;
@@ -147,9 +147,29 @@ TEST(llvmcodegen, use_host_puts) {
     ASSERT_TRUE(lr.has_value());
 
     auto& x = lr.value();
-    auto __puts = x.toPtr<int(const char*)>();
-    const char* test = "hello world from host fn";
-    __puts(test);
+    auto __puts = x.toPtr<int(__carl_string* s)>();
+    std::string test = "hello world from host fn";
+    __carl_string s {.len = test.size() + 1, .str = test.c_str()};
+    __puts(&s);
+}
+
+TEST(llvmcodegen, simple_builtin_call) {
+    LLJITWrapper jit;
+    LLVMCodeGenerator cg;
+    Parser p;
+
+    std::string src = 
+        "let s = \"hello world\";"
+        "__puts(s);";
+
+    auto decls = p.parse_r(src);
+
+    cg.generate(*decls);
+    auto mod = cg.take_module(true);
+
+    jit.load_module(mod);
+    auto __main = jit.lookup_ea("__main")->toPtr<void()>();
+    __main();
 }
 
 TEST(llvmcodegen, let_string_while_puts) {
@@ -159,15 +179,17 @@ TEST(llvmcodegen, let_string_while_puts) {
 
     std::string src = 
         "let s = \"Hello World from carl!\";"
-        "let c = 2;"
+        "let c = 3;"
         "while (c > 0) {"
-        "   __puts(s);"
+        "   let tmp = s;"
+        "   let foo = __puts;"
+        "   foo(tmp);"
         "   c = c - 1;"
         "}";
     auto decls = p.parse_r(src);
 
     cg.generate(*decls);
-    auto mod = cg.take_module();
+    auto mod = cg.take_module(true);
 
     jit.load_module(mod);
     auto __main = jit.lookup_ea("__main")->toPtr<void()>();

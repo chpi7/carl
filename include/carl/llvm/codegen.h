@@ -5,6 +5,8 @@
 #include <memory>
 
 #include "carl/ast/ast.h"
+#include "carl/name_environment.h"
+
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
 #include "llvm/ExecutionEngine/Orc/Core.h"
 #include "llvm/IR/Constants.h"
@@ -15,12 +17,12 @@ namespace carl {
 
 class LLVMCodeGenerator : public AstNodeVisitor {
    private:
+    std::unique_ptr<Environment<llvm::AllocaInst*, llvm::Function*>> names;
     bool has_error;
     llvm::Value* result;
     std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::IRBuilder<>> builder;
     std::unique_ptr<llvm::Module> module;
-    std::map<std::string, llvm::AllocaInst*> names_values;
 
    private:
     void log_error(std::string s);

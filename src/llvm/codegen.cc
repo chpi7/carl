@@ -11,7 +11,7 @@
 using namespace carl;
 
 static llvm::Value* getConstantInt(llvm::LLVMContext& ctx, uint64_t value) {
-    return llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), value, false);
+    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), value, false);
 }
 
 static llvm::Function* getMallocFunction(llvm::Module& mod, llvm::LLVMContext& ctx) {
@@ -25,20 +25,41 @@ static llvm::Function* getMallocFunction(llvm::Module& mod, llvm::LLVMContext& c
     return llvm::Function::Create(malloc_type, llvm::Function::ExternalLinkage, "__malloc", mod);
 }
 
-static llvm::Function* getFunction(llvm::Module& mod, llvm::LLVMContext& ctx, Call* call) {
-    std::string fname = call->get_fname();
-    auto* f = mod.getFunction(fname);
+static llvm::Function* getDebugFunction(llvm::Module& mod, llvm::LLVMContext& ctx) {
+    auto* f = mod.getFunction("__debug");
     if (f) return f;
 
-    // function does not exist --> assume extern call
-    auto ret_type = call->get_type()->get_llvm_type(ctx);
-    std::vector<llvm::Type*> arg_types;
-    for (auto& arg : call->get_arguments()) {
-        arg_types.push_back(arg->get_type()->get_llvm_type(ctx));
-    }
-    auto fn_type = llvm::FunctionType::get(ret_type, arg_types, false);
+    auto void_ptr_type = llvm::PointerType::getVoidTy(ctx);
+    auto size_t_type = llvm::PointerType::getInt64PtrTy(ctx);
+    auto malloc_type = llvm::FunctionType::get(void_ptr_type, size_t_type, false);
 
-    return llvm::Function::Create(fn_type, llvm::Function::ExternalLinkage, fname, mod);
+    return llvm::Function::Create(malloc_type, llvm::Function::ExternalLinkage, "__debug", mod);
+}
+
+static llvm::Function* getFunction(llvm::Module& mod, llvm::LLVMContext& ctx,
+                                   FnDecl* decl = nullptr, bool create = false) {
+    std::string fname = decl->get_sname();
+    llvm::Function* f = mod.getFunction(fname);
+    if (f) return f;
+    if (!create || decl == nullptr) return nullptr;
+
+    if (decl->get_type()->get_base_type() != types::BaseType::FN) {
+        std::cerr << "Can't get function type of non fn base type."
+                  << std::endl;
+        return nullptr;
+    }
+    auto carl_fn_type = std::static_pointer_cast<types::Fn>(decl->get_type());
+    auto llvm_fn_type =
+        static_cast<llvm::FunctionType*>(carl_fn_type->get_llvm_fn_type(ctx));
+    f = llvm::Function::Create(
+        llvm_fn_type, llvm::Function::ExternalLinkage, fname, mod);
+
+    int arg_idx = 0;
+    for (auto& arg : decl->get_formals()) {
+        f->getArg(arg_idx++)->setName(std::string(arg->get_name()));
+    }
+
+    return f;
 }
 
 static llvm::Function* getFreeFunction(llvm::Module& mod, llvm::LLVMContext& ctx) {
@@ -52,7 +73,24 @@ static llvm::Function* getFreeFunction(llvm::Module& mod, llvm::LLVMContext& ctx
     return llvm::Function::Create(free_type, llvm::Function::ExternalLinkage, "__free", mod);
 }
 
-LLVMCodeGenerator::LLVMCodeGenerator() { initialize(); }
+static llvm::FunctionType* getFnTypeForCall(llvm::LLVMContext& ctx,
+                                            Call* call) {
+    auto ret_type = call->get_type()->get_llvm_rt_type(ctx);
+    std::vector<llvm::Type*> fps;
+    for (auto& param : call->get_arguments())
+        fps.push_back(param->get_type()->get_llvm_rt_type(ctx));
+    return llvm::FunctionType::get(ret_type, fps, false);
+}
+
+static llvm::AllocaInst* createAlloca(llvm::BasicBlock* bb, llvm::StringRef name, llvm::Type* type) {
+    llvm::IRBuilder<> tmp_builder(bb, bb->begin());
+    return tmp_builder.CreateAlloca(type, nullptr, name);
+}
+
+LLVMCodeGenerator::LLVMCodeGenerator() { 
+    names = std::make_unique<Environment<llvm::AllocaInst*, llvm::Function*>>(nullptr);
+    initialize();
+}
 
 void LLVMCodeGenerator::log_error(std::string s) {
     has_error = true;
@@ -157,7 +195,7 @@ void LLVMCodeGenerator::visit_exprstmt(ExprStmt* exprstmt) {
 }
 
 void LLVMCodeGenerator::visit_returnstmt(ReturnStmt* returnstmt) {
-    auto ret_type = returnstmt->get_expr()->get_type()->get_llvm_type(*context);
+    auto ret_type = returnstmt->get_expr()->get_type()->get_llvm_rt_type(*context);
     if (ret_type->isVoidTy()) {
         result = builder->CreateRetVoid();
     } else {
@@ -201,15 +239,60 @@ void LLVMCodeGenerator::visit_block(Block* block) {
 }
 
 void LLVMCodeGenerator::visit_fndecl(FnDecl* fndecl) {
-    if (fndecl->get_is_extern()) return;
+    // this doesnt do anything atm
+    // for (auto& arg : fndecl->get_formals()) do_visit(arg);
 
-    for (auto& arg : fndecl->get_formals()) do_visit(arg);
+    // 1. generate code for the actual function
+    auto f = getFunction(*module, *context, fndecl, true);
+    if (!fndecl->get_is_extern()) {
+        llvm::BasicBlock* current_bb = builder->GetInsertBlock();
+        llvm::BasicBlock* body = llvm::BasicBlock::Create(*context, "entry", f);
+        builder->SetInsertPoint(body);
+        names->push();
+        int arg_idx = 0;
+        for (auto& arg : fndecl->get_formals()) {
+            std::string name = arg->get_name();
+            llvm::Value* v = f->getArg(arg_idx++);
+            auto aa = createAlloca(body, name, v->getType());
+            builder->CreateStore(v, aa);
+            names->set_variable(name, aa);
+        }
+        do_visit(fndecl->get_body());
+        names->pop();
+        builder->SetInsertPoint(current_bb);
+    }
 
-    auto t = static_cast<llvm::FunctionType*>(
-        fndecl->get_type()->get_llvm_type(*context));
-    auto name = std::string(fndecl->get_name());
-    auto f = llvm::Function::Create(t, llvm::Function::ExternalLinkage, name,
-                                    *module);
+    // 2. create the runtime heap obj so we can easily pass around functions
+    std::string fname = fndecl->get_sname();
+    auto rt_type = fndecl->get_type()->get_llvm_rt_type(*context);
+    auto rt_type_sz = llvm::ConstantExpr::getSizeOf(rt_type);
+    auto malloc = getMallocFunction(*module, *context);
+    llvm::Value* addr = builder->CreateCall(malloc, rt_type_sz, "fn_heap_wrapper");
+    auto zero = getConstantInt(*context, 0);
+    llvm::Value* fn_ptr_gep = builder->CreateGEP(
+        rt_type, addr,
+        {zero, zero},
+        "fn_heap_field");
+    builder->CreateStore(f, fn_ptr_gep);
+
+    llvm::AllocaInst* local = createAlloca(builder->GetInsertBlock(), fname, rt_type->getPointerTo());
+    builder->CreateStore(addr, local);
+    names->set_variable(fname, local);
+
+    // load struct ptr from local variable
+    // auto rt_struct_ptr = builder->CreateLoad(rt_type->getPointerTo(), local);
+    // load the first element (puts address) from the struct
+    // auto ptrtype = llvm::PointerType::get(*context, 0);
+    // auto gep = builder->CreateGEP(rt_type, rt_struct_ptr, {zero, zero});
+    // auto load_fn_addr_from_alloca = builder->CreateLoad(f->getType(), gep);
+
+    // auto debug = getDebugFunction(*module, *context);
+    // builder->CreateCall(debug, f);
+    // builder->CreateCall(debug, rt_struct_ptr);
+    // builder->CreateCall(debug, load_fn_addr_from_alloca);
+
+
+    result = nullptr;
 }
 
 void LLVMCodeGenerator::visit_formalparam(FormalParam* formalparam) {
@@ -217,38 +300,16 @@ void LLVMCodeGenerator::visit_formalparam(FormalParam* formalparam) {
 }
 
 void LLVMCodeGenerator::visit_letdecl(LetDecl* letdecl) {
-    // 1 compute initial value
-    // 2 allocate heap memory
-    // 3 store initial value into memory
-    // 4 alloca address
-    // TODO all of these steps ...
-
     std::string name(letdecl->get_name());
     auto initializer = letdecl->get_initializer();
-    bool on_heap = initializer->get_type()->is_rt_heap_obj();
+    auto init_type = initializer->get_type();
+
     llvm::Value* initial_value = do_visit(initializer);
+    auto alloca = createAlloca(builder->GetInsertBlock(), name, initial_value->getType());
+    builder->CreateStore(initial_value, alloca);
 
-
-    llvm::Type* alloca_type = initializer->get_type()->get_llvm_type(*context);
-    if (on_heap) alloca_type = llvm::PointerType::get(alloca_type, 0);
-
-    // TODO: insert at beginning of current BB.
-    auto ala_inst = builder->CreateAlloca(alloca_type, nullptr, name.c_str());
-
-    if (on_heap) {
-        auto malloc = getMallocFunction(*module, *context);
-        // this uses the gep trick internally:
-        auto type_size =
-            llvm::ConstantExpr::getSizeOf(initial_value->getType());
-        auto heap_addr = builder->CreateCall(malloc, type_size);
-        builder->CreateStore(initial_value, heap_addr);
-        builder->CreateStore(heap_addr, ala_inst);
-    } else {
-        builder->CreateStore(initial_value, ala_inst);
-    }
-
-    // save local variable alloca for variable access
-    names_values.insert(std::make_pair(name, ala_inst));
+    names->set_variable(name, alloca);
+    result = nullptr;
 }
 
 void LLVMCodeGenerator::visit_assignment(Assignment* assignment) {
@@ -258,11 +319,11 @@ void LLVMCodeGenerator::visit_assignment(Assignment* assignment) {
     auto name = std::string(target_variable->get_name().start,
                             target_variable->get_name().length);
 
-    if (!names_values.contains(name)) {
+    if (!names->has_variable(name)) {
         log_error("named value " + name + " not found.");
         return;
     }
-    auto target_alloca = names_values.at(name);
+    auto target_alloca = names->get_variable(name);
 
     auto value = do_visit(assignment->get_expr());
 
@@ -281,7 +342,7 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
     auto is_int =
         lhs->getType()->isIntegerTy() && rhs->getType()->isIntegerTy();
 
-    auto str_type = types::String().get_llvm_type(*context);
+    auto str_type = types::String().get_llvm_rt_type(*context);
     auto is_string =
         lhs->getType() == str_type && rhs->getType() == str_type;
 
@@ -322,34 +383,34 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
         // Always choose signed operations.
         switch (op_token) {
             case TOKEN_PLUS:
-                result = builder->CreateAdd(lhs, rhs, "fadd");
+                result = builder->CreateAdd(lhs, rhs, "add");
                 break;
             case TOKEN_MINUS:
-                result = builder->CreateSub(lhs, rhs, "fsub");
+                result = builder->CreateSub(lhs, rhs, "sub");
                 break;
             case TOKEN_STAR:
-                result = builder->CreateMul(lhs, rhs, "fmul");
+                result = builder->CreateMul(lhs, rhs, "mul");
                 break;
             case TOKEN_SLASH:
-                result = builder->CreateSDiv(lhs, rhs, "fdiv");
+                result = builder->CreateSDiv(lhs, rhs, "div");
                 break;
             case TOKEN_PERC:
-                result = builder->CreateSRem(lhs, rhs, "frem");
+                result = builder->CreateSRem(lhs, rhs, "rem");
                 break;
             case TOKEN_EQUAL_EQUAL:
-                result = builder->CreateICmpEQ(lhs, rhs, "fcmp");
+                result = builder->CreateICmpEQ(lhs, rhs, "cmp");
                 break;
             case TOKEN_LESS:
-                result = builder->CreateICmpSLT(lhs, rhs, "fcmp");
+                result = builder->CreateICmpSLT(lhs, rhs, "cmp");
                 break;
             case TOKEN_LESS_EQUAL:
-                result = builder->CreateICmpSLE(lhs, rhs, "fcmp");
+                result = builder->CreateICmpSLE(lhs, rhs, "cmp");
                 break;
             case TOKEN_GREATER:
-                result = builder->CreateICmpSGT(lhs, rhs, "fcmp");
+                result = builder->CreateICmpSGT(lhs, rhs, "cmp");
                 break;
             case TOKEN_GREATER_EQUAL:
-                result = builder->CreateICmpSGE(lhs, rhs, "fcmp");
+                result = builder->CreateICmpSGE(lhs, rhs, "cmp");
                 break;
             default:
                 log_error("unsupported int binop found");
@@ -380,15 +441,13 @@ void LLVMCodeGenerator::visit_unary(Unary* unary) {
 }
 
 void LLVMCodeGenerator::visit_variable(Variable* variable) {
-    // TODO make var heap allocated
-    auto name =
-        std::string(variable->get_name().start, variable->get_name().length);
-    if (!names_values.contains(name)) {
+    std::string name = variable->get_name();
+    if (!names->has_variable(name)) {
         log_error("named value " + name + " not found.");
         result = nullptr;
         return;
     }
-    auto alloca = names_values.at(name);
+    auto alloca = names->get_variable(name);
     result =
         builder->CreateLoad(alloca->getAllocatedType(), alloca, name.c_str());
 }
@@ -396,23 +455,38 @@ void LLVMCodeGenerator::visit_variable(Variable* variable) {
 void LLVMCodeGenerator::visit_literal(Literal* literal) {
     if (literal->get_type()->get_base_type() == types::BaseType::BOOL) {
         bool val = std::string(literal->get_value()) == "true";
-        result = llvm::ConstantInt::getBool(literal->get_type()->get_llvm_type(*context), val);
+        result = llvm::ConstantInt::getBool(literal->get_type()->get_llvm_rt_type(*context), val);
     } else {
         log_error("unsupported base type for literal");
     }
 }
 
 void LLVMCodeGenerator::visit_string(String* string) {
-    // TODO: change to heap allocation + implement + as concat
-    // token still has the '"'
     const char* start = string->get_value().start + 1;
     int len = string->get_value().length - 2;
     auto x = llvm::StringRef(start, len);
-    result = llvm::ConstantDataArray::getString(*context, x);
+    auto const_str = llvm::ConstantDataArray::getString(*context, x);
+
+    auto heap_type = string->get_type()->get_llvm_rt_type(*context);
+    auto malloc = getMallocFunction(*module, *context);
+    auto str_wrapper = builder->CreateCall(malloc, llvm::ConstantExpr::getSizeOf(heap_type));
+    auto str_len = llvm::ConstantExpr::getSizeOf(const_str->getType());
+    auto str_addr = builder->CreateCall(malloc, str_len);
+    
+    auto zero = getConstantInt(*context, 0);
+    auto one = getConstantInt(*context, 1);
+
+    auto wr_st_pt = builder->CreateGEP(heap_type, str_wrapper, {zero, one}, "str_data");
+    auto wr_ln_pt = builder->CreateGEP(heap_type, str_wrapper, {zero, zero}, "str_len");
+    builder->CreateStore(str_addr, wr_st_pt);
+    builder->CreateStore(str_len, wr_ln_pt);
+    builder->CreateStore(const_str, str_addr);
+
+    result = str_wrapper;
 }
 
 void LLVMCodeGenerator::visit_number(Number* number) {
-    auto num_type = number->get_type()->get_llvm_type(*context);
+    auto num_type = number->get_type()->get_llvm_rt_type(*context);
     if (number->get_type()->get_base_type() == types::BaseType::FLOAT) {
         auto num = (double)atoi(number->get_value().start);
         result = llvm::ConstantFP::get(num_type, num);
@@ -425,13 +499,24 @@ void LLVMCodeGenerator::visit_number(Number* number) {
 void LLVMCodeGenerator::visit_call(Call* call) {
     // we assume the parser + typechecker have made sure this is a valid call.
     // --> there is always smth to call
-    llvm::Function* callee = getFunction(*module, *context, call);
+
     std::string fname = call->get_fname();
+    llvm::AllocaInst* alloca = names->get_variable(fname);
+    llvm::Value* fn_heap_obj_ptr = builder->CreateLoad(alloca->getAllocatedType(), alloca, "ld_fn_wrapper");
+    auto zero = getConstantInt(*context, 0);
+    llvm::Value* ptr_to_fn_addr = builder->CreateGEP(
+        llvm::StructType::getTypeByName(*context, "__carl_fn"), fn_heap_obj_ptr,
+        {zero, zero}, "ptr_to_fn_addr");
+    
+    // opaque ptrs so it doesnt matter what it actually is :)
+    auto some_ptr = llvm::PointerType::get(*context, 0);
+    llvm::Value* fn_addr = builder->CreateLoad(some_ptr, ptr_to_fn_addr, fname);
 
     std::vector<llvm::Value*> args;
     for (auto& arg : call->get_arguments()) {
         args.push_back(do_visit(arg));
     }
 
-    builder->CreateCall(callee, args, fname);
+    auto fn_type = getFnTypeForCall(*context, call);
+    builder->CreateCall(fn_type, fn_addr, args, fname);
 }

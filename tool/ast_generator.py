@@ -38,7 +38,7 @@ def generate_member_decls(members: list[ClassMember]):
 def generate_member_getters(members: list[ClassMember]):
     ds = list()
     for m in members:
-        d = f"    {m.typename} get_{m.name}() {{ return this->{m.name}; }}"
+        d = f"    {m.typename} get_{m.name}() const {{ return this->{m.name}; }}"
         ds.append(d)
     return "\n".join(ds)
 
@@ -55,7 +55,7 @@ def generate_class_definition(cls: Class):
 {"   private:" if cls.members else ""}
 {generate_member_decls(cls.members)}
    public:
-    AstNodeType get_node_type();
+    AstNodeType get_node_type() const;
     {generate_constructor(cls)}
 {generate_member_getters(cls.members)}
 {generate_member_setters(cls.members)}
@@ -93,7 +93,7 @@ def generate_ast_node_get_node_type_impls(classes: list[Class]):
     l = list()
     for cls in classes:
         l.append(
-            f"AstNodeType {cls.name}::get_node_type() {{ return AstNodeType::{cls.name}; }}"
+            f"AstNodeType {cls.name}::get_node_type() const {{ return AstNodeType::{cls.name}; }}"
         )
     return "\n".join(l)
 
