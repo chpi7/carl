@@ -19,7 +19,8 @@ using TypeInferenceResult = Result<nullptr_t, TypeInferenceError>;
 
 class TypeInference : public AstNodeVisitor {
    private:
-    std::unique_ptr<Environment<std::shared_ptr<types::Type>, std::shared_ptr<types::Type>>> env;
+    std::unique_ptr<Environment<std::shared_ptr<types::Type>>> env;
+    std::unique_ptr<Environment<std::shared_ptr<types::Type>>> fn_env;
     std::shared_ptr<types::Type> result;
     std::optional<TypeInferenceError> error;
 

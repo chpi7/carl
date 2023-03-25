@@ -13,8 +13,8 @@ static std::vector<std::shared_ptr<ReturnStmt>> find_returns(std::shared_ptr<Blo
 }
 
 TypeInference::TypeInference() {
-    env = std::make_unique<Environment<std::shared_ptr<types::Type>,
-                                       std::shared_ptr<types::Type>>>(nullptr);
+    env = std::make_unique<Environment<std::shared_ptr<types::Type>>>(nullptr);
+    fn_env = std::make_unique<Environment<std::shared_ptr<types::Type>>>(nullptr);
 }
 
 TypeInferenceResult TypeInference::run(
@@ -45,7 +45,7 @@ void TypeInference::visit_formalparam(FormalParam* formalparam) {
 void TypeInference::visit_fndecl(FnDecl* fndecl) {
     // register fn in current env
     auto fname = fndecl->get_sname();
-    env->set_function(fname, fndecl->get_type());
+    fn_env->set_variable(fname, fndecl->get_type());
 
     // dont typecheck anything here for now :)
     if (fndecl->get_is_extern()) {
@@ -56,6 +56,7 @@ void TypeInference::visit_fndecl(FnDecl* fndecl) {
 
     // then go into inside env for the function where the formals are known
     UseNewEnv _(env.get());
+    UseNewEnv __(fn_env.get());
 
     for (auto& fp : fndecl->get_formals()) do_visit(fp);
     do_visit(fndecl->get_body());
@@ -111,6 +112,7 @@ void TypeInference::visit_whilestmt(WhileStmt* whilestmt) {
 
 void TypeInference::visit_block(Block* block) {
     UseNewEnv _(env.get());
+    UseNewEnv __(fn_env.get());
     for (auto& decl : block->get_declarations()) do_visit(decl);
 }
 
@@ -232,8 +234,8 @@ void TypeInference::visit_unary(Unary* unary) {
 void TypeInference::visit_variable(Variable* variable) {
     std::string vname = variable->get_name();
     std::shared_ptr<types::Type> vtype;
-    if (env->has_function(vname)) {
-        vtype = env->get_function(vname);
+    if (fn_env->has_variable(vname)) {
+        vtype = fn_env->get_variable(vname);
     } else if (env->has_variable(vname)) {
         vtype = env->get_variable(vname);
     } else {
@@ -259,8 +261,8 @@ void TypeInference::visit_number(Number* number) {
 void TypeInference::visit_call(Call* call) {
     std::string callee_name = call->get_fname();
     std::shared_ptr<types::Type> callee_type;
-    if (env->has_function(callee_name)) {
-        callee_type = env->get_function(callee_name);
+    if (fn_env->has_variable(callee_name)) {
+        callee_type = fn_env->get_variable(callee_name);
     } else if (env->has_variable(callee_name)) {
         callee_type = env->get_variable(callee_name);
     } else {
@@ -303,9 +305,9 @@ void TypeInference::visit_partialapp(PartialApp* partialapp) {
         } else {
             orig_fn_type = std::reinterpret_pointer_cast<types::Fn>(x);
         }
-    } else if (env->has_function(target_name)) {
+    } else if (fn_env->has_variable(target_name)) {
         orig_fn_type = std::reinterpret_pointer_cast<types::Fn>(
-            env->get_function(target_name));
+            fn_env->get_variable(target_name));
     } else {
         report_error("Name " + target_name + " not found in env for partialapp.");
     }

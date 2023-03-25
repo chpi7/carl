@@ -31,7 +31,7 @@ LLJITWrapper::LLJITWrapper() {
     register_host_function("__malloc", (void*)my_malloc);
     register_host_function("__debug", (void*)debug);
     register_host_function("__free", (void*)free);
-    register_host_function("__puts", (void*)(my_puts));
+    register_host_function("__puts_impl", (void*)(my_puts));
 }
 
 void LLJITWrapper::register_host_function(const char* name, void *addr) {

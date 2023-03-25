@@ -77,7 +77,7 @@ TEST(llvmcodegen, while_stmt) {
 
     LLVMCodeGenerator generator;
     generator.generate(decls);
-    auto mod = generator.take_module();
+    auto mod = generator.take_module(true);
 
     // run
     LLJITWrapper jit;
@@ -143,7 +143,7 @@ TEST(llvmcodegen, register_and_call_host_functions) {
 TEST(llvmcodegen, use_host_puts) {
     LLJITWrapper jit;
 
-    auto lr = jit.lookup_ea("__puts");
+    auto lr = jit.lookup_ea("__puts_impl");
     ASSERT_TRUE(lr.has_value());
 
     auto& x = lr.value();
@@ -165,7 +165,7 @@ TEST(llvmcodegen, simple_builtin_call) {
     auto decls = p.parse_r(src);
 
     cg.generate(*decls);
-    auto mod = cg.take_module(true);
+    auto mod = cg.take_module();
 
     jit.load_module(mod);
     auto __main = jit.lookup_ea("__main")->toPtr<void()>();
@@ -189,7 +189,32 @@ TEST(llvmcodegen, let_string_while_puts) {
     auto decls = p.parse_r(src);
 
     cg.generate(*decls);
-    auto mod = cg.take_module(true);
+    auto mod = cg.take_module();
+
+    jit.load_module(mod);
+    auto __main = jit.lookup_ea("__main")->toPtr<void()>();
+    __main();
+}
+
+TEST(llvmcodegen, call_with_multiple_args_by_value_and_by_reference) {
+    LLJITWrapper jit;
+    LLVMCodeGenerator cg;
+    Parser p;
+
+    std::string src = 
+        "fn foo(x: string, iters: int) {"
+        "   let i = iters;"
+        "   while(i > 0) {"
+        "       i = i - 1;"
+        "       __puts(x);"
+        "   }"
+        "}"
+        "let s = \"foo\";"
+        "foo(s, 3);";
+    auto decls = p.parse_r(src);
+
+    cg.generate(*decls);
+    auto mod = cg.take_module();
 
     jit.load_module(mod);
     auto __main = jit.lookup_ea("__main")->toPtr<void()>();

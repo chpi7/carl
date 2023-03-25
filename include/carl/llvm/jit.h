@@ -3,12 +3,14 @@
 
 #include <memory>
 #include <optional>
+#include <iostream>
 
 #include "llvm/ExecutionEngine/Orc/Core.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/Support/TargetSelect.h"
 
 namespace carl {
+
 extern "C" {
     typedef struct {
         uint64_t len;
@@ -23,6 +25,7 @@ class LLJITWrapper {
 
    public:
     LLJITWrapper();
+    LLJITWrapper(std::ostream& os);
     void register_host_function(const char* name, void *addr);
     std::optional<llvm::orc::ResourceTrackerSP> load_module(llvm::orc::ThreadSafeModule &module);
     std::optional<llvm::orc::ExecutorAddr> lookup_ea(const char* name);

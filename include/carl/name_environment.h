@@ -8,13 +8,12 @@
 
 namespace carl {
 
-template <typename V, typename F>
+template <typename V>
 class Environment {
    private:
     int id = 0;
-    std::unique_ptr<Environment<V, F>> parent;
-    std::map<std::string, V> variables;
-    std::map<std::string, F> functions;
+    std::unique_ptr<Environment<V>> parent;
+    std::map<std::string, V> values;
 
    public:
     Environment(std::unique_ptr<Environment> env) : parent(std::move(env)) {
@@ -25,89 +24,56 @@ class Environment {
         }
     };
 
-    Environment(std::map<std::string, V>&& v, std::map<std::string, F>&& f,
-                std::unique_ptr<Environment> p, int id)
-        : id(id), parent(std::move(p)), variables(v), functions(f){};
+    Environment(std::map<std::string, V>&& v, std::unique_ptr<Environment> p,
+                int id)
+        : id(id), parent(std::move(p)), values(v){};
 
     void push() {
-        parent = std::make_unique<Environment<V, F>>(
-            std::move(variables),
-            std::move(functions),
+        parent = std::make_unique<Environment<V>>(
+            std::move(values),
             std::move(parent),
             id
         );
-        variables = std::map<std::string, V>();
-        functions = std::map<std::string, F>();
+        values = std::map<std::string, V>();
         id += 1;
     }
 
     void pop() {
-        variables.clear();
-        functions.clear();
-
+        values.clear();
         id = parent->id;
-        variables = std::move(parent->variables);
-        functions = std::move(parent->functions);
+        values = std::move(parent->values);
         parent = std::move(parent->parent);
     }
 
     V& get_variable(const std::string& name) {
-        if (variables.contains(name)) {
-            return variables[name];
+        if (values.contains(name)) {
+            return values.at(name);
         } else {
             return parent->get_variable(name);
         }
     }
 
     bool can_set_variable(const std::string& name) {
-        return !variables.contains(name);
-    }
-
-    void set_variable(const std::string& name) {
-        variables[name] = nullptr;
+        return !values.contains(name);
     }
 
     void set_variable(const std::string& name, V v) {
-        variables[name] = v;
+        values.insert_or_assign(name, v);
     }
 
     bool has_variable(const std::string& name) {
-        return variables.contains(name) || (parent && parent->has_variable(name));
-    }
-
-    F& get_function(const std::string& name) {
-        if (functions.contains(name)) {
-            return functions[name];
-        } else {
-            return parent->get_function(name);
-        }
-    }
-
-    bool can_set_function(const std::string& name) {
-        return !functions.contains(name);
-    }
-
-    void set_function(const std::string& name) {
-        functions[name] = nullptr;
-    }
-
-    void set_function(const std::string& name, F f) {
-        functions[name] = f;
-    }
-
-    bool has_function(const std::string& name) {
-        return functions.contains(name) || (parent && parent->has_function(name));
+        return values.contains(name) || (parent && parent->has_variable(name));
     }
 };
 
 /** Calls push_env() in the constructor and pop_env() in the destructor. */
-template <typename V, typename F>
+template <typename V>
 struct UseNewEnv {
    private:
-    Environment<V, F>* env;
+    Environment<V>* env;
 
    public:
-    UseNewEnv(Environment<V, F>* env) {
+    UseNewEnv(Environment<V>* env) {
         this->env = env;
         env->push();
     }

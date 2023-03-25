@@ -118,7 +118,8 @@ std::shared_ptr<Expression> Parser::parse_precedence(Precedence precedence) {
 }
 
 Parser::Parser() : scanner(nullptr) {
-    environment = std::make_unique<Environment<Variable*, FnDecl*>>(nullptr);
+    environment = std::make_unique<Environment<Variable*>>(nullptr);
+    fn_environment = std::make_unique<Environment<FnDecl*>>(nullptr);
     panic_mode = false;
     has_error = false;
 }
@@ -168,7 +169,7 @@ ParseResult Parser::parse_r(std::string& src) {
     std::vector<std::shared_ptr<types::Type>> y = {std::make_shared<types::String>()};
     auto x = std::make_shared<types::Fn>(y, std::make_shared<types::Int>());
     puts_decl->set_type(x);
-    environment->set_function("__puts", puts_decl.get());
+    fn_environment->set_variable("__puts", puts_decl.get());
 
     auto decls = parse(src);
     decls.insert(decls.begin(), puts_decl);
@@ -233,7 +234,7 @@ std::shared_ptr<LetDecl> Parser::let_decl() {
         error_at(previous, "Redeclaration of variable not allowed.");
     } else {
         // safe the type here when we have it?
-        environment->set_variable(name);
+        environment->set_variable(name, nullptr);
     }
 
     if (peek(TOKEN_SEMICOLON)) {
@@ -275,11 +276,12 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
 
     // add to env immediatly to allow recursive calls
     auto fn_name = std::string(name.start, name.length);
-    environment->set_function(fn_name);
+    fn_environment->set_variable(fn_name, nullptr);
 
     consume(TOKEN_LEFT_PAREN, "Expected ( after fn name.");
 
     UseNewEnv eh(environment.get());
+    UseNewEnv feh(fn_environment.get());
 
     std::list<std::shared_ptr<FormalParam>> formal_params;
     std::vector<std::shared_ptr<types::Type>> formal_param_types;
@@ -294,7 +296,7 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
         }
         auto fp = std::make_shared<FormalParam>(previous);
         auto fp_name = std::string(previous.start, previous.length);
-        environment->set_variable(fp_name);
+        environment->set_variable(fp_name, nullptr);
 
         consume(TOKEN_COLON, "Expected ':' between formal param name and formal param type.");
         auto type_ = type();
@@ -359,6 +361,7 @@ std::shared_ptr<WhileStmt> Parser::while_stmt() {
 
 std::shared_ptr<Block> Parser::block() {
     UseNewEnv eh(environment.get());
+    UseNewEnv feh(fn_environment.get());
 
     std::list<std::shared_ptr<AstNode>> decls;
     while (!peek(TOKEN_RIGHT_BRACE)) {
@@ -390,7 +393,7 @@ std::shared_ptr<Expression> Parser::call() {
     std::string fname_str = fname;
 
     // var can hold a function --> check both:
-    if (!environment->has_function(fname_str) && !environment->has_variable(fname_str)) {
+    if (!fn_environment->has_variable(fname_str) && !environment->has_variable(fname_str)) {
         error_at(previous, "Function name not found in environment");
     }
 
@@ -466,7 +469,7 @@ std::shared_ptr<Expression> Parser::unary() {
 std::shared_ptr<Expression> Parser::variable() {
     consume(TOKEN_IDENTIFIER, "Expected identifier as variable name.");
     std::string name = std::string(previous.start, previous.length);
-    if (!environment->has_variable(name) && !environment->has_function(name)) {
+    if (!environment->has_variable(name) && !fn_environment->has_variable(name)) {
         error_at(previous, "name not found in environment");
     }
     return std::make_shared<Variable>(previous);

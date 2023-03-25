@@ -15,9 +15,62 @@
 
 namespace carl {
 
+struct TypedValue {
+    // the typed value
+    llvm::Value* value;
+    // the type of the allocated (contained) object, not the object itself! For
+    // locals it is the alloca->getalloctedtype and for globals the other one.
+    llvm::Type* type;
+    // is it an alloca or a global?
+    bool local;
+
+    // operator llvm::Value*() const noexcept { return value; }
+
+    TypedValue() {
+        value = nullptr;
+        type = nullptr;
+        local = false;
+    }
+
+    TypedValue(const TypedValue& other) {
+        this->value = other.value;
+        this->type = other.type;
+        this->local = other.local;
+    }
+
+    TypedValue(TypedValue&& other) {
+        this->value = other.value;
+        this->type = other.type;
+        this->local = other.local;
+    }
+
+    TypedValue(llvm::AllocaInst* v) {
+        this->value = v;
+        this->type = v->getAllocatedType();
+        this->local = true;
+    }
+
+    TypedValue(llvm::GlobalVariable* v) {
+        this->value = v;
+        this->type = v->getValueType();
+        this->local = false;
+    }
+
+    TypedValue& operator=(const TypedValue& other) {
+        if (this == &other) {
+            return *this;
+        }
+        this->value = other.value;
+        this->type = other.type;
+        this->local = other.local;
+
+        return *this;
+    }
+};
+
 class LLVMCodeGenerator : public AstNodeVisitor {
    private:
-    std::unique_ptr<Environment<llvm::AllocaInst*, llvm::Function*>> names;
+    std::unique_ptr<Environment<TypedValue>> names;
     bool has_error;
     llvm::Value* result;
     std::unique_ptr<llvm::LLVMContext> context;

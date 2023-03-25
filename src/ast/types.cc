@@ -64,7 +64,12 @@ llvm::Type* Fn::get_llvm_rt_type(llvm::LLVMContext& ctx) {
 llvm::FunctionType* Fn::get_llvm_fn_type(llvm::LLVMContext& ctx) {
     auto ret_type = ret->get_llvm_rt_type(ctx);
     std::vector<llvm::Type*> fps;
-    for (auto& param : parameters) fps.push_back(param->get_llvm_rt_type(ctx));
+    for (auto& param : parameters) {
+        auto *x = param->get_llvm_rt_type(ctx);
+        // we pass heap objects by reference
+        if (param->is_rt_heap_obj()) x = x->getPointerTo(0);
+        fps.push_back(x);
+    }
     return llvm::FunctionType::get(ret_type, fps, false);
 }
 bool Fn::is_rt_heap_obj() { return true; }

@@ -37,8 +37,11 @@ static llvm::Function* getDebugFunction(llvm::Module& mod, llvm::LLVMContext& ct
 }
 
 static llvm::Function* getFunction(llvm::Module& mod, llvm::LLVMContext& ctx,
-                                   FnDecl* decl = nullptr, bool create = false) {
+                                   FnDecl* decl = nullptr, bool create = false,
+                                   const char* suffix = nullptr) {
     std::string fname = decl->get_sname();
+    if (suffix) fname += suffix;
+
     llvm::Function* f = mod.getFunction(fname);
     if (f) return f;
     if (!create || decl == nullptr) return nullptr;
@@ -88,7 +91,7 @@ static llvm::AllocaInst* createAlloca(llvm::BasicBlock* bb, llvm::StringRef name
 }
 
 LLVMCodeGenerator::LLVMCodeGenerator() { 
-    names = std::make_unique<Environment<llvm::AllocaInst*, llvm::Function*>>(nullptr);
+    names = std::make_unique<Environment<TypedValue>>(nullptr);
     initialize();
 }
 
@@ -176,10 +179,10 @@ void LLVMCodeGenerator::generate(
     end_wrapper_function();
 
     llvm::legacy::FunctionPassManager fpm(module.get());
-    // fpm.add(llvm::createInstructionCombiningPass());
-    // fpm.add(llvm::createReassociatePass());
-    // fpm.add(llvm::createGVNPass());
-    // fpm.add(llvm::createCFGSimplificationPass());
+    fpm.add(llvm::createInstructionCombiningPass());
+    fpm.add(llvm::createReassociatePass());
+    fpm.add(llvm::createGVNPass());
+    fpm.add(llvm::createCFGSimplificationPass());
     fpm.doInitialization();
     fpm.run(*wrapper_fn);
 }
@@ -243,7 +246,7 @@ void LLVMCodeGenerator::visit_fndecl(FnDecl* fndecl) {
     // for (auto& arg : fndecl->get_formals()) do_visit(arg);
 
     // 1. generate code for the actual function
-    auto f = getFunction(*module, *context, fndecl, true);
+    auto f = getFunction(*module, *context, fndecl, true, "_impl");
     if (!fndecl->get_is_extern()) {
         llvm::BasicBlock* current_bb = builder->GetInsertBlock();
         llvm::BasicBlock* body = llvm::BasicBlock::Create(*context, "entry", f);
@@ -253,44 +256,37 @@ void LLVMCodeGenerator::visit_fndecl(FnDecl* fndecl) {
         for (auto& arg : fndecl->get_formals()) {
             std::string name = arg->get_name();
             llvm::Value* v = f->getArg(arg_idx++);
-            auto aa = createAlloca(body, name, v->getType());
-            builder->CreateStore(v, aa);
+            TypedValue aa = createAlloca(body, name, v->getType());
+            builder->CreateStore(v, aa.value);
             names->set_variable(name, aa);
         }
         do_visit(fndecl->get_body());
+        builder->CreateRetVoid();
         names->pop();
         builder->SetInsertPoint(current_bb);
     }
 
     // 2. create the runtime heap obj so we can easily pass around functions
     std::string fname = fndecl->get_sname();
-    auto rt_type = fndecl->get_type()->get_llvm_rt_type(*context);
-    auto rt_type_sz = llvm::ConstantExpr::getSizeOf(rt_type);
+    auto runtime_type = fndecl->get_type()->get_llvm_rt_type(*context);
+    auto runtime_type_sz = llvm::ConstantExpr::getSizeOf(runtime_type);
     auto malloc = getMallocFunction(*module, *context);
-    llvm::Value* addr = builder->CreateCall(malloc, rt_type_sz, "fn_heap_wrapper");
+    llvm::Value* addr = builder->CreateCall(malloc, runtime_type_sz, fname + "_wrapper_ptr");
     auto zero = getConstantInt(*context, 0);
     llvm::Value* fn_ptr_gep = builder->CreateGEP(
-        rt_type, addr,
-        {zero, zero},
-        "fn_heap_field");
+        runtime_type, addr,
+        {zero, zero});
     builder->CreateStore(f, fn_ptr_gep);
 
-    llvm::AllocaInst* local = createAlloca(builder->GetInsertBlock(), fname, rt_type->getPointerTo());
-    builder->CreateStore(addr, local);
-    names->set_variable(fname, local);
-
-    // load struct ptr from local variable
-    // auto rt_struct_ptr = builder->CreateLoad(rt_type->getPointerTo(), local);
-    // load the first element (puts address) from the struct
-    // auto ptrtype = llvm::PointerType::get(*context, 0);
-    // auto gep = builder->CreateGEP(rt_type, rt_struct_ptr, {zero, zero});
-    // auto load_fn_addr_from_alloca = builder->CreateLoad(f->getType(), gep);
-
-    // auto debug = getDebugFunction(*module, *context);
-    // builder->CreateCall(debug, f);
-    // builder->CreateCall(debug, rt_struct_ptr);
-    // builder->CreateCall(debug, load_fn_addr_from_alloca);
-
+    auto glob_name = fname;
+    module->getOrInsertGlobal(glob_name, runtime_type->getPointerTo());
+    auto global = module->getNamedGlobal(glob_name);
+    global->setLinkage(llvm::GlobalValue::CommonLinkage);
+    global->setAlignment(llvm::Align(8));
+    global->setConstant(false);
+    global->setInitializer(builder->getInt64(0));
+    builder->CreateStore(addr, global);
+    names->set_variable(fname, global);
 
     result = nullptr;
 }
@@ -323,11 +319,11 @@ void LLVMCodeGenerator::visit_assignment(Assignment* assignment) {
         log_error("named value " + name + " not found.");
         return;
     }
-    auto target_alloca = names->get_variable(name);
+    auto variable = names->get_variable(name);
 
     auto value = do_visit(assignment->get_expr());
 
-    result = builder->CreateStore(value, target_alloca);
+    result = builder->CreateStore(value, variable.value);
 }
 
 void LLVMCodeGenerator::visit_binary(Binary* binary) {
@@ -442,14 +438,13 @@ void LLVMCodeGenerator::visit_unary(Unary* unary) {
 
 void LLVMCodeGenerator::visit_variable(Variable* variable) {
     std::string name = variable->get_name();
-    if (!names->has_variable(name)) {
+    if (names->has_variable(name)) {
+        auto v = names->get_variable(name);
+        result = builder->CreateLoad(v.type, v.value, name.c_str());
+    } else {
         log_error("named value " + name + " not found.");
         result = nullptr;
-        return;
     }
-    auto alloca = names->get_variable(name);
-    result =
-        builder->CreateLoad(alloca->getAllocatedType(), alloca, name.c_str());
 }
 
 void LLVMCodeGenerator::visit_literal(Literal* literal) {
@@ -501,8 +496,8 @@ void LLVMCodeGenerator::visit_call(Call* call) {
     // --> there is always smth to call
 
     std::string fname = call->get_fname();
-    llvm::AllocaInst* alloca = names->get_variable(fname);
-    llvm::Value* fn_heap_obj_ptr = builder->CreateLoad(alloca->getAllocatedType(), alloca, "ld_fn_wrapper");
+    TypedValue wrapper_var = names->get_variable(fname);
+    llvm::Value* fn_heap_obj_ptr = builder->CreateLoad(wrapper_var.type, wrapper_var.value, "ld_fn_wrapper");
     auto zero = getConstantInt(*context, 0);
     llvm::Value* ptr_to_fn_addr = builder->CreateGEP(
         llvm::StructType::getTypeByName(*context, "__carl_fn"), fn_heap_obj_ptr,
@@ -514,7 +509,8 @@ void LLVMCodeGenerator::visit_call(Call* call) {
 
     std::vector<llvm::Value*> args;
     for (auto& arg : call->get_arguments()) {
-        args.push_back(do_visit(arg));
+        auto* arg_v = do_visit(arg);
+        args.push_back(arg_v);
     }
 
     auto fn_type = getFnTypeForCall(*context, call);

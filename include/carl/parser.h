@@ -46,7 +46,8 @@ class Parser {
    private:
     bool panic_mode;
     std::shared_ptr<Scanner> scanner;
-    std::unique_ptr<Environment<Variable*, FnDecl*>> environment;
+    std::unique_ptr<Environment<Variable*>> environment;
+    std::unique_ptr<Environment<FnDecl*>> fn_environment;
     Token current;
     Token previous;
 
