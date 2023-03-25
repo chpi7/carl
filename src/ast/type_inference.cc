@@ -288,7 +288,7 @@ void TypeInference::visit_call(Call* call) {
     }
 
     if (!fn_type->can_apply_to(arg_types)) {
-        report_error("Arguments are not of the expected type for " + fn_type->str());
+        report_error("Arguments are not of the expected type for " + fn_type->str() + ".");
     }
 
     call->set_type(fn_type->get_ret());

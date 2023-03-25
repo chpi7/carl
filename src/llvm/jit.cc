@@ -4,19 +4,24 @@
 
 using namespace carl;
 
+static LLJITWrapper* CURRENT_JIT_PTR = nullptr;
+
 extern "C" {
     void* my_malloc(size_t s) {
         auto m = malloc(s);
         return m;
     }
 
-    void debug(int(*memory)(const char*)) {
+    void debug(uint64_t ptr) {
+        if (CURRENT_JIT_PTR) CURRENT_JIT_PTR->debug_values.push_back(ptr);
         return;
     }
 
     int my_puts(__carl_string* s) {
-        int m = puts(s->str);
-        return m;
+        // int m = fputs(s->str, stdout);
+        if (CURRENT_JIT_PTR) CURRENT_JIT_PTR->write_outs(s->str);
+        // "A nonnegative value indicates that no error has occured."
+        return 0;
     }
 }
 
@@ -29,9 +34,13 @@ LLJITWrapper::LLJITWrapper() {
 
     // register mandatory external functions:
     register_host_function("__malloc", (void*)my_malloc);
-    register_host_function("__debug", (void*)debug);
     register_host_function("__free", (void*)free);
+    register_host_function("__debug_impl", (void*)debug);
     register_host_function("__puts_impl", (void*)(my_puts));
+
+    // not sure if this is such a great idea but somehow the functions above
+    // need access
+    CURRENT_JIT_PTR = this;
 }
 
 void LLJITWrapper::register_host_function(const char* name, void *addr) {
@@ -47,6 +56,16 @@ void LLJITWrapper::register_host_function(const char* name, void *addr) {
     auto error = lljit->getMainJITDylib().define(llvm::orc::absoluteSymbols(map));
     if (error) {
         llvm::errs() << "could not register host function";
+    }
+}
+
+void LLJITWrapper::set_outs(std::ostream* os) {
+    this->outs = os;
+}
+
+void LLJITWrapper::write_outs(const char* s) {
+    if (outs) {
+        (*outs) << s;
     }
 }
 

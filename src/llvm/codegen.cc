@@ -514,5 +514,5 @@ void LLVMCodeGenerator::visit_call(Call* call) {
     }
 
     auto fn_type = getFnTypeForCall(*context, call);
-    builder->CreateCall(fn_type, fn_addr, args, fname);
+    result = builder->CreateCall(fn_type, fn_addr, args, fname);
 }

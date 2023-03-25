@@ -106,6 +106,8 @@ class Fn : public Type {
     llvm::Type* get_llvm_rt_type(llvm::LLVMContext& ctx);
     llvm::FunctionType* get_llvm_fn_type(llvm::LLVMContext& ctx);
     bool is_rt_heap_obj();
+    bool can_cast_to(Type* other);
+    bool equals(Type* other);
 
     bool can_apply_to(std::vector<std::shared_ptr<Type>> arguments);
     const std::vector<std::shared_ptr<Type>> get_parameters();

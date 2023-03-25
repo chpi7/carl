@@ -74,6 +74,27 @@ llvm::FunctionType* Fn::get_llvm_fn_type(llvm::LLVMContext& ctx) {
 }
 bool Fn::is_rt_heap_obj() { return true; }
 
+bool Fn::equals(Type* other) {
+    if (other->get_base_type() != BaseType::FN) { return false; }
+
+    auto *other_fn_t = static_cast<Fn*>(other);
+    if (parameters.size() != other_fn_t->parameters.size()) { return false; }
+
+    for (int i = 0; i < parameters.size(); ++i) {
+        auto my_param_t = parameters.at(i);
+        auto other_param_t = other_fn_t->parameters.at(i);
+        if (!my_param_t->can_cast_to(other_param_t.get())) { return false; }
+    }
+
+    if (!ret->can_cast_to(other_fn_t->ret.get())) { return false; }
+
+    return true;
+}
+
+bool Fn::can_cast_to(Type* other) {
+    return equals(other);
+}
+
 const std::vector<std::shared_ptr<Type>> Fn::get_parameters() {
     return parameters;
 }

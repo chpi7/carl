@@ -7,6 +7,7 @@
 #include <map>
 
 #include "carl/ast/ast.h"
+#include "carl/ast/types.h"
 #include "carl/scanner.h"
 #include "carl/name_environment.h"
 
@@ -62,7 +63,7 @@ class Parser {
     std::vector<std::shared_ptr<AstNode>> parse(std::string& src);
     std::shared_ptr<AstNode> declaration();
     std::shared_ptr<LetDecl> let_decl();
-    std::shared_ptr<Type> type();
+    std::shared_ptr<types::Type> type();
     std::shared_ptr<FnDecl> fn_decl();
 
     std::shared_ptr<Statement> statement();
@@ -92,8 +93,9 @@ class Parser {
     bool peek_next(TokenType tokenType);
     std::shared_ptr<Expression> parse_precedence(Precedence precedence);
     const ParseRule* get_rule(TokenType tokenType) const;
-    void push_env();
-    void pop_env();
+    std::shared_ptr<FnDecl> decl_builtin(const std::string& name,
+                      std::vector<std::shared_ptr<types::Type>> param_types,
+                      std::shared_ptr<types::Type> return_type);
 };
 }  // namespace carl
 #endif

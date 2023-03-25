@@ -94,14 +94,21 @@ def generate_token_attr(cls: Class, attr: ClassMember) -> str:
     return f"""    write_indent();
     os << ".{attr.name} = " << std::string({cls.name.lower()}->get_{attr.name}().start, {cls.name.lower()}->get_{attr.name}().length) << "\\n";"""
 
+def generate_std_string_attr(cls: Class, attr: ClassMember) -> str:
+    return f"""    write_indent();
+    os << ".{attr.name} = " << {cls.name.lower()}->get_{attr.name}() << "\\n";"""
+
 def generate_attr(cls: Class, attr: ClassMember) -> str:
     is_list = "@list" in attr.typename or "@vec" in attr.typename
     is_token = "Token" in attr.typename
+    is_std_string = "std::string" in attr.typename
     
     if is_list:
         return generate_list_attr(cls, attr)
     elif is_token:
         return generate_token_attr(cls, attr)
+    elif is_std_string:
+        return generate_std_string_attr(cls, attr)
     else:
         return generate_ptr_attr(cls, attr)
 

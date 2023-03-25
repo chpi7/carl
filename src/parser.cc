@@ -4,7 +4,6 @@
 #include <list>
 
 #include "carl/common.h"
-#include "carl/ast/types.h"
 #include "carl/ast/type_inference.h"
 
 /* Grammar Excerpt
@@ -23,6 +22,21 @@ namespace carl {
 template<typename T>
 static std::shared_ptr<T> make_error_node() {
     return nullptr;
+}
+
+static std::shared_ptr<types::Type> type_from_identifier(std::string& s) {
+    if (s == std::string("int")) {
+        return std::make_shared<types::Int>();
+    } else if (s == std::string("float")) {
+        return std::make_shared<types::Float>();
+    } else if (s == std::string("bool")) {
+        return std::make_shared<types::Bool>();
+    } else if (s == std::string("string")) {
+        return std::make_shared<types::String>();
+    } else {
+        // Todo function types
+        return std::make_shared<types::Unknown>();
+    }
 }
 
 // Parse rules for the parse_precedence function --> returns expressions only.
@@ -156,23 +170,14 @@ void Parser::synchronize() {
 
 ParseResult Parser::parse_r(std::string& src) {
 
-    const char* n = "__puts";
-    Token t;
-    t.start = n;
-    t.length = 6;
-    auto fp1 = std::make_shared<FormalParam>(t);
-    fp1->set_type(std::make_shared<types::String>());
-    std::list<std::shared_ptr<FormalParam>> p {fp1};
-    std::list<std::shared_ptr<AstNode>> d;
-    auto puts_decl = std::make_shared<FnDecl>(t, p, std::make_shared<Block>(d));
-    puts_decl->set_is_extern(true);
-    std::vector<std::shared_ptr<types::Type>> y = {std::make_shared<types::String>()};
-    auto x = std::make_shared<types::Fn>(y, std::make_shared<types::Int>());
-    puts_decl->set_type(x);
-    fn_environment->set_variable("__puts", puts_decl.get());
+    auto puts_decl = decl_builtin("__puts", {std::make_shared<types::String>()},
+                                  std::make_shared<types::Int>());
+    auto debug_decl = decl_builtin("__debug", {std::make_shared<types::Int>()},
+                                  std::make_shared<types::Void>());
 
     auto decls = parse(src);
     decls.insert(decls.begin(), puts_decl);
+    decls.insert(decls.begin(), debug_decl);
 
     if (has_error) {
         return ParseResult::make_error(ParseError{"some error occured"});
@@ -210,9 +215,29 @@ std::vector<std::shared_ptr<AstNode>> Parser::parse() {
     return result;
 }
 
-std::shared_ptr<Type> Parser::type() {
-    consume(TOKEN_IDENTIFIER, "Expected identifier as typename.");
-    return std::make_shared<Type>(previous);
+std::shared_ptr<types::Type> Parser::type() {
+    if (match(TOKEN_LEFT_PAREN)) {
+        // (int, string : void)
+        std::vector<std::shared_ptr<types::Type>> param_types;
+        while (true) {
+            std::shared_ptr<types::Type> t = type();
+            param_types.push_back(t);
+            if (match(TOKEN_COMMA)) {
+                // more args to come
+                continue;
+            } else {
+                break;
+            }
+        }
+        consume(TOKEN_COLON, "Expected : between function param types and return type");
+        auto ret_type = type();
+        consume(TOKEN_RIGHT_PAREN, "Expected ) after function type return type.");
+        return std::make_shared<types::Fn>(param_types, ret_type);
+    } else {
+        consume(TOKEN_IDENTIFIER, "Expected identifier or fn type as typename.");
+        std::string type_str = previous;
+        return type_from_identifier(type_str);
+    }
 }
 
 std::shared_ptr<AstNode> Parser::declaration() {
@@ -254,21 +279,6 @@ std::shared_ptr<LetDecl> Parser::let_decl() {
     }
 }
 
-static std::shared_ptr<types::Type> type_from_identifier(std::string& s) {
-    if (s == std::string("int")) {
-        return std::make_shared<types::Int>();
-    } else if (s == std::string("float")) {
-        return std::make_shared<types::Float>();
-    } else if (s == std::string("bool")) {
-        return std::make_shared<types::Bool>();
-    } else if (s == std::string("string")) {
-        return std::make_shared<types::String>();
-    } else {
-        // Todo function types
-        return std::make_shared<types::Unknown>();
-    }
-}
-
 std::shared_ptr<FnDecl> Parser::fn_decl() {
 
     consume(TOKEN_IDENTIFIER, "Expected function name after fn keyword.");
@@ -299,9 +309,7 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
         environment->set_variable(fp_name, nullptr);
 
         consume(TOKEN_COLON, "Expected ':' between formal param name and formal param type.");
-        auto type_ = type();
-        auto type_str = std::string(type_->get_name().start, type_->get_name().length);
-        auto fp_type = type_from_identifier(type_str);
+        auto fp_type = type();
         formal_param_types.push_back(fp_type);
         fp->set_type(fp_type);
 
@@ -312,9 +320,7 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
     // return type
     std::shared_ptr<types::Type> fn_ret_type = std::make_shared<types::Void>();
     if (match(TOKEN_COLON)) {
-        auto ret_type = type();
-        auto ret_type_str = std::string(ret_type->get_name().start, ret_type->get_name().length);
-        fn_ret_type = type_from_identifier(ret_type_str);
+        fn_ret_type = type();
     }
 
     // body
@@ -546,4 +552,29 @@ void Parser::error_at(Token token, const char* message) {
 
     fprintf(stderr, ": %s\n", message);
 }
+
+std::shared_ptr<FnDecl> Parser::decl_builtin(const std::string& name,
+                          std::vector<std::shared_ptr<types::Type>> param_types,
+                          std::shared_ptr<types::Type> return_type) {
+    Token t;
+    t.start = name.c_str();
+    t.length = name.size();
+
+    std::list<std::shared_ptr<FormalParam>> p;
+    for (auto& param_type : param_types) {
+        auto fp = std::make_shared<FormalParam>(t);
+        fp->set_type(param_type);
+    }
+
+    std::list<std::shared_ptr<AstNode>> d;
+    auto puts_decl = std::make_shared<FnDecl>(t, p, std::make_shared<Block>(d));
+    puts_decl->set_is_extern(true);
+
+    auto x = std::make_shared<types::Fn>(param_types, return_type);
+    puts_decl->set_type(x);
+    fn_environment->set_variable(name, puts_decl.get());
+
+    return puts_decl;
+}
+
 }  // namespace carl

@@ -361,4 +361,15 @@ TEST(Parser, parse_partial_app_invalid_type) {
     ParseResult r = parser.parse_r(src);
     ASSERT_FALSE(r);
 }
+
+TEST(Parser, parser_fn_with_fn_formal_param) {
+    Parser parser;
+    std::string src = 
+    "fn foo(a: int, f: (int, int : int)) : int { return f(a, a + 1); }"
+    "fn baz(a: int, b: int) : int { return a + b; }"
+    "let result = foo(1, baz);";
+
+    ParseResult r = parser.parse_r(src);
+    ASSERT_TRUE(r);
+}
 }  // namespace
