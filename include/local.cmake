@@ -11,6 +11,7 @@ set(
     include/carl/ast/types.h
     include/carl/basic_codegen.h
     include/carl/llvm/codegen.h
+    include/carl/llvm/runtime_types.h
     include/carl/llvm/jit.h
     include/carl/scanner.h
     include/carl/parser.h

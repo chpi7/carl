@@ -242,4 +242,28 @@ TEST(llvmcodegen, pass_fn_as_parameter) {
     ASSERT_EQ(jit.debug_values.size(), 1);
     ASSERT_EQ(jit.debug_values.at(0), 3);
 }
+
+TEST(llvmcodegen, concat_strings) {
+    LLJITWrapper jit;
+    std::stringstream ss;
+    jit.set_outs(&ss);
+    LLVMCodeGenerator cg;
+    Parser p;
+
+    std::string src = 
+        "let hello = \"hello \";"
+        "let world = \"world!\";"
+        "let hw = hello + world;"
+        "__puts(hw);";
+    auto decls = p.parse_r(src);
+
+    cg.generate(*decls);
+    auto mod = cg.take_module();
+
+    jit.load_module(mod);
+    auto __main = jit.lookup_ea("__main")->toPtr<void()>();
+    __main();
+
+    ASSERT_EQ(ss.str(), "hello world!");
+}
 }  // namespace

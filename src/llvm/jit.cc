@@ -23,6 +23,17 @@ extern "C" {
         // "A nonnegative value indicates that no error has occured."
         return 0;
     }
+
+    __carl_string* __string_concat(__carl_string* a, __carl_string *b) {
+        __carl_string* r = (__carl_string*)(my_malloc(sizeof(__carl_string)));
+        // -1 because both strings have null at the end
+        const char* data = (const char*)(malloc(a->len + b->len - 1));
+        memcpy((void*)data, (void*)a->str, a->len - 1);
+        memcpy((void*)(data + a->len - 1), (void*)(b->str), b->len);
+        r->len = a->len + b->len - 1;
+        r->str = data;
+        return r;
+    }
 }
 
 LLJITWrapper::LLJITWrapper() {
@@ -34,7 +45,8 @@ LLJITWrapper::LLJITWrapper() {
 
     // register mandatory external functions:
     register_host_function("__malloc", (void*)my_malloc);
-    register_host_function("__free", (void*)free);
+    register_host_function("__string_concat", (void*)(__string_concat));
+    // __foo_impl can be called from user code as __foo(...)
     register_host_function("__debug_impl", (void*)debug);
     register_host_function("__puts_impl", (void*)(my_puts));
 

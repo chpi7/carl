@@ -1,7 +1,7 @@
 # Carl
 
 A statically typed, jit compiled scripting language built for fun (wip).<br>
-The main point is to have some fancy functional features to work with functions 🏗️.
+The main point is to have some fancy functional features to combine and compose functions in interesting ways 🏗️.
 
 **Passing functions around**:
 ```rust
@@ -28,3 +28,15 @@ let add_five = add_three . add_two;
 
 let result = add_five(1) == 6;
 ```
+
+### TODO:
+#### Languages Features
+- [ ] Function Composition
+- [ ] Partial Application
+- [ ] Closures
+- [ ] Struct Datatype
+#### Runtime:
+- [ ] Garbage Collection
+#### Other:
+- [ ] Standard library
+- [ ] Async IO (with libuv)

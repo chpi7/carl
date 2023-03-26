@@ -25,6 +25,17 @@ static llvm::Function* getMallocFunction(llvm::Module& mod, llvm::LLVMContext& c
     return llvm::Function::Create(malloc_type, llvm::Function::ExternalLinkage, "__malloc", mod);
 }
 
+static llvm::Function* getStringConcatFunction(llvm::Module& mod, llvm::LLVMContext& ctx) {
+    auto* f = mod.getFunction("__string_concat");
+    if (f) return f;
+
+    auto ptr_type = llvm::PointerType::get(ctx, 0);
+    auto fn_type =
+        llvm::FunctionType::get(ptr_type, {ptr_type, ptr_type}, false);
+    return llvm::Function::Create(fn_type, llvm::Function::ExternalLinkage,
+                                  "__string_concat", mod);
+}
+
 static llvm::Function* getDebugFunction(llvm::Module& mod, llvm::LLVMContext& ctx) {
     auto* f = mod.getFunction("__debug");
     if (f) return f;
@@ -337,10 +348,10 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
         lhs->getType()->isDoubleTy() && rhs->getType()->isDoubleTy();
     auto is_int =
         lhs->getType()->isIntegerTy() && rhs->getType()->isIntegerTy();
-
-    auto str_type = types::String().get_llvm_rt_type(*context);
-    auto is_string =
-        lhs->getType() == str_type && rhs->getType() == str_type;
+    
+    auto lhs_type = binary->get_lhs()->get_type()->get_base_type();
+    auto rhs_type = binary->get_rhs()->get_type()->get_base_type();
+    auto is_string = lhs_type == rhs_type && lhs_type == types::BaseType::STRING;
 
     if (is_float) {
         switch (op_token) {
@@ -413,7 +424,8 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
                 break;
         }
     } else if (is_string && op_token == TOKEN_PLUS) {
-        // TODO implement string concatenation
+        auto* concat_fn = getStringConcatFunction(*module, *context);
+        result = builder->CreateCall(concat_fn, {lhs, rhs}, "concat_result");
     } else {
         // unsupported.
         result = nullptr;
@@ -514,5 +526,5 @@ void LLVMCodeGenerator::visit_call(Call* call) {
     }
 
     auto fn_type = getFnTypeForCall(*context, call);
-    result = builder->CreateCall(fn_type, fn_addr, args, fname);
+    result = builder->CreateCall(fn_type, fn_addr, args, fname + "_res");
 }

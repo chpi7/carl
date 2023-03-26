@@ -74,19 +74,13 @@ class Bool : public Type {
     llvm::Type* get_llvm_rt_type(llvm::LLVMContext& ctx);
 };
 
-/**
- *  Allocated as:
- *  {
- *      int len; // incl. null
- *      char* text; // null terminated, on the heap
- *  }
-*/
 class String : public Type {
     private:
     std::string llvm_type_name = std::string("__carl_string");
     public:
     BaseType get_base_type();
     std::string str() const;
+    // see runtime_types > __carl_string
     llvm::Type* get_llvm_rt_type(llvm::LLVMContext& ctx);
     bool is_rt_heap_obj();
 };
@@ -103,6 +97,7 @@ class Fn : public Type {
     Fn(std::vector<std::shared_ptr<Type>> parameters,
        std::shared_ptr<Type> ret);
     BaseType get_base_type();
+    // see runtime_types > __carl_fn
     llvm::Type* get_llvm_rt_type(llvm::LLVMContext& ctx);
     llvm::FunctionType* get_llvm_fn_type(llvm::LLVMContext& ctx);
     bool is_rt_heap_obj();

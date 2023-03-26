@@ -4,21 +4,15 @@
 #include <memory>
 #include <optional>
 #include <iostream>
-#include <cstdint>
 #include <vector>
+
+#include "carl/llvm/runtime_types.h"
 
 #include "llvm/ExecutionEngine/Orc/Core.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/Support/TargetSelect.h"
 
 namespace carl {
-
-extern "C" {
-    typedef struct {
-        uint64_t len;
-        const char* str;
-    } __carl_string;
-}
 
 class LLJITWrapper {
        private:

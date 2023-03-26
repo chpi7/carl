@@ -57,7 +57,7 @@ BaseType Fn::get_base_type() { return BaseType::FN; }
 llvm::Type* Fn::get_llvm_rt_type(llvm::LLVMContext& ctx) {
     llvm::Type* t = llvm::StructType::getTypeByName(ctx, llvm_type_name);
     if (t == nullptr) {
-        t = llvm::StructType::create(llvm_type_name, llvm::Type::getInt64PtrTy(ctx));
+        t = llvm::StructType::create(llvm_type_name, llvm::PointerType::get(ctx, 0));
     }
     return t;
 }
