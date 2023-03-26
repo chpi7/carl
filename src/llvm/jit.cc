@@ -34,6 +34,13 @@ extern "C" {
         r->str = data;
         return r;
     }
+
+    void __carl_assert(bool expectTrue) {
+        if (!expectTrue) {
+            fputs("Assertion error in __carl_assert.\n", stderr);
+            exit(1);
+        }
+    }
 }
 
 LLJITWrapper::LLJITWrapper() {
@@ -49,6 +56,7 @@ LLJITWrapper::LLJITWrapper() {
     // __foo_impl can be called from user code as __foo(...)
     register_host_function("__debug_impl", (void*)debug);
     register_host_function("__puts_impl", (void*)(my_puts));
+    register_host_function("__assert_impl", (void*)(__carl_assert));
 
     // not sure if this is such a great idea but somehow the functions above
     // need access

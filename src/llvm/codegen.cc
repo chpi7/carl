@@ -190,10 +190,10 @@ void LLVMCodeGenerator::generate(
     end_wrapper_function();
 
     llvm::legacy::FunctionPassManager fpm(module.get());
-    fpm.add(llvm::createInstructionCombiningPass());
-    fpm.add(llvm::createReassociatePass());
-    fpm.add(llvm::createGVNPass());
-    fpm.add(llvm::createCFGSimplificationPass());
+    // fpm.add(llvm::createInstructionCombiningPass());
+    // fpm.add(llvm::createReassociatePass());
+    // fpm.add(llvm::createGVNPass());
+    // fpm.add(llvm::createCFGSimplificationPass());
     fpm.doInitialization();
     fpm.run(*wrapper_fn);
 }

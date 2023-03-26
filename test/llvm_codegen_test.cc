@@ -21,8 +21,6 @@ TEST(llvmcodegen, compile_expression) {
     LLVMCodeGenerator generator;
     llvm::Value* value =
         generator.do_visit(std::reinterpret_pointer_cast<Expression>(expr));
-    value->print(llvm::outs());
-    llvm::outs() << "\n";
 }
 
 TEST(llvmcodegen, basic_expr_compile_eval) {
@@ -106,18 +104,6 @@ TEST(llvmcodegen, string) {
     ASSERT_TRUE(exprwrapper.has_value());
 }
 
-int VAL = 0;
-extern "C" {
-    void set_val() {
-        VAL = 1;
-    }
-
-    int inc_val(int x) {
-        VAL += x;
-        return VAL;
-    }
-}
-
 TEST(llvmcodegen, use_host_puts) {
     LLJITWrapper jit;
     std::stringstream ss;
@@ -155,13 +141,39 @@ TEST(llvmcodegen, simple_builtin_call) {
     __main();
 }
 
-TEST(llvmcodegen, let_string_while_puts_and_call_fn_through_var) {
+TEST(llvmcodegen, concat_strings) {
     LLJITWrapper jit;
+    std::stringstream ss;
+    jit.set_outs(&ss);
     LLVMCodeGenerator cg;
     Parser p;
 
     std::string src = 
-        "let s = \"Hello World from carl!\";"
+        "let hello = \"hello \";"
+        "let world = \"world!\";"
+        "let hw = hello + world;"
+        "__puts(hw);";
+    auto decls = p.parse_r(src);
+
+    cg.generate(*decls);
+    auto mod = cg.take_module();
+
+    jit.load_module(mod);
+    auto __main = jit.lookup_ea("__main")->toPtr<void()>();
+    __main();
+
+    ASSERT_EQ(ss.str(), "hello world!");
+}
+
+TEST(llvmcodegen, let_string_while_puts_and_call_fn_through_var) {
+    LLJITWrapper jit;
+    std::stringstream ss;
+    jit.set_outs(&ss);
+    LLVMCodeGenerator cg;
+    Parser p;
+
+    std::string src = 
+        "let s = \"a\";"
         "let c = 3;"
         "while (c > 0) {"
         "   let tmp = s;"
@@ -177,6 +189,8 @@ TEST(llvmcodegen, let_string_while_puts_and_call_fn_through_var) {
     jit.load_module(mod);
     auto __main = jit.lookup_ea("__main")->toPtr<void()>();
     __main();
+
+    ASSERT_EQ(ss.str(), "aaa");
 }
 
 TEST(llvmcodegen, call_with_multiple_args_by_value_and_by_reference) {
@@ -226,10 +240,10 @@ TEST(llvmcodegen, pass_fn_as_parameter) {
         "   return f(a, 1 + a);"
         "}"
         "fn add(a: int, b: int) : int {"
-        "   return a + b;"
+        "   return 2 * a + b;"
         "}"
         "let result = foo(1, add);"
-        "__debug(result);";
+        "__assert(result == 4);";
     auto decls = p.parse_r(src);
 
     cg.generate(*decls);
@@ -238,32 +252,5 @@ TEST(llvmcodegen, pass_fn_as_parameter) {
     jit.load_module(mod);
     auto __main = jit.lookup_ea("__main")->toPtr<void()>();
     __main();
-
-    ASSERT_EQ(jit.debug_values.size(), 1);
-    ASSERT_EQ(jit.debug_values.at(0), 3);
-}
-
-TEST(llvmcodegen, concat_strings) {
-    LLJITWrapper jit;
-    std::stringstream ss;
-    jit.set_outs(&ss);
-    LLVMCodeGenerator cg;
-    Parser p;
-
-    std::string src = 
-        "let hello = \"hello \";"
-        "let world = \"world!\";"
-        "let hw = hello + world;"
-        "__puts(hw);";
-    auto decls = p.parse_r(src);
-
-    cg.generate(*decls);
-    auto mod = cg.take_module();
-
-    jit.load_module(mod);
-    auto __main = jit.lookup_ea("__main")->toPtr<void()>();
-    __main();
-
-    ASSERT_EQ(ss.str(), "hello world!");
 }
 }  // namespace

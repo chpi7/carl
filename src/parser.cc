@@ -169,15 +169,18 @@ void Parser::synchronize() {
 }
 
 ParseResult Parser::parse_r(std::string& src) {
-
     auto puts_decl = decl_builtin("__puts", {std::make_shared<types::String>()},
                                   std::make_shared<types::Int>());
     auto debug_decl = decl_builtin("__debug", {std::make_shared<types::Int>()},
-                                  std::make_shared<types::Void>());
+                                   std::make_shared<types::Void>());
+    auto assert_decl =
+        decl_builtin("__assert", {std::make_shared<types::Bool>()},
+                     std::make_shared<types::Void>());
 
     auto decls = parse(src);
     decls.insert(decls.begin(), puts_decl);
     decls.insert(decls.begin(), debug_decl);
+    decls.insert(decls.begin(), assert_decl);
 
     if (has_error) {
         return ParseResult::make_error(ParseError{"some error occured"});

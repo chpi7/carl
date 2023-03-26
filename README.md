@@ -12,7 +12,7 @@ fn add(a: int, b: int) : int {
     return a + b;
 }
 let result = call_other_fn(1, add);
-__debug(result); // assert == 3
+__assert(result == 3);
 ```
 
 **Composition**:
@@ -30,6 +30,7 @@ let result = add_five(1) == 6;
 ```
 
 ### TODO:
+To check what is currently implemented throughout the full stack, check out [codegen tests](test/llvm_codegen_test.cc).
 #### Languages Features
 - [ ] Function Composition
 - [ ] Partial Application
