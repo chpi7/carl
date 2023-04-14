@@ -1,4 +1,5 @@
 #include "carl/ast/types.h"
+#include "carl/llvm/runtime_types.h"
 
 #include <vector>
 
@@ -55,14 +56,12 @@ Fn::Fn(std::vector<std::shared_ptr<Type>> parameters, std::shared_ptr<Type> ret)
     : parameters(parameters), ret(ret){};
 BaseType Fn::get_base_type() { return BaseType::FN; }
 llvm::Type* Fn::get_llvm_rt_type(llvm::LLVMContext& ctx) {
-    llvm::Type* t = llvm::StructType::getTypeByName(ctx, llvm_type_name);
-    if (t == nullptr) {
-        t = llvm::StructType::create(llvm_type_name, llvm::PointerType::get(ctx, 0));
-    }
-    return t;
+    return carl_fn_llvm_type(ctx);
 }
 llvm::FunctionType* Fn::get_llvm_fn_type(llvm::LLVMContext& ctx) {
     auto ret_type = ret->get_llvm_rt_type(ctx);
+
+    // User specified formal parameters
     std::vector<llvm::Type*> fps;
     for (auto& param : parameters) {
         auto *x = param->get_llvm_rt_type(ctx);
@@ -70,6 +69,11 @@ llvm::FunctionType* Fn::get_llvm_fn_type(llvm::LLVMContext& ctx) {
         if (param->is_rt_heap_obj()) x = x->getPointerTo(0);
         fps.push_back(x);
     }
+
+    // Captured values pointer
+    auto* ptr_t = llvm::PointerType::get(ctx, 0);
+    fps.push_back(ptr_t);
+
     return llvm::FunctionType::get(ret_type, fps, false);
 }
 bool Fn::is_rt_heap_obj() { return true; }

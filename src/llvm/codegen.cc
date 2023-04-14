@@ -3,6 +3,8 @@
 #include <functional>
 
 #include "carl/ast/types.h"
+#include "carl/llvm/runtime_types.h"
+
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
@@ -45,6 +47,29 @@ static llvm::Function* getDebugFunction(llvm::Module& mod, llvm::LLVMContext& ct
     auto malloc_type = llvm::FunctionType::get(void_ptr_type, size_t_type, false);
 
     return llvm::Function::Create(malloc_type, llvm::Function::ExternalLinkage, "__debug", mod);
+}
+
+static llvm::Function* getVecPushFunction(llvm::Module& mod, llvm::LLVMContext& ctx) {
+    auto* f = mod.getFunction("__vec_push");
+    if (f) return f;
+
+    auto void_ptr_type = llvm::PointerType::getVoidTy(ctx);
+    auto ptr_type = llvm::PointerType::get(ctx, 0);
+    auto int_type = llvm::PointerType::getInt64Ty(ctx);
+    auto push_vec_type = llvm::FunctionType::get(void_ptr_type, {ptr_type, int_type}, false);
+
+    return llvm::Function::Create(push_vec_type, llvm::Function::ExternalLinkage, "__vec_push", mod);
+}
+
+static llvm::Function* getVecGetFunction(llvm::Module& mod, llvm::LLVMContext& ctx) {
+    auto* f = mod.getFunction("__vec_get");
+    if (f) return f;
+
+    auto ptr_type = llvm::PointerType::get(ctx, 0);
+    auto int_type = llvm::PointerType::getInt64Ty(ctx);
+    auto vec_get_type = llvm::FunctionType::get(int_type, {ptr_type, int_type}, false);
+
+    return llvm::Function::Create(vec_get_type, llvm::Function::ExternalLinkage, "__vec_get", mod);
 }
 
 static llvm::Function* getFunction(llvm::Module& mod, llvm::LLVMContext& ctx,
@@ -93,6 +118,10 @@ static llvm::FunctionType* getFnTypeForCall(llvm::LLVMContext& ctx,
     std::vector<llvm::Type*> fps;
     for (auto& param : call->get_arguments())
         fps.push_back(param->get_type()->get_llvm_rt_type(ctx));
+
+    // captures type
+    fps.push_back(carl_vec_llvm_type(ctx));
+
     return llvm::FunctionType::get(ret_type, fps, false);
 }
 
@@ -104,6 +133,27 @@ static llvm::AllocaInst* createAlloca(llvm::BasicBlock* bb, llvm::StringRef name
 LLVMCodeGenerator::LLVMCodeGenerator() { 
     names = std::make_unique<Environment<TypedValue>>(nullptr);
     initialize();
+}
+
+llvm::Value* LLVMCodeGenerator::alloc_vec() {
+    auto* type = carl_vec_llvm_type(*context);
+    auto* malloc_fn = getMallocFunction(*module, *context);
+    auto size = llvm::ConstantExpr::getSizeOf(type);
+    auto vec = builder->CreateCall(malloc_fn, {size}, "new_vec");
+
+    return vec;
+}
+
+llvm::Value* LLVMCodeGenerator::get_vec(llvm::Value* vec_ptr, int idx) {
+    // TODO: maybe just compile this straight to llvm without the runtime call?
+    auto* get_fn = getVecGetFunction(*module, *context);
+    auto idx_value = getConstantInt(*context, idx);
+    return builder->CreateCall(get_fn, {vec_ptr, idx_value});
+}
+
+void LLVMCodeGenerator::push_vec(llvm::Value* vec_ptr, llvm::Value* v) {
+    auto* vec_push = getVecPushFunction(*module, *context);
+    builder->CreateCall(vec_push, {vec_ptr, v});
 }
 
 void LLVMCodeGenerator::log_error(std::string s) {
@@ -190,12 +240,14 @@ void LLVMCodeGenerator::generate(
     end_wrapper_function();
 
     llvm::legacy::FunctionPassManager fpm(module.get());
-    // fpm.add(llvm::createInstructionCombiningPass());
-    // fpm.add(llvm::createReassociatePass());
-    // fpm.add(llvm::createGVNPass());
-    // fpm.add(llvm::createCFGSimplificationPass());
+    fpm.add(llvm::createInstructionCombiningPass());
+    fpm.add(llvm::createReassociatePass());
+    fpm.add(llvm::createGVNPass());
+    fpm.add(llvm::createCFGSimplificationPass());
     fpm.doInitialization();
-    fpm.run(*wrapper_fn);
+    for (auto& f : module->getFunctionList()) {
+        fpm.run(f);
+    }
 }
 
 llvm::orc::ThreadSafeModule LLVMCodeGenerator::take_module(bool print_module) {
@@ -271,6 +323,22 @@ void LLVMCodeGenerator::visit_fndecl(FnDecl* fndecl) {
             builder->CreateStore(v, aa.value);
             names->set_variable(name, aa);
         }
+
+        // Load captured values
+        llvm::Type* vec_type = carl_vec_llvm_type(*context);
+        llvm::Value* vec_ptr = f->getArg(fndecl->get_formals().size());
+        int captured_idx = 0;
+        for (auto& captured : fndecl->get_captures()) {
+            std::string name = captured->get_name();
+            auto rt_type = captured->get_type()->get_llvm_rt_type(*context);
+            llvm::AllocaInst* aa = createAlloca(body, name, rt_type);
+            names->set_variable(name, aa);
+
+            auto* v = get_vec(vec_ptr, captured_idx);    
+            builder->CreateStore(v, aa);
+            captured_idx++;
+        }
+
         do_visit(fndecl->get_body());
         builder->CreateRetVoid();
         names->pop();
@@ -288,6 +356,20 @@ void LLVMCodeGenerator::visit_fndecl(FnDecl* fndecl) {
         runtime_type, addr,
         {zero, zero});
     builder->CreateStore(f, fn_ptr_gep);
+
+    // 3. capture values into the captured values vector
+    auto* vec_ptr = alloc_vec();
+    for (auto& captured_variable : fndecl->get_captures()) {
+        TypedValue captured_typed_value =
+            names->get_variable(captured_variable->get_name());
+        auto* v = builder->CreateLoad(captured_typed_value.type, captured_typed_value.value);
+        push_vec(vec_ptr, v);
+    }
+    auto one = getConstantInt(*context, 1);
+    llvm::Value* captures_ptr_gep = builder->CreateGEP(
+        runtime_type, addr,
+        {zero, one});
+    builder->CreateStore(vec_ptr, captures_ptr_gep);
 
     auto glob_name = fname;
     module->getOrInsertGlobal(glob_name, runtime_type->getPointerTo());
@@ -342,8 +424,6 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
     auto rhs = do_visit(binary->get_rhs());
     auto op_token = binary->get_op().type;
 
-    // TODO cast if types are not equal here.
-
     auto is_float =
         lhs->getType()->isDoubleTy() && rhs->getType()->isDoubleTy();
     auto is_int =
@@ -352,6 +432,7 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
     auto lhs_type = binary->get_lhs()->get_type()->get_base_type();
     auto rhs_type = binary->get_rhs()->get_type()->get_base_type();
     auto is_string = lhs_type == rhs_type && lhs_type == types::BaseType::STRING;
+    auto is_fn = lhs_type == rhs_type && lhs_type == types::BaseType::FN;
 
     if (is_float) {
         switch (op_token) {
@@ -426,6 +507,13 @@ void LLVMCodeGenerator::visit_binary(Binary* binary) {
     } else if (is_string && op_token == TOKEN_PLUS) {
         auto* concat_fn = getStringConcatFunction(*module, *context);
         result = builder->CreateCall(concat_fn, {lhs, rhs}, "concat_result");
+    } else if (is_fn) {
+        // result = f . g, which is f(g(x))
+        // --> create new closure which captures f and g:
+        // fn (<params of g>) : <ret type of f> {
+        //      return f(g(<params of g>))
+        // }
+        log_error("composition not implemented yet.");
     } else {
         // unsupported.
         result = nullptr;
@@ -451,6 +539,7 @@ void LLVMCodeGenerator::visit_unary(Unary* unary) {
 void LLVMCodeGenerator::visit_variable(Variable* variable) {
     std::string name = variable->get_name();
     if (names->has_variable(name)) {
+        // if (!defined_inside(name, current_fn_scope)) capture(name); 
         auto v = names->get_variable(name);
         result = builder->CreateLoad(v.type, v.value, name.c_str());
     } else {
@@ -514,16 +603,23 @@ void LLVMCodeGenerator::visit_call(Call* call) {
     llvm::Value* ptr_to_fn_addr = builder->CreateGEP(
         llvm::StructType::getTypeByName(*context, "__carl_fn"), fn_heap_obj_ptr,
         {zero, zero}, "ptr_to_fn_addr");
-    
+
     // opaque ptrs so it doesnt matter what it actually is :)
     auto some_ptr = llvm::PointerType::get(*context, 0);
     llvm::Value* fn_addr = builder->CreateLoad(some_ptr, ptr_to_fn_addr, fname);
+
+    auto one = getConstantInt(*context, 1);
+    llvm::Value* captures_ptr_gep = builder->CreateGEP(
+        llvm::StructType::getTypeByName(*context, "__carl_fn"), fn_heap_obj_ptr,
+        {zero, one});
+    auto vec_ptr = builder->CreateLoad(some_ptr, captures_ptr_gep);
 
     std::vector<llvm::Value*> args;
     for (auto& arg : call->get_arguments()) {
         auto* arg_v = do_visit(arg);
         args.push_back(arg_v);
     }
+    args.push_back(vec_ptr);
 
     auto fn_type = getFnTypeForCall(*context, call);
     result = builder->CreateCall(fn_type, fn_addr, args, fname + "_res");

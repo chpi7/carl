@@ -9,19 +9,27 @@ static LLJITWrapper* CURRENT_JIT_PTR = nullptr;
 extern "C" {
     void* my_malloc(size_t s) {
         auto m = malloc(s);
+        memset(m, 0x00, s);
         return m;
     }
 
-    void debug(uint64_t ptr) {
-        if (CURRENT_JIT_PTR) CURRENT_JIT_PTR->debug_values.push_back(ptr);
+    void debug(uint64_t data, __carl_vec* captures) {
+        if (CURRENT_JIT_PTR) CURRENT_JIT_PTR->debug_values.push_back(data);
         return;
     }
 
-    int my_puts(__carl_string* s) {
+    int my_puts(__carl_string* s, __carl_vec* captures) {
         // int m = fputs(s->str, stdout);
         if (CURRENT_JIT_PTR) CURRENT_JIT_PTR->write_outs(s->str);
         // "A nonnegative value indicates that no error has occured."
         return 0;
+    }
+
+    void __carl_assert(bool expectTrue, __carl_vec* captures) {
+        if (!expectTrue) {
+            fputs("Assertion error in __carl_assert.\n", stderr);
+            exit(1);
+        }
     }
 
     __carl_string* __string_concat(__carl_string* a, __carl_string *b) {
@@ -35,11 +43,25 @@ extern "C" {
         return r;
     }
 
-    void __carl_assert(bool expectTrue) {
-        if (!expectTrue) {
-            fputs("Assertion error in __carl_assert.\n", stderr);
+    void __vec_push(__carl_vec* vec, uint64_t value) {
+        int current_len = vec->len;
+        if (current_len == vec->max_len) {
+            int new_len = vec->max_len == 0 ? 1 : vec->max_len + 5;
+            // fprintf(stdout, "__vec_push expanding vec from %d to %d\n", current_len, new_len);
+            vec->data = (uint64_t*)realloc(vec->data, sizeof(uint64_t) * new_len);
+            vec->max_len = new_len;
+        }
+
+        vec->data[vec->len] = value;
+        vec->len++;
+    }
+
+    uint64_t __vec_get(__carl_vec* vec, uint64_t idx) {
+        if (idx >= vec->len) {
+            fputs("__vec_gets out of range", stderr);
             exit(1);
         }
+        return vec->data[idx];
     }
 }
 
@@ -53,6 +75,8 @@ LLJITWrapper::LLJITWrapper() {
     // register mandatory external functions:
     register_host_function("__malloc", (void*)my_malloc);
     register_host_function("__string_concat", (void*)(__string_concat));
+    register_host_function("__vec_push", (void*)(__vec_push));
+    register_host_function("__vec_get", (void*)(__vec_get));
     // __foo_impl can be called from user code as __foo(...)
     register_host_function("__debug_impl", (void*)debug);
     register_host_function("__puts_impl", (void*)(my_puts));

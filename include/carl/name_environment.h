@@ -61,8 +61,13 @@ class Environment {
         values.insert_or_assign(name, v);
     }
 
-    bool has_variable(const std::string& name) {
-        return values.contains(name) || (parent && parent->has_variable(name));
+    bool has_variable(const std::string& name, int min_id = 0) {
+        if (id < min_id) return false;
+        return values.contains(name) || (parent && parent->has_variable(name, min_id));
+    }
+
+    int get_id() {
+        return id;
     }
 };
 

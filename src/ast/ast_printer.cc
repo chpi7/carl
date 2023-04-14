@@ -56,7 +56,15 @@ void AstPrinter::visit_fndecl(FnDecl* fndecl) {
     fndecl->get_body()->accept(this);
     indent--;
 
-
+    write_indent();
+    os << ".captures\n";
+    indent++;
+    for (auto& elem : fndecl->get_captures()) {
+        elem->accept(this);
+    }
+    indent--;
+    write_indent();
+    os << ".is_extern = " << (fndecl->get_is_extern() ? std::string("true") : std::string("false")) << "\n";
     indent--;
 }
 

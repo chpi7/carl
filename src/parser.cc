@@ -1,6 +1,7 @@
 #include "carl/parser.h"
 
 #include <unordered_map>
+#include <unordered_set>
 #include <list>
 
 #include "carl/common.h"
@@ -287,7 +288,6 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
     consume(TOKEN_IDENTIFIER, "Expected function name after fn keyword.");
     auto name = previous;
 
-    // add to env immediatly to allow recursive calls
     auto fn_name = std::string(name.start, name.length);
     fn_environment->set_variable(fn_name, nullptr);
 
@@ -332,11 +332,29 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
         return make_error_node<FnDecl>();
     }
 
+    current_fn_env_id.push_back(environment->get_id());
+    captured_variables.emplace_back();
     auto body = block();
+    auto captures = captured_variables.back();
+    auto unique_captures = std::list<std::shared_ptr<Variable>>();
+
+    std::unordered_set<std::string> known_captures;
+    for (auto& capture : captures) {
+        std::string name = capture->get_name();
+        if (!known_captures.contains(name)) {
+            unique_captures.push_back(capture);
+            known_captures.insert(name);
+        }
+    }
+
+    captured_variables.pop_back();
+    current_fn_env_id.pop_back();
+
     if (has_error) {
         return make_error_node<FnDecl>();
     }
     auto fn = std::make_shared<FnDecl>(name, formal_params, body);
+    fn->set_captures(unique_captures);
     auto fn_type = std::make_shared<types::Fn>(formal_param_types, fn_ret_type);
     fn->set_type(fn_type);
     return fn;
@@ -481,7 +499,13 @@ std::shared_ptr<Expression> Parser::variable() {
     if (!environment->has_variable(name) && !fn_environment->has_variable(name)) {
         error_at(previous, "name not found in environment");
     }
-    return std::make_shared<Variable>(previous);
+
+    auto variable = std::make_shared<Variable>(previous);
+    if (environment->has_variable(name) && is_captured(name)) {
+        // std::cout << "detected " << name << " as captured.\n";
+        captured_variables.back().push_back(variable);
+    }
+    return variable;
 }
 
 std::shared_ptr<Expression> Parser::binary() {
@@ -533,6 +557,13 @@ void Parser::consume(TokenType type, const char* message) {
 void Parser::advance() {
     previous = current;
     current = scanner->scan_token();
+}
+
+bool Parser::is_captured(const std::string& name) {
+    if (current_fn_env_id.empty()) return false;
+    // Check up to the env of the function if the name is known.
+    // If not it has to come from outside of the function.
+    return !environment->has_variable(name, current_fn_env_id.back());
 }
 
 void Parser::error_at(Token token, const char* message) {

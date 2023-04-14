@@ -14,6 +14,7 @@
 namespace carl {
 
 class AstNodeVisitor;
+class Variable;
 
 enum class AstNodeType { Statement, Block, Expression, Type, FormalParam, FnDecl, LetDecl, ExprStmt, ReturnStmt, WhileStmt, Assignment, Binary, Unary, Variable, Literal, String, Number, Call, PartialApp };
 
@@ -86,12 +87,14 @@ class FnDecl : public AstNode {
     std::list<std::shared_ptr<FormalParam>> formals;
     std::shared_ptr<Block> body;
     std::shared_ptr<types::Type> type;
+    std::list<std::shared_ptr<Variable>> captures;
     bool is_extern;
    public:
     AstNodeType get_node_type() const;
     FnDecl(Token name, std::list<std::shared_ptr<FormalParam>> formals, std::shared_ptr<Block> body) : name(name), formals(formals), body(body) {
         this->sname = std::string(name.start,name.length);
         this->type = std::make_shared<types::Unknown>();
+        this->captures = std::list<std::shared_ptr<Variable>>();
         this->is_extern = false;
     }
     Token get_name() const { return this->name; }
@@ -99,9 +102,11 @@ class FnDecl : public AstNode {
     std::list<std::shared_ptr<FormalParam>> get_formals() const { return this->formals; }
     std::shared_ptr<Block> get_body() const { return this->body; }
     std::shared_ptr<types::Type> get_type() const { return this->type; }
+    std::list<std::shared_ptr<Variable>> get_captures() const { return this->captures; }
     bool get_is_extern() const { return this->is_extern; }
     void set_sname(std::string sname) { this->sname = sname;}
     void set_type(std::shared_ptr<types::Type> type) { this->type = type;}
+    void set_captures(std::list<std::shared_ptr<Variable>> captures) { this->captures = captures;}
     void set_is_extern(bool is_extern) { this->is_extern = is_extern;}
     void accept(AstNodeVisitor* visitor);
 };

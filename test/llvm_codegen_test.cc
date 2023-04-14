@@ -149,9 +149,9 @@ TEST(llvmcodegen, concat_strings) {
     Parser p;
 
     std::string src = 
-        "let hello = \"hello \";"
-        "let world = \"world!\";"
-        "let hw = hello + world;"
+        "let hello = \"hello\";"
+        "let world = \"world\";"
+        "let hw = hello + \" \" + world + \"!\";"
         "__puts(hw);";
     auto decls = p.parse_r(src);
 
@@ -252,5 +252,62 @@ TEST(llvmcodegen, pass_fn_as_parameter) {
     jit.load_module(mod);
     auto __main = jit.lookup_ea("__main")->toPtr<void()>();
     __main();
+}
+
+TEST(llvmcodegen, closure) {
+    LLJITWrapper jit;
+    LLVMCodeGenerator cg;
+    Parser p;
+
+    std::string src = 
+        "let c1 = 1;"
+        "let c2 = 2;"
+        "fn foo(a: int) : int {"
+        "   __debug(c1);"
+        "   __debug(c2);"
+        "   return c1 + c2 + 3;"
+        "}"
+        "c1 = 0;"
+        "let result = foo(0);";
+    auto decls = p.parse_r(src);
+
+    cg.generate(*decls);
+    auto mod = cg.take_module();
+
+    jit.load_module(mod);
+    auto __main = jit.lookup_ea("__main")->toPtr<void()>();
+    __main();
+
+    ASSERT_EQ(jit.debug_values.size(), 2);
+    std::vector<uint64_t> expected {1, 2};
+    ASSERT_EQ(jit.debug_values, expected);
+}
+
+TEST(llvmcodegen, closure_with_different_captures) {
+    LLJITWrapper jit;
+    LLVMCodeGenerator cg;
+    Parser p;
+
+    std::string src = 
+        "fn call_closure(a: int) {"
+        "   fn foo() : int {"
+        "       return a;"
+        "   }"
+        "   __debug(foo());"
+        "}"
+        "call_closure(1);"
+        "call_closure(2);";
+    auto decls = p.parse_r(src);
+
+    cg.generate(*decls);
+    auto mod = cg.take_module();
+
+    jit.load_module(mod);
+    auto __main = jit.lookup_ea("__main")->toPtr<void()>();
+    __main();
+
+    ASSERT_EQ(jit.debug_values.size(), 2);
+    std::vector<uint64_t> expected {1, 2};
+    ASSERT_EQ(jit.debug_values, expected);
 }
 }  // namespace

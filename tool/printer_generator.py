@@ -98,10 +98,15 @@ def generate_std_string_attr(cls: Class, attr: ClassMember) -> str:
     return f"""    write_indent();
     os << ".{attr.name} = " << {cls.name.lower()}->get_{attr.name}() << "\\n";"""
 
+def generate_bool_attr(cls: Class, attr: ClassMember) -> str:
+    return f"""    write_indent();
+    os << ".{attr.name} = " << ({cls.name.lower()}->get_{attr.name}() ? std::string("true") : std::string("false")) << "\\n";"""
+
 def generate_attr(cls: Class, attr: ClassMember) -> str:
     is_list = "@list" in attr.typename or "@vec" in attr.typename
     is_token = "Token" in attr.typename
-    is_std_string = "std::string" in attr.typename
+    is_std_string = attr.typename == "std::string" 
+    is_bool = attr.typename == "bool"
     
     if is_list:
         return generate_list_attr(cls, attr)
@@ -109,6 +114,8 @@ def generate_attr(cls: Class, attr: ClassMember) -> str:
         return generate_token_attr(cls, attr)
     elif is_std_string:
         return generate_std_string_attr(cls, attr)
+    elif is_bool:
+        return generate_bool_attr(cls, attr)
     else:
         return generate_ptr_attr(cls, attr)
 

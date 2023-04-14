@@ -12,6 +12,7 @@ set(SRC_CC
     src/basic_codegen.cc 
     src/llvm/codegen.cc
     src/llvm/jit.cc
+    src/llvm/runtime_types.cc
 )
 
 add_library(

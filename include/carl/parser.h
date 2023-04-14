@@ -49,6 +49,10 @@ class Parser {
     std::shared_ptr<Scanner> scanner;
     std::unique_ptr<Environment<Variable*>> environment;
     std::unique_ptr<Environment<FnDecl*>> fn_environment;
+    // whats the function we are currently in
+    std::vector<int> current_fn_env_id; 
+    std::vector<std::list<std::shared_ptr<Variable>>> captured_variables;
+
     Token current;
     Token previous;
 
@@ -84,6 +88,7 @@ class Parser {
     std::shared_ptr<Expression> literal();
 
    private:
+    bool is_captured(const std::string& name);
     void error_at(Token token, const char* message);
     void consume(TokenType type, const char* message);
     void advance();

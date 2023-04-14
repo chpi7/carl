@@ -56,6 +56,12 @@ struct TypedValue {
         this->local = false;
     }
 
+    TypedValue(llvm::Value* v, llvm::Type* type) {
+        this->value = v;
+        this->type = type;
+        this->local = true;
+    }
+
     TypedValue& operator=(const TypedValue& other) {
         if (this == &other) {
             return *this;
@@ -78,6 +84,9 @@ class LLVMCodeGenerator : public AstNodeVisitor {
     std::unique_ptr<llvm::Module> module;
 
    private:
+    llvm::Value* alloc_vec();
+    llvm::Value* get_vec(llvm::Value* vec_ptr, int idx);
+    void push_vec(llvm::Value* vec_ptr, llvm::Value* v);
     void log_error(std::string s);
     llvm::Function* start_wrapper_function();
     void end_wrapper_function();

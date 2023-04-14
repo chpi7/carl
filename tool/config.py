@@ -1,7 +1,7 @@
 IFDEF_NAME = "carl_ast_h"
 INCLUDES = ["<sstream>", "<fstream>", "<memory>", "<list>", "<vector>", "<string>", '"carl/scanner.h"', '"carl/common.h"', '"carl/ast/types.h"']
 NAMESPACE = "carl"
-FORWARD_DECLS = ["class AstNodeVisitor;"]
+FORWARD_DECLS = ["class AstNodeVisitor;", "class Variable;"]
 REPLACEMENTS = {"@ptr": "std::shared_ptr", "@list": "std::list", "@vec": "std::vector", 
                 "@tok_to_sname_init": "std::string(name.start,name.length)"}
 
@@ -25,6 +25,7 @@ TYPES = [
         @list<@ptr<FormalParam>> formals, 
         @ptr<Block> body, 
         @ptr<types::Type> type?=std::make_shared<types::Unknown>(),
+        @list<@ptr<Variable>> captures?=std::list<std::shared_ptr<Variable>>(),
         bool is_extern?=false
     ) : AstNode""",
     """LetDecl(
