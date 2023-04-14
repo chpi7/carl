@@ -32,9 +32,9 @@ let result = add_five(1) == 6;
 ### TODO:
 To check what is currently implemented throughout the full stack, check out [codegen tests](test/llvm_codegen_test.cc).
 #### Languages Features
+- [x] Closures
 - [ ] Function Composition
 - [ ] Partial Application
-- [ ] Closures
 - [ ] Struct Datatype
 #### Runtime:
 - [ ] Garbage Collection
