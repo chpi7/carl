@@ -165,6 +165,30 @@ TEST(llvmcodegen, concat_strings) {
     ASSERT_EQ(ss.str(), "hello world!");
 }
 
+TEST(llvmcodegen, return_string_from_fn) {
+    LLJITWrapper jit;
+    std::stringstream ss;
+    jit.set_outs(&ss);
+    LLVMCodeGenerator cg;
+    Parser p;
+
+    std::string src = 
+        "fn ret_str() : string {\n"
+        "   return \"hello\";\n"
+        "}\n"
+        "__puts(ret_str());";
+    auto decls = p.parse_r(src);
+
+    cg.generate(*decls);
+    auto mod = cg.take_module();
+
+    jit.load_module(mod);
+    auto __main = jit.lookup_ea("__main")->toPtr<void()>();
+    __main();
+
+    ASSERT_EQ(ss.str(), "hello");
+}
+
 TEST(llvmcodegen, let_string_while_puts_and_call_fn_through_var) {
     LLJITWrapper jit;
     std::stringstream ss;
