@@ -278,7 +278,6 @@ TEST(llvmcodegen, closure) {
     auto __main = jit.lookup_ea("__main")->toPtr<void()>();
     __main();
 
-    ASSERT_EQ(jit.debug_values.size(), 2);
     std::vector<uint64_t> expected {1, 2};
     ASSERT_EQ(jit.debug_values, expected);
 }
@@ -289,14 +288,17 @@ TEST(llvmcodegen, closure_with_different_captures) {
     Parser p;
 
     std::string src = 
-        "fn call_closure(a: int) {"
+        "fn create_closure(a: int) : (:int) {"
         "   fn foo() : int {"
         "       return a;"
         "   }"
-        "   __debug(foo());"
+        "   return foo;"
         "}"
-        "call_closure(1);"
-        "call_closure(2);";
+        "let c1 = create_closure(1);"
+        "let c2 = create_closure(2);"
+        "__debug(c1());"
+        "__debug(c2());"
+        "__debug(c1() + c2());";
     auto decls = p.parse_r(src);
 
     cg.generate(*decls);
@@ -306,8 +308,7 @@ TEST(llvmcodegen, closure_with_different_captures) {
     auto __main = jit.lookup_ea("__main")->toPtr<void()>();
     __main();
 
-    ASSERT_EQ(jit.debug_values.size(), 2);
-    std::vector<uint64_t> expected {1, 2};
+    std::vector<uint64_t> expected {1, 2, 3};
     ASSERT_EQ(jit.debug_values, expected);
 }
 }  // namespace

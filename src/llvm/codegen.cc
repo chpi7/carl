@@ -97,6 +97,7 @@ static llvm::Function* getFunction(llvm::Module& mod, llvm::LLVMContext& ctx,
     for (auto& arg : decl->get_formals()) {
         f->getArg(arg_idx++)->setName(std::string(arg->get_name()));
     }
+    f->getArg(arg_idx)->setName("captures_vec");
 
     return f;
 }
@@ -115,6 +116,9 @@ static llvm::Function* getFreeFunction(llvm::Module& mod, llvm::LLVMContext& ctx
 static llvm::FunctionType* getFnTypeForCall(llvm::LLVMContext& ctx,
                                             Call* call) {
     auto ret_type = call->get_type()->get_llvm_rt_type(ctx);
+    if (call->get_type()->is_rt_heap_obj()) {
+        ret_type = ret_type->getPointerTo(0);
+    }
     std::vector<llvm::Type*> fps;
     for (auto& param : call->get_arguments())
         fps.push_back(param->get_type()->get_llvm_rt_type(ctx));
@@ -599,6 +603,8 @@ void LLVMCodeGenerator::visit_call(Call* call) {
     std::string fname = call->get_fname();
     TypedValue wrapper_var = names->get_variable(fname);
     llvm::Value* fn_heap_obj_ptr = builder->CreateLoad(wrapper_var.type, wrapper_var.value, "ld_fn_wrapper");
+    // module->print(llvm::outs(), nullptr);
+    // llvm::outs() << "\n";
     auto zero = getConstantInt(*context, 0);
     llvm::Value* ptr_to_fn_addr = builder->CreateGEP(
         llvm::StructType::getTypeByName(*context, "__carl_fn"), fn_heap_obj_ptr,

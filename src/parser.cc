@@ -223,7 +223,7 @@ std::shared_ptr<types::Type> Parser::type() {
     if (match(TOKEN_LEFT_PAREN)) {
         // (int, string : void)
         std::vector<std::shared_ptr<types::Type>> param_types;
-        while (true) {
+        while (!peek(TOKEN_COLON)) {
             std::shared_ptr<types::Type> t = type();
             param_types.push_back(t);
             if (match(TOKEN_COMMA)) {
