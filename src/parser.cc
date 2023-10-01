@@ -1,18 +1,18 @@
 #include "carl/parser.h"
 
+#include <list>
 #include <unordered_map>
 #include <unordered_set>
-#include <list>
 
-#include "carl/common.h"
 #include "carl/ast/type_inference.h"
+#include "carl/common.h"
 
 /* Grammar Excerpt
 
     program -> declaration*
     declaration -> letDecl | fnDecl | statement
 
-    statement -> whileStatment | blockStatement | expressionStatement 
+    statement -> whileStatment | blockStatement | expressionStatement
     whileStatement -> 'while' ( expression ) statement
     blockStatement -> { declaration* }
     expressionStatement -> statement ';'
@@ -20,7 +20,7 @@
 
 namespace carl {
 
-template<typename T>
+template <typename T>
 static std::shared_ptr<T> make_error_node() {
     return nullptr;
 }
@@ -87,7 +87,7 @@ std::shared_ptr<Expression> Parser::parse_precedence(Precedence precedence) {
     // token");
     if (prefix_rule->prefix == nullptr) {
         error_at(current, "no prefix rule found.");
-        advance(); // dont get stuck in infinite loop
+        advance();  // dont get stuck in infinite loop
         return make_error_node<Expression>();
     }
 
@@ -101,8 +101,7 @@ std::shared_ptr<Expression> Parser::parse_precedence(Precedence precedence) {
         }
     } else {
         // so nice :)
-        expression =
-            (this->*(prefix_rule->prefix))();
+        expression = (this->*(prefix_rule->prefix))();
     }
 
     const ParseRule* infix_rule;
@@ -169,19 +168,26 @@ void Parser::synchronize() {
     }
 }
 
-ParseResult Parser::parse_r(std::string& src) {
-    auto puts_decl = decl_builtin("__puts", {std::make_shared<types::String>()},
-                                  std::make_shared<types::Int>());
-    auto debug_decl = decl_builtin("__debug", {std::make_shared<types::Int>()},
-                                   std::make_shared<types::Void>());
-    auto assert_decl =
-        decl_builtin("__assert", {std::make_shared<types::Bool>()},
-                     std::make_shared<types::Void>());
+ParseResult Parser::parse_r(std::string& src, bool add_builtins) {
+    std::shared_ptr<carl::FnDecl> puts_decl, debug_decl, assert_decl;
+    if (add_builtins) {
+        puts_decl =
+            decl_builtin("__puts", {std::make_shared<types::String>()},
+                         std::make_shared<types::Int>());
+        debug_decl =
+            decl_builtin("__debug", {std::make_shared<types::Int>()},
+                         std::make_shared<types::Void>());
+        assert_decl =
+            decl_builtin("__assert", {std::make_shared<types::Bool>()},
+                         std::make_shared<types::Void>());
+    }
 
     auto decls = parse(src);
-    decls.insert(decls.begin(), puts_decl);
-    decls.insert(decls.begin(), debug_decl);
-    decls.insert(decls.begin(), assert_decl);
+    if (add_builtins) {
+        decls.insert(decls.begin(), puts_decl);
+        decls.insert(decls.begin(), debug_decl);
+        decls.insert(decls.begin(), assert_decl);
+    }
 
     if (has_error) {
         return ParseResult::make_error(ParseError{"some error occured"});
@@ -190,7 +196,8 @@ ParseResult Parser::parse_r(std::string& src) {
     TypeInference ti;
     auto r = ti.run(decls);
     if (!r) {
-        return ParseResult::make_error(ParseError {.message = r.get_error().message});
+        return ParseResult::make_error(
+            ParseError{.message = r.get_error().message});
     }
 
     return ParseResult::make_result(decls);
@@ -200,14 +207,14 @@ std::vector<std::shared_ptr<AstNode>> Parser::parse(std::string& src) {
     auto scanner = std::make_shared<Scanner>();
     scanner->init(src.c_str());
     set_scanner(scanner);
-    
+
     return parse();
 }
 
 std::vector<std::shared_ptr<AstNode>> Parser::parse() {
     if (!scanner) {
         std::cerr << "scanner not set." << std::endl;
-        return {}; // std::vector<std::shared_ptr<AstNode>>();
+        return {};  // std::vector<std::shared_ptr<AstNode>>();
     }
     std::vector<std::shared_ptr<AstNode>> result;
     while (current.type != TOKEN_EOF) {
@@ -233,12 +240,15 @@ std::shared_ptr<types::Type> Parser::type() {
                 break;
             }
         }
-        consume(TOKEN_COLON, "Expected : between function param types and return type");
+        consume(TOKEN_COLON,
+                "Expected : between function param types and return type");
         auto ret_type = type();
-        consume(TOKEN_RIGHT_PAREN, "Expected ) after function type return type.");
+        consume(TOKEN_RIGHT_PAREN,
+                "Expected ) after function type return type.");
         return std::make_shared<types::Fn>(param_types, ret_type);
     } else {
-        consume(TOKEN_IDENTIFIER, "Expected identifier or fn type as typename.");
+        consume(TOKEN_IDENTIFIER,
+                "Expected identifier or fn type as typename.");
         std::string type_str = previous;
         return type_from_identifier(type_str);
     }
@@ -284,7 +294,6 @@ std::shared_ptr<LetDecl> Parser::let_decl() {
 }
 
 std::shared_ptr<FnDecl> Parser::fn_decl() {
-
     consume(TOKEN_IDENTIFIER, "Expected function name after fn keyword.");
     auto name = previous;
 
@@ -311,7 +320,9 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
         auto fp_name = std::string(previous.start, previous.length);
         environment->set_variable(fp_name, nullptr);
 
-        consume(TOKEN_COLON, "Expected ':' between formal param name and formal param type.");
+        consume(
+            TOKEN_COLON,
+            "Expected ':' between formal param name and formal param type.");
         auto fp_type = type();
         formal_param_types.push_back(fp_type);
         fp->set_type(fp_type);
@@ -410,7 +421,8 @@ std::shared_ptr<Expression> Parser::expression() {
 }
 
 static std::shared_ptr<PartialApp> build_partial_app(
-    Token fname, std::vector<int> pl, std::list<std::shared_ptr<Expression>> args) {
+    Token fname, std::vector<int> pl,
+    std::list<std::shared_ptr<Expression>> args) {
     return std::make_shared<PartialApp>(fname, pl, args);
 }
 
@@ -420,7 +432,8 @@ std::shared_ptr<Expression> Parser::call() {
     std::string fname_str = fname;
 
     // var can hold a function --> check both:
-    if (!fn_environment->has_variable(fname_str) && !environment->has_variable(fname_str)) {
+    if (!fn_environment->has_variable(fname_str) &&
+        !environment->has_variable(fname_str)) {
         error_at(previous, "Function name not found in environment");
     }
 
@@ -428,15 +441,18 @@ std::shared_ptr<Expression> Parser::call() {
 
     auto args = std::list<std::shared_ptr<Expression>>();
     std::vector<int> placeholder_positions;
-    while (current.type != TOKEN_ERROR && current.type != TOKEN_EOF && current.type != TOKEN_RIGHT_PAREN) {
+    while (current.type != TOKEN_ERROR && current.type != TOKEN_EOF &&
+           current.type != TOKEN_RIGHT_PAREN) {
         if (match(TOKEN_UNDERSCORE)) {
-            placeholder_positions.push_back(args.size() + placeholder_positions.size());
+            placeholder_positions.push_back(args.size() +
+                                            placeholder_positions.size());
         } else {
             args.push_back(expression());
         }
         if (!match(TOKEN_COMMA)) break;
     }
-    consume(TOKEN_RIGHT_PAREN, "Expected ) at the end of function argument list.");
+    consume(TOKEN_RIGHT_PAREN,
+            "Expected ) at the end of function argument list.");
 
     if (placeholder_positions.empty()) {
         return std::make_shared<Call>(fname, args);
@@ -496,7 +512,8 @@ std::shared_ptr<Expression> Parser::unary() {
 std::shared_ptr<Expression> Parser::variable() {
     consume(TOKEN_IDENTIFIER, "Expected identifier as variable name.");
     std::string name = std::string(previous.start, previous.length);
-    if (!environment->has_variable(name) && !fn_environment->has_variable(name)) {
+    if (!environment->has_variable(name) &&
+        !fn_environment->has_variable(name)) {
         error_at(previous, "name not found in environment");
     }
 
@@ -514,7 +531,7 @@ std::shared_ptr<Expression> Parser::binary() {
     // make some operator right associative
     int prec_offset = 0;
     Precedence current = current_rule->prec;
-    switch(current) {
+    switch (current) {
         case PREC_ASSIGNMENT:
         case PREC_COMPOSITION:
             break;
@@ -587,9 +604,10 @@ void Parser::error_at(Token token, const char* message) {
     fprintf(stderr, ": %s\n", message);
 }
 
-std::shared_ptr<FnDecl> Parser::decl_builtin(const std::string& name,
-                          std::vector<std::shared_ptr<types::Type>> param_types,
-                          std::shared_ptr<types::Type> return_type) {
+std::shared_ptr<FnDecl> Parser::decl_builtin(
+    const std::string& name,
+    std::vector<std::shared_ptr<types::Type>> param_types,
+    std::shared_ptr<types::Type> return_type) {
     Token t;
     t.start = name.c_str();
     t.length = name.size();

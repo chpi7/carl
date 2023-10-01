@@ -62,7 +62,7 @@ class Parser {
     Parser();
     void set_scanner(std::shared_ptr<Scanner> scanner);
 
-    ParseResult parse_r(std::string& src);
+    ParseResult parse_r(std::string& src, bool add_builtins = true);
     std::vector<std::shared_ptr<AstNode>> parse();
     std::vector<std::shared_ptr<AstNode>> parse(std::string& src);
     std::shared_ptr<AstNode> declaration();

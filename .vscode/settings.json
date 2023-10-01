@@ -2,6 +2,7 @@
     "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4 }",
     "python.formatting.provider": "black",
     "files.associations": {
+        "*.embeddedhtml": "html",
         "type_traits": "cpp",
         "*.tcc": "cpp",
         "algorithm": "cpp",
@@ -61,6 +62,23 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "typeinfo": "cpp",
-        "mutex": "cpp"
-    }
+        "mutex": "cpp",
+        "*.inc": "cpp",
+        "any": "cpp",
+        "bitset": "cpp",
+        "cinttypes": "cpp",
+        "forward_list": "cpp",
+        "future": "cpp",
+        "semaphore": "cpp",
+        "shared_mutex": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp",
+        "variant": "cpp",
+        "cassert": "cpp",
+        "cerrno": "cpp",
+        "cfloat": "cpp",
+        "climits": "cpp"
+    },
+    "cmake.cmakePath": "/usr/bin/cmake",
+    "cmake.configureOnOpen": false
 }

@@ -16,6 +16,10 @@ class Environment {
     std::map<std::string, V> values;
 
    public:
+    Environment() {
+        parent = std::unique_ptr<Environment<V>>(nullptr);
+    }
+
     Environment(std::unique_ptr<Environment> env) : parent(std::move(env)) {
         if (parent) {
             id = parent->id + 1; 

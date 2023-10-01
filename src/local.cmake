@@ -1,15 +1,13 @@
 set(SRC_CC
-    src/vm/vm.cc
-    src/vm/chunk.cc
-    src/vm/env.cc
     src/ast/types.cc
     src/ast/ast.cc
     src/ast/print_visitor.cc
     src/ast/ast_printer.cc
     src/ast/type_inference.cc
+    src/jit2/codegen2.cc
+    src/jit2/carljit.cc
     src/parser.cc 
     src/scanner.cc 
-    src/basic_codegen.cc 
     src/llvm/codegen.cc
     src/llvm/jit.cc
     src/llvm/runtime_types.cc

@@ -13,6 +13,7 @@ set(TEST_CC
     test/util_test.cc
     test/parser_test.cc
     test/llvm_codegen_test.cc
+    test/codegen2_test.cc
 )
 
 add_executable(tester test/tester.cc ${TEST_CC} ${CARL_INCLUDE_H})
