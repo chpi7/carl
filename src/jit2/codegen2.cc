@@ -25,39 +25,15 @@ void Codegen2::init(std::string module_name) {
 
 Codegen2Module Codegen2::generate(std::vector<std::shared_ptr<AstNode>> decls) {
     /* Init main wrapper function */
-    bool return_last_result = false;
     llvm::Type* ret_type = llvm::Type::getVoidTy(*context);
-    llvm::Value* last_result = nullptr;
-    if (decls.back()->get_node_type() == AstNodeType::ExprStmt) {
-        return_last_result = true;
-        auto expr =
-            std::dynamic_pointer_cast<ExprStmt>(decls.back())->get_expr();
-        ret_type = runtime_type_llvm_get__from_BaseType(
-            expr->get_type()->get_base_type(), *context);
-    }
     llvm::Function* main = start_function("__carl_main", ret_type);
 
     /* Generate code for everything */
-    for (size_t i = 0; i < decls.size(); ++i) {
-        const auto& declaration = decls.at(i);
-        bool is_last = i == decls.size() - 1;
-
-        if (is_last && return_last_result) {
-            /* We checked above that this cast is okay */
-            auto expr =
-                std::dynamic_pointer_cast<ExprStmt>(decls.back())->get_expr();
-            last_result = do_visit(expr);
-        } else {
-            do_visit(declaration);
-        }
+    for (const auto& d : decls) {
+        do_visit(d);
     }
-
-    /* Create return for main function if necessary */
-    if (return_last_result) {
-        builder->CreateRet(last_result);
-    } else {
-        builder->CreateRetVoid();
-    }
+    /* In case there is no return in the code, at one. */
+    builder->CreateRetVoid();
 
     module->print(llvm::outs(), nullptr);
 
@@ -256,4 +232,207 @@ void Codegen2::visit_string(String* string) {
     builder->CreateStore(crt_string_data_ptr, gep_data);
 
     result = crt_string_ptr;
+}
+
+void Codegen2::visit_letdecl(LetDecl* letdecl) {
+    std::string name = letdecl->get_name();
+    llvm::Value* initializer = do_visit(letdecl->get_initializer());
+    llvm::AllocaInst* local = create_alloca(name, initializer->getType());
+    builder->CreateStore(initializer, local);
+    named_values.set_variable(name, local);
+
+    result = nullptr;
+}
+
+void Codegen2::visit_variable(Variable* variable) {
+    Value& v = named_values.get_variable(variable->get_name());
+    result = builder->CreateLoad(v.get_type(), v.get_value());
+}
+
+void Codegen2::visit_returnstmt(ReturnStmt* returnstmt) {
+    builder->CreateRet(do_visit(returnstmt->get_expr()));
+    result = nullptr;
+}
+
+void Codegen2::visit_fndecl(FnDecl* fndecl) {
+    /*
+    For this code:
+    let a = 1;
+    fn foo(b) {
+        return a + b;
+    }
+
+    Do:
+    1) Generate function code
+    function foo_impl (b : int, a: int) : int {
+        return a + b;
+    }
+    2) Create the crt_fn object
+    crt_fn {
+        impl_ptr = foo;
+        captures = [a = 1]; <<--- vector / array of 64 bit values
+    }
+    3) Store crt_fn object in alloca with correct name
+    */
+
+    /* 1) */
+    /* Generate function if it does not exist yet */
+    std::string fname = fndecl->get_sname();
+    llvm::Function* llvm_fn = module->getFunction(fname);
+    if (llvm_fn == nullptr) {
+        assert(fndecl->get_type()->get_base_type() == types::BaseType::FN);
+
+        auto carl_fn_type =
+            std::static_pointer_cast<types::Fn>(fndecl->get_type());
+
+        auto llvm_ret_type = runtime_type_llvm_get__from_BaseType(
+            carl_fn_type->get_ret()->get_base_type(), *context);
+
+        std::vector<llvm::Type*> llvm_param_types;
+        for (auto carl_param_type : carl_fn_type->get_parameters()) {
+            llvm_param_types.push_back(runtime_type_llvm_get__from_BaseType(
+                carl_param_type->get_base_type(), *context));
+        }
+        for (auto capture : fndecl->get_captures()) {
+            llvm_param_types.push_back(runtime_type_llvm_get__from_BaseType(
+                capture->get_type()->get_base_type(), *context));
+        }
+
+        auto llvm_fn_type =
+            llvm::FunctionType::get(llvm_ret_type, llvm_param_types, false);
+
+        std::string fn_name = fname + "_impl";
+        llvm_fn = llvm::Function::Create(
+            llvm_fn_type, llvm::Function::ExternalLinkage, fn_name, *module);
+
+        // set argument names
+        int arg_idx = 0;
+        for (auto& arg : fndecl->get_formals()) {
+            llvm_fn->getArg(arg_idx)->setName(std::string(arg->get_name()));
+            arg_idx++;
+        }
+        for (auto capture : fndecl->get_captures()) {
+            llvm_fn->getArg(arg_idx++)->setName(
+                std::string(capture->get_name()));
+        }
+
+        // Generate function implementation
+        auto* old_insert_block = builder->GetInsertBlock();
+        auto* body = llvm::BasicBlock::Create(*context, "entry", llvm_fn);
+        builder->SetInsertPoint(body);
+        named_values.push();
+
+        size_t num_args =
+            fndecl->get_formals().size() + fndecl->get_captures().size();
+        for (size_t arg_idx = 0; arg_idx < num_args; ++arg_idx) {
+            llvm::Argument* v = llvm_fn->getArg(arg_idx);
+            std::string name = v->getName().str();
+            llvm::AllocaInst* alloca = create_alloca(name, v->getType());
+            builder->CreateStore(v, alloca);
+            named_values.set_variable(name, Value(alloca));
+        }
+        do_visit(fndecl->get_body());
+        builder->CreateRetVoid();
+
+        named_values.pop();
+        builder->SetInsertPoint(old_insert_block);
+    }
+
+    /* 2) */
+    llvm::Function* fn_crt_alloc = get_crt_malloc();
+    auto* fn_llvm_type = CRT_LLVM_TYPE(crt_fn, *context);
+    llvm::Value* crt_fn_ptr = builder->CreateCall(
+        fn_crt_alloc, llvm::ConstantExpr::getSizeOf(fn_llvm_type),
+        "crt_fn_ptr");
+    auto* fn_ptr =
+        builder->CreateGEP(fn_llvm_type, crt_fn_ptr,
+                           {mk_uint32(0), mk_uint32(0)}, "crt_fn_fn_ptr");
+    builder->CreateStore(llvm_fn, fn_ptr);
+
+    // allocate captures vector
+    auto* capture_ptr = builder->CreateCall(
+        fn_crt_alloc,
+        mk_uint64(sizeof(uint64_t) * fndecl->get_captures().size()),
+        "capture_ptr");
+    // capture values into the vector
+    size_t capture_idx = 0;
+    for (const auto& capture : fndecl->get_captures()) {
+        auto& value = named_values.get_variable(capture->get_name());
+        auto* loaded = builder->CreateLoad(value.get_type(), value.get_value());
+        auto* capture_elem_ptr = builder->CreateGEP(
+            llvm::Type::getInt64PtrTy(*context), capture_ptr,
+            {mk_uint32(capture_idx)},
+            std::string("capture_") + std::to_string(capture_idx));
+        builder->CreateStore(loaded, capture_elem_ptr);
+
+        capture_idx++;
+    }
+    // store capture ptr into the fn wrapper struct
+    auto* fn_crt_capture_ptr =
+        builder->CreateGEP(fn_llvm_type, crt_fn_ptr,
+                           {mk_uint32(0), mk_uint32(1)}, "crt_fn_capture_ptr");
+    builder->CreateStore(capture_ptr, fn_crt_capture_ptr);
+
+    /* 3) */
+    llvm::AllocaInst* fn_alloca =
+        create_alloca(fndecl->get_sname(), crt_fn_ptr->getType());
+    builder->CreateStore(crt_fn_ptr, fn_alloca);
+    Value value(fn_alloca);
+    value.fn_capture_amount = fndecl->get_captures().size();
+    named_values.set_variable(fndecl->get_sname(), value);
+
+    module->print(llvm::outs(), nullptr);
+}
+
+void Codegen2::visit_block(Block* block) {
+    named_values.push();
+    for (const auto& declaration : block->get_declarations()) {
+        do_visit(declaration);
+    }
+    named_values.pop();
+    result = nullptr;
+}
+
+void Codegen2::visit_call(Call* call) {
+    Value& v = named_values.get_variable(call->get_fname());
+    if (v.fn_capture_amount < 0) {
+        error("invalid capture amount in value");
+        return;
+    }
+    auto* fn_wrapper =
+        builder->CreateLoad(v.get_type(), v.get_value(),
+                            std::string(call->get_fname()) + "_wrapper");
+    auto* fn_wrapper_fn_ptr_gep =
+        builder->CreateGEP(CRT_LLVM_TYPE(crt_fn, *context), fn_wrapper,
+                           {mk_uint32(0), mk_uint32(0)}, "fn_ptr_gep");
+    auto* fn_impl_ptr = builder->CreateLoad(llvm::PointerType::get(*context, 0),
+                                            fn_wrapper_fn_ptr_gep, "impl_ptr");
+    std::vector<llvm::Value*> arguments;
+    std::vector<llvm::Type*> arg_types;
+    for (const auto& arg : call->get_arguments()) {
+        auto* v = do_visit(arg);
+        arguments.push_back(v);
+        arg_types.push_back(v->getType());
+    }
+
+    auto* fn_wrapper_cap_gep =
+        builder->CreateGEP(CRT_LLVM_TYPE(crt_fn, *context), fn_wrapper,
+                           {mk_uint32(0), mk_uint32(1)}, "capture_gep");
+    auto* fn_wrapper_cap_ptr = builder->CreateLoad(llvm::Type::getInt64PtrTy(*context), fn_wrapper_cap_gep, "capture_ptr");
+    for (size_t cap_idx = 0; cap_idx < v.fn_capture_amount; ++cap_idx) {
+        auto* capture_gep = builder->CreateGEP(
+            llvm::Type::getInt64Ty(*context), fn_wrapper_cap_ptr,
+            {mk_uint32(cap_idx)},
+            std::string("capture_gep_") + std::to_string(cap_idx));
+        auto* capture = builder->CreateLoad(llvm::Type::getInt64Ty(*context), capture_gep);
+        arguments.push_back(capture);
+        arg_types.push_back(capture->getType());
+    }
+
+    auto* ret_type = runtime_type_llvm_get__from_BaseType(
+        call->get_type()->get_base_type(), *context);
+    llvm::FunctionType* fn_type =
+        llvm::FunctionType::get(ret_type, arg_types, false);
+    result = builder->CreateCall(fn_type, fn_impl_ptr, arguments,
+                                 std::string(call->get_fname()));
 }

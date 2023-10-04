@@ -16,6 +16,17 @@ llvm::Type* runtime_type_llvm_get__crt_string(llvm::LLVMContext &context) {
     return t;
 };
 
+llvm::Type* runtime_type_llvm_get__crt_fn(llvm::LLVMContext &context) {
+    const char* llvm_type_name = "crt_fn";
+    llvm::Type* t = llvm::StructType::getTypeByName(context, llvm_type_name);
+    if (t == nullptr) {
+        t = llvm::StructType::create(llvm_type_name,
+                                     llvm::PointerType::get(context, 0),
+                                     llvm::Type::getInt64PtrTy(context));
+    }
+    return t;
+};
+
 llvm::Type* runtime_type_llvm_get__from_BaseType(carl::types::BaseType base_type, llvm::LLVMContext &context) {
     switch (base_type) {
         case carl::types::BaseType::BOOL:

@@ -10,6 +10,55 @@
 using namespace carl;
 
 namespace {
+TEST(codegen2, string_fndecl_with_capture) {
+    CarlJIT jit;
+    Parser p;
+    AstPrinter printer(std::cout);
+
+    Codegen2 cg;
+    cg.init("main");
+
+    std::string src = ""
+        "let one = 1;"
+        "fn foo(a: int): int {"
+        "   return a + one;"
+        "}"
+        "one = one + 1;"
+        "return foo(41);";
+    auto decls = p.parse_r(src, false);
+    for (auto& d : *decls) printer.print(d.get());
+
+    auto module = cg.generate(*decls);
+
+    jit.load_module(module);
+    auto __main = jit.lookup_ea("__carl_main")->toPtr<uint64_t()>();
+    uint64_t result = __main();
+    ASSERT_EQ(result, 42);
+}
+
+TEST(codegen2, string_letdecl) {
+    CarlJIT jit;
+    Parser p;
+    AstPrinter printer(std::cout);
+
+    Codegen2 cg;
+    cg.init("main");
+
+    std::string src = ""
+        "let a = 40;"
+        "let b = 2;"
+        "return a + b;";
+    auto decls = p.parse_r(src, false);
+    for (auto& d : *decls) printer.print(d.get());
+
+    auto module = cg.generate(*decls);
+
+    jit.load_module(module);
+    auto __main = jit.lookup_ea("__carl_main")->toPtr<uint64_t()>();
+    uint64_t result = __main();
+    ASSERT_EQ(result, 42);
+}
+
 TEST(codegen2, string_concat) {
     CarlJIT jit;
     Parser p;
@@ -18,7 +67,7 @@ TEST(codegen2, string_concat) {
     Codegen2 cg;
     cg.init("main");
 
-    std::string src = "\"hello \" + \"world!\";";
+    std::string src = "return \"hello \" + \"world!\";";
     auto decls = p.parse_r(src, false);
     for (auto& d : *decls) printer.print(d.get());
 
@@ -39,7 +88,7 @@ TEST(codegen2, string_create) {
     Codegen2 cg;
     cg.init("main");
 
-    std::string src = "\"hello world!\";";
+    std::string src = "return \"hello world!\";";
     auto decls = p.parse_r(src, false);
     for (auto& d : *decls) printer.print(d.get());
 
@@ -60,7 +109,7 @@ TEST(codegen2, basic_expression_add) {
     Codegen2 cg;
     cg.init("main");
 
-    std::string src = "1 + 2;";
+    std::string src = "return 1 + 2;";
     auto decls = p.parse_r(src, false);
     for (auto& d : *decls) printer.print(d.get());
 
