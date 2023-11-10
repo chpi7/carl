@@ -34,10 +34,8 @@ To check what is currently implemented throughout the full stack, check out [cod
 #### Languages Features
 - [x] Closures
 - [ ] Function Composition
-- [ ] Partial Application
 - [ ] Struct Datatype
 #### Runtime:
 - [ ] Garbage Collection
 #### Other:
-- [ ] Standard library
 - [ ] Async IO (with libuv)
