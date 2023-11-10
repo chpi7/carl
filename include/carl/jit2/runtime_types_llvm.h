@@ -36,6 +36,8 @@ llvm::Type* runtime_type_llvm_get__from_BaseType(carl::types::BaseType base_type
             return llvm::Type::getDoubleTy(context);
         case carl::types::BaseType::STRING:
             return runtime_type_llvm_get__crt_string(context);
+        case carl::types::BaseType::FN:
+            return runtime_type_llvm_get__crt_fn(context)->getPointerTo();
         default:
             fprintf(stderr, "ERROR in runtime_type_llvm_get__from_BaseType: unmapped type\n");
             return nullptr;

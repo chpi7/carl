@@ -31,7 +31,6 @@ class AstPrinter : public AstNodeVisitor {
     void visit_string(String* string);
     void visit_number(Number* number);
     void visit_call(Call* call);
-    void visit_partialapp(PartialApp* partialapp);
 private:
     void write_indent() {
         static constexpr const char* indent_with = "  ";

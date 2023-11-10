@@ -16,7 +16,7 @@ namespace carl {
 class AstNodeVisitor;
 class Variable;
 
-enum class AstNodeType { Statement, Block, Expression, Type, FormalParam, FnDecl, LetDecl, ExprStmt, ReturnStmt, WhileStmt, Assignment, Binary, Unary, Variable, Literal, String, Number, Call, PartialApp };
+enum class AstNodeType { Statement, Block, Expression, Type, FormalParam, FnDecl, LetDecl, ExprStmt, ReturnStmt, WhileStmt, Assignment, Binary, Unary, Variable, Literal, String, Number, Call };
 
 class AstNode {
    public:
@@ -250,20 +250,6 @@ class Call : public Expression {
     void accept(AstNodeVisitor* visitor);
 };
 
-class PartialApp : public Expression {
-   private:
-    Token fname;
-    std::vector<int> placeholder_positions;
-    std::list<std::shared_ptr<Expression>> arguments;
-   public:
-    AstNodeType get_node_type() const;
-    PartialApp(Token fname, std::vector<int> placeholder_positions, std::list<std::shared_ptr<Expression>> arguments) : fname(fname), placeholder_positions(placeholder_positions), arguments(arguments) {}
-    Token get_fname() const { return this->fname; }
-    std::vector<int> get_placeholder_positions() const { return this->placeholder_positions; }
-    std::list<std::shared_ptr<Expression>> get_arguments() const { return this->arguments; }
-    void accept(AstNodeVisitor* visitor);
-};
-
 class AstNodeVisitor {
    public:
     virtual void visit_statement(Statement* statement) { assert(false && "visit statement not overwritten"); };
@@ -284,7 +270,6 @@ class AstNodeVisitor {
     virtual void visit_string(String* string) { assert(false && "visit string not overwritten"); };
     virtual void visit_number(Number* number) { assert(false && "visit number not overwritten"); };
     virtual void visit_call(Call* call) { assert(false && "visit call not overwritten"); };
-    virtual void visit_partialapp(PartialApp* partialapp) { assert(false && "visit partialapp not overwritten"); };
 };
 
 } // namespace carl

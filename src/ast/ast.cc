@@ -20,7 +20,6 @@ void Literal::accept(AstNodeVisitor* visitor) { visitor->visit_literal(this); }
 void String::accept(AstNodeVisitor* visitor) { visitor->visit_string(this); }
 void Number::accept(AstNodeVisitor* visitor) { visitor->visit_number(this); }
 void Call::accept(AstNodeVisitor* visitor) { visitor->visit_call(this); }
-void PartialApp::accept(AstNodeVisitor* visitor) { visitor->visit_partialapp(this); }
 
 AstNodeType Statement::get_node_type() const { return AstNodeType::Statement; }
 AstNodeType Block::get_node_type() const { return AstNodeType::Block; }
@@ -40,6 +39,5 @@ AstNodeType Literal::get_node_type() const { return AstNodeType::Literal; }
 AstNodeType String::get_node_type() const { return AstNodeType::String; }
 AstNodeType Number::get_node_type() const { return AstNodeType::Number; }
 AstNodeType Call::get_node_type() const { return AstNodeType::Call; }
-AstNodeType PartialApp::get_node_type() const { return AstNodeType::PartialApp; }
 
 } // namespace carl

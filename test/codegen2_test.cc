@@ -10,6 +10,34 @@
 using namespace carl;
 
 namespace {
+TEST(codegen2, fn_mania) {
+    CarlJIT jit;
+    Parser p;
+    AstPrinter printer(std::cout);
+
+    Codegen2 cg;
+    cg.init("main");
+
+    std::string src = ""
+        "fn foo(a: int): (:int) {"
+        "   let one = 1;"
+        "   fn bar() : int {"
+        "       return a + one;"
+        "   }"
+        "   return bar;"
+        "}"
+        "let bar_1 = foo(1);"
+        "return bar_1();";
+    auto decls = p.parse_r(src, false);
+
+    auto module = cg.generate(*decls);
+
+    jit.load_module(module);
+    auto __main = jit.lookup_ea("__carl_main")->toPtr<uint64_t()>();
+    uint64_t result = __main();
+    ASSERT_EQ(result, 2);
+}
+
 TEST(codegen2, string_fndecl_with_capture) {
     CarlJIT jit;
     Parser p;
@@ -20,13 +48,13 @@ TEST(codegen2, string_fndecl_with_capture) {
 
     std::string src = ""
         "let one = 1;"
-        "fn foo(a: int): int {"
-        "   return a + one;"
+        "let two = 2;"
+        "fn foo(a: int, b : int): int {"
+        "   return a + one + two + b;"
         "}"
         "one = one + 1;"
-        "return foo(41);";
+        "return foo(39, 0);";
     auto decls = p.parse_r(src, false);
-    for (auto& d : *decls) printer.print(d.get());
 
     auto module = cg.generate(*decls);
 
@@ -49,7 +77,6 @@ TEST(codegen2, string_letdecl) {
         "let b = 2;"
         "return a + b;";
     auto decls = p.parse_r(src, false);
-    for (auto& d : *decls) printer.print(d.get());
 
     auto module = cg.generate(*decls);
 
@@ -69,7 +96,6 @@ TEST(codegen2, string_concat) {
 
     std::string src = "return \"hello \" + \"world!\";";
     auto decls = p.parse_r(src, false);
-    for (auto& d : *decls) printer.print(d.get());
 
     auto module = cg.generate(*decls);
 
@@ -90,7 +116,6 @@ TEST(codegen2, string_create) {
 
     std::string src = "return \"hello world!\";";
     auto decls = p.parse_r(src, false);
-    for (auto& d : *decls) printer.print(d.get());
 
     auto module = cg.generate(*decls);
 
@@ -111,7 +136,6 @@ TEST(codegen2, basic_expression_add) {
 
     std::string src = "return 1 + 2;";
     auto decls = p.parse_r(src, false);
-    for (auto& d : *decls) printer.print(d.get());
 
     auto module = cg.generate(*decls);
 

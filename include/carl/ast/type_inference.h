@@ -66,7 +66,6 @@ class TypeInference : public AstNodeVisitor {
     void visit_string(String* string);
     void visit_number(Number* number);
     void visit_call(Call* call);
-    void visit_partialapp(PartialApp* partialapp);
 };
 }  // namespace carl
 #endif

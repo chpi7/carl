@@ -89,7 +89,9 @@ llvm::Function* Codegen2::get_crt_string__concat() {
 }
 
 /* ----------------- visitor functions -------------------*/
-void Codegen2::visit_exprstmt(ExprStmt* exprstmt) {}
+void Codegen2::visit_exprstmt(ExprStmt* exprstmt) {
+    printf("TODO: not implemented!\n");
+}
 
 void Codegen2::visit_binary(Binary* binary) {
     auto op_token = binary->get_op().type;
@@ -264,7 +266,8 @@ void Codegen2::visit_fndecl(FnDecl* fndecl) {
 
     Do:
     1) Generate function code
-    function foo_impl (b : int, a: int) : int {
+    function foo_impl (b : int, captures: ptr) : int {
+        alloca a = captures[0];
         return a + b;
     }
     2) Create the crt_fn object
@@ -293,10 +296,8 @@ void Codegen2::visit_fndecl(FnDecl* fndecl) {
             llvm_param_types.push_back(runtime_type_llvm_get__from_BaseType(
                 carl_param_type->get_base_type(), *context));
         }
-        for (auto capture : fndecl->get_captures()) {
-            llvm_param_types.push_back(runtime_type_llvm_get__from_BaseType(
-                capture->get_type()->get_base_type(), *context));
-        }
+        /* capture pointer */
+        llvm_param_types.push_back(llvm::PointerType::get(*context, 0));
 
         auto llvm_fn_type =
             llvm::FunctionType::get(llvm_ret_type, llvm_param_types, false);
@@ -311,10 +312,7 @@ void Codegen2::visit_fndecl(FnDecl* fndecl) {
             llvm_fn->getArg(arg_idx)->setName(std::string(arg->get_name()));
             arg_idx++;
         }
-        for (auto capture : fndecl->get_captures()) {
-            llvm_fn->getArg(arg_idx++)->setName(
-                std::string(capture->get_name()));
-        }
+        llvm_fn->getArg(arg_idx)->setName("capture_ptr");
 
         // Generate function implementation
         auto* old_insert_block = builder->GetInsertBlock();
@@ -322,8 +320,7 @@ void Codegen2::visit_fndecl(FnDecl* fndecl) {
         builder->SetInsertPoint(body);
         named_values.push();
 
-        size_t num_args =
-            fndecl->get_formals().size() + fndecl->get_captures().size();
+        size_t num_args = fndecl->get_formals().size();
         for (size_t arg_idx = 0; arg_idx < num_args; ++arg_idx) {
             llvm::Argument* v = llvm_fn->getArg(arg_idx);
             std::string name = v->getName().str();
@@ -331,6 +328,21 @@ void Codegen2::visit_fndecl(FnDecl* fndecl) {
             builder->CreateStore(v, alloca);
             named_values.set_variable(name, Value(alloca));
         }
+        /* Load each captured value into an alloca with the correct name. */
+        llvm::Argument* capture_arg = llvm_fn->getArg(num_args);
+        size_t capture_idx = 0;
+        for (auto capture : fndecl->get_captures()) {
+            auto t = runtime_type_llvm_get__from_BaseType(
+                    capture->get_type()->get_base_type(), *context);
+            llvm::AllocaInst* alloca = create_alloca(capture->get_name(), t);
+            llvm::Value* capture_gep = builder->CreateGEP(llvm::Type::getInt64Ty(*context), capture_arg, {mk_uint32(capture_idx)}, "capture_gep");
+            builder->CreateStore(builder->CreateLoad(t, capture_gep), alloca);
+            named_values.set_variable(capture->get_name(), Value(alloca));
+
+            capture_idx++;
+        }
+
+        /* Generate the actual body */
         do_visit(fndecl->get_body());
         builder->CreateRetVoid();
 
@@ -378,10 +390,8 @@ void Codegen2::visit_fndecl(FnDecl* fndecl) {
         create_alloca(fndecl->get_sname(), crt_fn_ptr->getType());
     builder->CreateStore(crt_fn_ptr, fn_alloca);
     Value value(fn_alloca);
-    value.fn_capture_amount = fndecl->get_captures().size();
     named_values.set_variable(fndecl->get_sname(), value);
 
-    module->print(llvm::outs(), nullptr);
 }
 
 void Codegen2::visit_block(Block* block) {
@@ -395,13 +405,12 @@ void Codegen2::visit_block(Block* block) {
 
 void Codegen2::visit_call(Call* call) {
     Value& v = named_values.get_variable(call->get_fname());
-    if (v.fn_capture_amount < 0) {
-        error("invalid capture amount in value");
-        return;
-    }
     auto* fn_wrapper =
         builder->CreateLoad(v.get_type(), v.get_value(),
                             std::string(call->get_fname()) + "_wrapper");
+    llvm::outs() << "fn_wrapper type: ";
+    fn_wrapper->getType()->print(llvm::outs());
+    llvm::outs() << "\n";
     auto* fn_wrapper_fn_ptr_gep =
         builder->CreateGEP(CRT_LLVM_TYPE(crt_fn, *context), fn_wrapper,
                            {mk_uint32(0), mk_uint32(0)}, "fn_ptr_gep");
@@ -414,20 +423,12 @@ void Codegen2::visit_call(Call* call) {
         arguments.push_back(v);
         arg_types.push_back(v->getType());
     }
-
+    arg_types.push_back(llvm::PointerType::get(*context, 0));
     auto* fn_wrapper_cap_gep =
         builder->CreateGEP(CRT_LLVM_TYPE(crt_fn, *context), fn_wrapper,
                            {mk_uint32(0), mk_uint32(1)}, "capture_gep");
     auto* fn_wrapper_cap_ptr = builder->CreateLoad(llvm::Type::getInt64PtrTy(*context), fn_wrapper_cap_gep, "capture_ptr");
-    for (size_t cap_idx = 0; cap_idx < v.fn_capture_amount; ++cap_idx) {
-        auto* capture_gep = builder->CreateGEP(
-            llvm::Type::getInt64Ty(*context), fn_wrapper_cap_ptr,
-            {mk_uint32(cap_idx)},
-            std::string("capture_gep_") + std::to_string(cap_idx));
-        auto* capture = builder->CreateLoad(llvm::Type::getInt64Ty(*context), capture_gep);
-        arguments.push_back(capture);
-        arg_types.push_back(capture->getType());
-    }
+    arguments.push_back(fn_wrapper_cap_ptr);
 
     auto* ret_type = runtime_type_llvm_get__from_BaseType(
         call->get_type()->get_base_type(), *context);

@@ -46,9 +46,4 @@ TYPES = [
     "String(Token value) : Expression",
     "Number(Token value) : Expression",
     "Call(Token fname, @list<@ptr<Expression>> arguments) : Expression",
-    """PartialApp(
-        Token fname,
-        @vec<int> placeholder_positions,
-        @list<@ptr<Expression>> arguments
-    ) : Expression""",
 ]

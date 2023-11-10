@@ -31,7 +31,6 @@ class Value {
     public:
     bool is_alloca = false;
     bool is_global = false;
-    int fn_capture_amount = -1;
     private:
     llvm::Value* value = nullptr;
 
