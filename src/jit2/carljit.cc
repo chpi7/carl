@@ -42,8 +42,7 @@ void CarlJIT::register_host_function(const char* name, void *addr) {
     llvm::orc::SymbolStringPtr sym_name = lljit->getExecutionSession().intern(name);
     llvm::JITEvaluatedSymbol sym(llvm::pointerToJITTargetAddress(addr),
                                  llvm::JITSymbolFlags::Callable | llvm::JITSymbolFlags::Exported | llvm::JITSymbolFlags::Absolute);
-    llvm::orc::SymbolMap map {{ sym_name, sym }};
-    auto error = lljit->getMainJITDylib().define(llvm::orc::absoluteSymbols(map));
+    auto error = lljit->getMainJITDylib().define(llvm::orc::absoluteSymbols({{ sym_name, sym }}));
     if (error) {
         llvm::errs() << "could not register host function";
     }

@@ -2,13 +2,11 @@
 #define CARL_TYPES_H
 
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 #include <vector>
 
 #include "llvm/IR/Type.h"
-#include "llvm/IR/Constants.h"
 
 namespace carl {
 namespace types {
@@ -29,16 +27,7 @@ class Type {
         return get_base_type() == other->get_base_type();
     }
     virtual std::string str() const = 0;
-    virtual llvm::Type* get_llvm_rt_type(llvm::LLVMContext& ctx) {
-        return llvm::Type::getVoidTy(ctx);
-    }
     virtual bool is_rt_heap_obj() { return false; }
-
-//    public:
-//     friend std::ostream& operator<<(std::ostream& os, const Type& t) {
-//         os << t.str();
-//         return os;
-//     }
 };
 
 class Void : public Type {
@@ -59,19 +48,16 @@ class Int : public Number {
     BaseType get_base_type();
     bool can_cast_to(Type* other);
     std::string str() const;
-    llvm::Type* get_llvm_rt_type(llvm::LLVMContext& ctx);
 };
 
 class Float : public Number {
     BaseType get_base_type();
     std::string str() const;
-    llvm::Type* get_llvm_rt_type(llvm::LLVMContext& ctx);
 };
 
 class Bool : public Type {
     BaseType get_base_type();
     std::string str() const;
-    llvm::Type* get_llvm_rt_type(llvm::LLVMContext& ctx);
 };
 
 class String : public Type {
@@ -80,8 +66,6 @@ class String : public Type {
     public:
     BaseType get_base_type();
     std::string str() const;
-    // see runtime_types > __carl_string
-    llvm::Type* get_llvm_rt_type(llvm::LLVMContext& ctx);
     bool is_rt_heap_obj();
 };
 
@@ -97,9 +81,6 @@ class Fn : public Type {
     Fn(std::vector<std::shared_ptr<Type>> parameters,
        std::shared_ptr<Type> ret);
     BaseType get_base_type();
-    // see runtime_types > __carl_fn
-    llvm::Type* get_llvm_rt_type(llvm::LLVMContext& ctx);
-    llvm::FunctionType* get_llvm_fn_type(llvm::LLVMContext& ctx);
     bool is_rt_heap_obj();
     bool can_cast_to(Type* other);
     bool equals(Type* other);

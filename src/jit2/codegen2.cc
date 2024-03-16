@@ -32,7 +32,7 @@ Codegen2Module Codegen2::generate(std::vector<std::shared_ptr<AstNode>> decls) {
     for (const auto& d : decls) {
         do_visit(d);
     }
-    /* In case there is no return in the code, at one. */
+    /* In case there is no return in the code, add one. */
     builder->CreateRetVoid();
 
     module->print(llvm::outs(), nullptr);
@@ -191,15 +191,12 @@ void Codegen2::visit_binary(Binary* binary) {
 }
 
 void Codegen2::visit_number(Number* number) {
-    llvm::Type* llvm_type = number->get_type()->get_llvm_rt_type(*context);
     switch (number->get_type()->get_base_type()) {
         case types::BaseType::INT:
-            result = llvm::ConstantInt::get(llvm_type,
-                                            atoi(number->get_value().start));
+            result = llvm::ConstantInt::get(llvm::Type::getInt64Ty(*context), atoi(number->get_value().start));
             break;
         case types::BaseType::FLOAT:
-            result = llvm::ConstantFP::get(
-                llvm_type, (double)atof(number->get_value().start));
+            result = llvm::ConstantFP::get(llvm::Type::getFloatTy(*context), (double)atof(number->get_value().start));
             break;
         default:
             error("Invalid number base type encountered.");

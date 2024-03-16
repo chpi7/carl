@@ -19,15 +19,17 @@ TEST(codegen2, fn_mania) {
     cg.init("main");
 
     std::string src = ""
+        "let two = 2;"
         "fn foo(a: int): (:int) {"
         "   let one = 1;"
         "   fn bar() : int {"
-        "       return a + one;"
+        "       return a + one + two;"
         "   }"
         "   return bar;"
         "}"
         "let bar_1 = foo(1);"
-        "return bar_1();";
+        "let bar_2 = foo(2);"
+        "return bar_1() + bar_2();";
     auto decls = p.parse_r(src, false);
 
     auto module = cg.generate(*decls);
@@ -35,7 +37,7 @@ TEST(codegen2, fn_mania) {
     jit.load_module(module);
     auto __main = jit.lookup_ea("__carl_main")->toPtr<uint64_t()>();
     uint64_t result = __main();
-    ASSERT_EQ(result, 2);
+    ASSERT_EQ(result, 4 + 5);
 }
 
 TEST(codegen2, string_fndecl_with_capture) {

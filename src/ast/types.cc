@@ -1,5 +1,4 @@
 #include "carl/ast/types.h"
-#include "carl/llvm/runtime_types.h"
 
 #include <vector>
 
@@ -20,33 +19,15 @@ bool Int::can_cast_to(Type* other) {
     return get_base_type() == other->get_base_type();
 }
 std::string Int::str() const { return std::string("int"); }
-llvm::Type* Int::get_llvm_rt_type(llvm::LLVMContext& ctx) {
-    return llvm::Type::getInt64Ty(ctx);
-}
 
 BaseType Float::get_base_type() { return BaseType::FLOAT; }
 std::string Float::str() const { return std::string("float"); }
-llvm::Type* Float::get_llvm_rt_type(llvm::LLVMContext& ctx) {
-    return llvm::Type::getDoubleTy(ctx);
-}
 
 BaseType Bool::get_base_type() { return BaseType::BOOL; }
 std::string Bool::str() const { return std::string("bool"); }
-llvm::Type* Bool::get_llvm_rt_type(llvm::LLVMContext& ctx) {
-    return llvm::Type::getInt1Ty(ctx);
-}
 
 BaseType String::get_base_type() { return BaseType::STRING; }
 std::string String::str() const { return std::string("string"); }
-llvm::Type* String::get_llvm_rt_type(llvm::LLVMContext& ctx) {
-    llvm::Type* t = llvm::StructType::getTypeByName(ctx, llvm_type_name);
-    if (t == nullptr) {
-        t = llvm::StructType::create(llvm_type_name,
-                                     llvm::Type::getInt64Ty(ctx),
-                                     llvm::Type::getInt8PtrTy(ctx));
-    }
-    return t;
-}
 bool String::is_rt_heap_obj() { return true; }
 
 Fn::Fn() : parameters({}), ret(std::make_shared<Void>()) {}
@@ -55,27 +36,6 @@ Fn::Fn(std::vector<std::shared_ptr<Type>> parameters)
 Fn::Fn(std::vector<std::shared_ptr<Type>> parameters, std::shared_ptr<Type> ret)
     : parameters(parameters), ret(ret){};
 BaseType Fn::get_base_type() { return BaseType::FN; }
-llvm::Type* Fn::get_llvm_rt_type(llvm::LLVMContext& ctx) {
-    return carl_fn_llvm_type(ctx);
-}
-llvm::FunctionType* Fn::get_llvm_fn_type(llvm::LLVMContext& ctx) {
-    auto ret_type = ret->get_llvm_rt_type(ctx);
-
-    // User specified formal parameters
-    std::vector<llvm::Type*> fps;
-    for (auto& param : parameters) {
-        auto *x = param->get_llvm_rt_type(ctx);
-        // we pass heap objects by reference
-        if (param->is_rt_heap_obj()) x = x->getPointerTo(0);
-        fps.push_back(x);
-    }
-
-    // Captured values pointer
-    auto* ptr_t = llvm::PointerType::get(ctx, 0);
-    fps.push_back(ptr_t);
-
-    return llvm::FunctionType::get(ret_type, fps, false);
-}
 bool Fn::is_rt_heap_obj() { return true; }
 
 bool Fn::equals(Type* other) {

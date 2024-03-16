@@ -361,6 +361,15 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
     captured_variables.pop_back();
     current_fn_env_id.pop_back();
 
+    for (const auto& capture : unique_captures) {
+        const std::string name = capture->get_name();
+        if (environment->has_variable(name) && is_captured(name)) {
+            // captured_variables and current fn env id popped before.
+            // --> check if captured in the enclosing function as well and propagate upwards if needed.
+            captured_variables.back().push_back(capture);
+        }
+    }
+
     if (has_error) {
         return make_error_node<FnDecl>();
     }
@@ -503,7 +512,6 @@ std::shared_ptr<Expression> Parser::variable() {
 
     auto variable = std::make_shared<Variable>(previous);
     if (environment->has_variable(name) && is_captured(name)) {
-        // std::cout << "detected " << name << " as captured.\n";
         captured_variables.back().push_back(variable);
     }
     return variable;

@@ -29,13 +29,4 @@ let add_five = add_three . add_two;
 let result = add_five(1) == 6;
 ```
 
-### TODO:
-To check what is currently implemented throughout the full stack, check out [codegen tests](test/llvm_codegen_test.cc).
-#### Languages Features
-- [x] Closures
-- [ ] Function Composition
-- [ ] Struct Datatype
-#### Runtime:
-- [ ] Garbage Collection
-#### Other:
-- [ ] Async IO (with libuv)
+To check what is currently implemented throughout the full stack, check out [codegen tests](test/codegen2_test.cc).

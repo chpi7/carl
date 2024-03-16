@@ -8,9 +8,6 @@ set(SRC_CC
     src/jit2/carljit.cc
     src/parser.cc 
     src/scanner.cc 
-    src/llvm/codegen.cc
-    src/llvm/jit.cc
-    src/llvm/runtime_types.cc
 )
 
 add_library(
