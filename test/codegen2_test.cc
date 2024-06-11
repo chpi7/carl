@@ -10,6 +10,30 @@
 using namespace carl;
 
 namespace {
+TEST(codegen2, adt_create_basic) {
+    CarlJIT jit;
+    Parser p;
+    AstPrinter printer(std::cout);
+
+    Codegen2 cg;
+    cg.init("main");
+
+    std::string src = 
+        "data Tree = Leaf | Node (int, Tree, Tree);"
+        "let tree = Node ( Leaf(), 1, Node ( Leaf(), 2, Leaf() ));"
+        "__debug(tree);";
+    ParseResult decls = p.parse_r(src);
+
+    Codegen2Module module = cg.generate(*decls);
+
+    jit.load_module(module);
+    auto __main = jit.lookup_ea("__carl_main")->toPtr<uint64_t()>();
+    __main();
+
+    // TODO: add actual checking of created instances.
+    ASSERT_TRUE(false);
+}
+
 TEST(codegen2, fn_mania) {
     CarlJIT jit;
     Parser p;

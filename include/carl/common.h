@@ -1,5 +1,4 @@
-#ifndef carl_common_h
-#define carl_common_h
+#pragma once
 
 #include <cassert>
 #include <cstddef>
@@ -54,4 +53,3 @@ Result<T, E> Result<T,E>::make_error(E error) {
 }
 
 }  // namespace carl
-#endif

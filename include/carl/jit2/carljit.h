@@ -1,5 +1,4 @@
-#ifndef carl_jit_h
-#define carl_jit_h
+#pragma once
 
 #include <memory>
 #include <optional>
@@ -33,5 +32,3 @@ class CarlJIT {
         std::optional<void*> lookup(const char* name);
 };
 }  // namespace carl
-
-#endif

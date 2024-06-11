@@ -9,6 +9,7 @@ void Type::accept(AstNodeVisitor* visitor) { visitor->visit_type(this); }
 void FormalParam::accept(AstNodeVisitor* visitor) { visitor->visit_formalparam(this); }
 void FnDecl::accept(AstNodeVisitor* visitor) { visitor->visit_fndecl(this); }
 void LetDecl::accept(AstNodeVisitor* visitor) { visitor->visit_letdecl(this); }
+void AdtStmt::accept(AstNodeVisitor* visitor) { visitor->visit_adtstmt(this); }
 void ExprStmt::accept(AstNodeVisitor* visitor) { visitor->visit_exprstmt(this); }
 void ReturnStmt::accept(AstNodeVisitor* visitor) { visitor->visit_returnstmt(this); }
 void WhileStmt::accept(AstNodeVisitor* visitor) { visitor->visit_whilestmt(this); }
@@ -20,6 +21,8 @@ void Literal::accept(AstNodeVisitor* visitor) { visitor->visit_literal(this); }
 void String::accept(AstNodeVisitor* visitor) { visitor->visit_string(this); }
 void Number::accept(AstNodeVisitor* visitor) { visitor->visit_number(this); }
 void Call::accept(AstNodeVisitor* visitor) { visitor->visit_call(this); }
+void MatchArm::accept(AstNodeVisitor* visitor) { visitor->visit_matcharm(this); }
+void Match::accept(AstNodeVisitor* visitor) { visitor->visit_match(this); }
 
 AstNodeType Statement::get_node_type() const { return AstNodeType::Statement; }
 AstNodeType Block::get_node_type() const { return AstNodeType::Block; }
@@ -28,6 +31,7 @@ AstNodeType Type::get_node_type() const { return AstNodeType::Type; }
 AstNodeType FormalParam::get_node_type() const { return AstNodeType::FormalParam; }
 AstNodeType FnDecl::get_node_type() const { return AstNodeType::FnDecl; }
 AstNodeType LetDecl::get_node_type() const { return AstNodeType::LetDecl; }
+AstNodeType AdtStmt::get_node_type() const { return AstNodeType::AdtStmt; }
 AstNodeType ExprStmt::get_node_type() const { return AstNodeType::ExprStmt; }
 AstNodeType ReturnStmt::get_node_type() const { return AstNodeType::ReturnStmt; }
 AstNodeType WhileStmt::get_node_type() const { return AstNodeType::WhileStmt; }
@@ -39,5 +43,7 @@ AstNodeType Literal::get_node_type() const { return AstNodeType::Literal; }
 AstNodeType String::get_node_type() const { return AstNodeType::String; }
 AstNodeType Number::get_node_type() const { return AstNodeType::Number; }
 AstNodeType Call::get_node_type() const { return AstNodeType::Call; }
+AstNodeType MatchArm::get_node_type() const { return AstNodeType::MatchArm; }
+AstNodeType Match::get_node_type() const { return AstNodeType::Match; }
 
 } // namespace carl

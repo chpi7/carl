@@ -143,7 +143,7 @@ void Scanner::skip_whitespace() {
 
 TokenType Scanner::check_keyword(int offset, int length, const char *expected,
                                  TokenType type) {
-    int check_len = (int)(current - start - offset);
+    const int check_len = (int)(current - start - offset);
     if (check_len == length && memcmp(start + offset, expected, length) == 0) {
         return type;
     }
@@ -152,6 +152,8 @@ TokenType Scanner::check_keyword(int offset, int length, const char *expected,
 
 TokenType Scanner::get_identifier_type() {
     switch (*start) {
+        case 'd':
+            return check_keyword(1, 3, "ata", TOKEN_DATA);
         case 'e':
             return check_keyword(1, 3, "lse", TOKEN_ELSE);
         case 'f':
@@ -164,6 +166,8 @@ TokenType Scanner::get_identifier_type() {
             return check_keyword(1, 1, "f", TOKEN_IF);
         case 'l':
             return check_keyword(1, 2, "et", TOKEN_LET);
+        case 'm':
+            return check_keyword(1, 4, "atch", TOKEN_MATCH);
         case 'n':
             return check_keyword(1, 2, "il", TOKEN_NIL);
         case 'r':

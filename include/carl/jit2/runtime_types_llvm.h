@@ -39,7 +39,7 @@ llvm::Type* runtime_type_llvm_get__from_BaseType(carl::types::BaseType base_type
         case carl::types::BaseType::FN:
             return runtime_type_llvm_get__crt_fn(context)->getPointerTo();
         default:
-            fprintf(stderr, "ERROR in runtime_type_llvm_get__from_BaseType: unmapped type\n");
+            fprintf(stderr, "ERROR in runtime_type_llvm_get__from_BaseType: unmapped type %d\n", static_cast<int>(base_type));
             return nullptr;
     }
 };

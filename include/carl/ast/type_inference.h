@@ -1,5 +1,4 @@
-#ifndef carl_type_inference_h 
-#define carl_type_inference_h
+#pragma once 
 
 #include <vector>
 #include <memory>
@@ -68,4 +67,3 @@ class TypeInference : public AstNodeVisitor {
     void visit_call(Call* call);
 };
 }  // namespace carl
-#endif

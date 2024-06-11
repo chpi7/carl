@@ -1,9 +1,8 @@
-#ifndef carl_scanner_h
-#define carl_scanner_h
+#pragma once
 
 #include <iostream>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace carl {
 
@@ -53,6 +52,8 @@ enum TokenType {
     TOKEN_NIL,
     TOKEN_RETURN,
     TOKEN_LET,
+    TOKEN_DATA,
+    TOKEN_MATCH,
 
     TOKEN_ERROR,
     TOKEN_EOF,
@@ -63,7 +64,7 @@ struct Token {
     const char *start;
     int length;
     int line;
-    
+
     operator std::string() const noexcept { return std::string(start, length); }
 };
 
@@ -108,5 +109,3 @@ static bool is_digit(char c) { return c >= '0' && c <= '9'; }
 
 static bool is_alpha_num(char c) { return is_alpha(c) || is_digit(c); }
 }  // namespace carl
-
-#endif

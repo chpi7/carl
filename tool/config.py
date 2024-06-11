@@ -34,6 +34,7 @@ TYPES = [
         @ptr<types::Type> type?=std::make_shared<types::Unknown>()
     ) : AstNode""",
 
+    "AdtStmt(@ptr<types::Type> type) : Statement",
     "ExprStmt(@ptr<Expression> expr) : Statement",
     "ReturnStmt(@ptr<Expression> expr) : Statement",
     "WhileStmt(@ptr<Expression> condition, @ptr<Statement> body) : Statement",
@@ -46,4 +47,6 @@ TYPES = [
     "String(Token value) : Expression",
     "Number(Token value) : Expression",
     "Call(Token fname, @list<@ptr<Expression>> arguments) : Expression",
+    "MatchArm(@ptr<Expression> result) : Expression",
+    "Match(@ptr<Expression> matchee, @list<@ptr<MatchArm>> arms) : Expression",
 ]

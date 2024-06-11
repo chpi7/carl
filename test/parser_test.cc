@@ -350,4 +350,26 @@ TEST(Parser, parser_fn_with_fn_formal_param) {
     ParseResult r = parser.parse_r(src);
     ASSERT_TRUE(r);
 }
+
+TEST(Parser, parse_adt_pattern_matching) {
+    Parser parser;
+    std::string src = 
+    "data Tree = Leaf | Node (int, Tree, Tree);"
+    "let tree = Node ( Leaf(), 1, Node ( Leaf(), 2, Leaf() ));"
+    /*
+    "let value = match (tree) {"
+    "    Node(value, _, right): value"
+    "    Leaf: -1"
+    "};"
+    */
+    "";
+
+    ParseResult r = parser.parse_r(src, false, true);
+    AstPrinter printer(std::cout);
+    for (auto& node : *r) {
+        printer.print(node.get());
+    }
+
+    ASSERT_TRUE(r);
+}
 }  // namespace

@@ -34,12 +34,19 @@ def generate_member_decls(members: list[ClassMember]):
         ds.append(d)
     return "\n".join(ds)
 
+def member_can_be_referenced(member: ClassMember):
+    """ This will also return basic types as a const ref but thats okay """
+    return not member.typename.startswith("@ptr")
 
 def generate_member_getters(members: list[ClassMember]):
     ds = list()
     for m in members:
-        d = f"    {m.typename} get_{m.name}() const {{ return this->{m.name}; }}"
-        ds.append(d)
+        if member_can_be_referenced(m):
+            d = f"    const {m.typename}& get_{m.name}() const {{ return this->{m.name}; }}"
+            ds.append(d)
+        else:
+            d = f"    {m.typename} get_{m.name}() const {{ return this->{m.name}; }}"
+            ds.append(d)
     return "\n".join(ds)
 
 def generate_member_setters(members: list[ClassMember]):

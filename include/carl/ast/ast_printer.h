@@ -20,6 +20,7 @@ class AstPrinter : public AstNodeVisitor {
     void visit_formalparam(FormalParam* formalparam);
     void visit_fndecl(FnDecl* fndecl);
     void visit_letdecl(LetDecl* letdecl);
+    void visit_adtstmt(AdtStmt* adtstmt);
     void visit_exprstmt(ExprStmt* exprstmt);
     void visit_returnstmt(ReturnStmt* returnstmt);
     void visit_whilestmt(WhileStmt* whilestmt);
@@ -31,6 +32,8 @@ class AstPrinter : public AstNodeVisitor {
     void visit_string(String* string);
     void visit_number(Number* number);
     void visit_call(Call* call);
+    void visit_matcharm(MatchArm* matcharm);
+    void visit_match(Match* match);
 private:
     void write_indent() {
         static constexpr const char* indent_with = "  ";

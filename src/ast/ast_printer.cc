@@ -83,6 +83,14 @@ void AstPrinter::visit_letdecl(LetDecl* letdecl) {
     indent--;
 }
 
+void AstPrinter::visit_adtstmt(AdtStmt* adtstmt) {
+    write_indent();
+    os << "AdtStmt [" << adtstmt->get_type()->str() << "]\n"; 
+    indent++;
+
+    indent--;
+}
+
 void AstPrinter::visit_exprstmt(ExprStmt* exprstmt) {
     write_indent();
     os << "ExprStmt" << "\n"; 
@@ -220,6 +228,37 @@ void AstPrinter::visit_call(Call* call) {
     os << ".arguments\n";
     indent++;
     for (auto& elem : call->get_arguments()) {
+        elem->accept(this);
+    }
+    indent--;
+    indent--;
+}
+
+void AstPrinter::visit_matcharm(MatchArm* matcharm) {
+    write_indent();
+    os << "MatchArm [" << matcharm->get_type()->str() << "]\n"; 
+    indent++;
+    write_indent();
+    os << ".result\n";
+    indent++;
+    matcharm->get_result()->accept(this);
+    indent--;
+    indent--;
+}
+
+void AstPrinter::visit_match(Match* match) {
+    write_indent();
+    os << "Match [" << match->get_type()->str() << "]\n"; 
+    indent++;
+    write_indent();
+    os << ".matchee\n";
+    indent++;
+    match->get_matchee()->accept(this);
+    indent--;
+    write_indent();
+    os << ".arms\n";
+    indent++;
+    for (auto& elem : match->get_arms()) {
         elem->accept(this);
     }
     indent--;

@@ -35,8 +35,8 @@ static std::shared_ptr<types::Type> type_from_identifier(std::string& s) {
     } else if (s == std::string("string")) {
         return std::make_shared<types::String>();
     } else {
-        // Todo function types
-        return std::make_shared<types::Unknown>();
+        // A user defined type, or garbage.
+        return std::make_shared<types::RefByName>(s);
     }
 }
 
@@ -77,6 +77,7 @@ static const std::unordered_map<TokenType, ParseRule> parse_rules = {
     {TOKEN_NIL, {PREC_NONE, &Parser::literal, nullptr}},
     {TOKEN_RETURN, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_LET, {PREC_NONE, nullptr, nullptr}},
+    {TOKEN_DATA, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_ERROR, {PREC_NONE, nullptr, nullptr}},
     {TOKEN_EOF, {PREC_NONE, nullptr, nullptr}},
 };
@@ -168,15 +169,13 @@ void Parser::synchronize() {
     }
 }
 
-ParseResult Parser::parse_r(std::string& src, bool add_builtins) {
+ParseResult Parser::parse_r(std::string& src, bool add_builtins, bool skip_type_checking) {
     std::shared_ptr<carl::FnDecl> puts_decl, debug_decl, assert_decl;
     if (add_builtins) {
-        puts_decl =
-            decl_builtin("__puts", {std::make_shared<types::String>()},
-                         std::make_shared<types::Int>());
-        debug_decl =
-            decl_builtin("__debug", {std::make_shared<types::Int>()},
-                         std::make_shared<types::Void>());
+        puts_decl = decl_builtin("__puts", {std::make_shared<types::String>()},
+                                 std::make_shared<types::Int>());
+        debug_decl = decl_builtin("__debug", {std::make_shared<types::Int>()},
+                                  std::make_shared<types::Void>());
         assert_decl =
             decl_builtin("__assert", {std::make_shared<types::Bool>()},
                          std::make_shared<types::Void>());
@@ -193,11 +192,13 @@ ParseResult Parser::parse_r(std::string& src, bool add_builtins) {
         return ParseResult::make_error(ParseError{"some error occured"});
     }
 
-    TypeInference ti;
-    auto r = ti.run(decls);
-    if (!r) {
-        return ParseResult::make_error(
-            ParseError{.message = r.get_error().message});
+    if (!skip_type_checking) {
+        TypeInference ti;
+        auto r = ti.run(decls);
+        if (!r) {
+            return ParseResult::make_error(
+                ParseError{.message = r.get_error().message});
+        }
     }
 
     return ParseResult::make_result(decls);
@@ -365,7 +366,8 @@ std::shared_ptr<FnDecl> Parser::fn_decl() {
         const std::string name = capture->get_name();
         if (environment->has_variable(name) && is_captured(name)) {
             // captured_variables and current fn env id popped before.
-            // --> check if captured in the enclosing function as well and propagate upwards if needed.
+            // --> check if captured in the enclosing function as well and
+            // propagate upwards if needed.
             captured_variables.back().push_back(capture);
         }
     }
@@ -387,6 +389,8 @@ std::shared_ptr<Statement> Parser::statement() {
         return block();
     } else if (match(TOKEN_RETURN)) {
         return ret_stmt();
+    } else if (match(TOKEN_DATA)) {
+        return adt_stmt();
     } else {
         return expr_stmt();
     }
@@ -419,6 +423,46 @@ std::shared_ptr<Block> Parser::block() {
     return std::make_shared<Block>(decls);
 }
 
+std::shared_ptr<AdtStmt> Parser::adt_stmt() {
+    consume(TOKEN_IDENTIFIER, "Expected identifier after 'data'");
+    std::string adt_name = previous;
+    consume(TOKEN_EQUAL, "Expected '=' after data identifier");
+
+    return std::make_shared<AdtStmt>(parse_data_definition(adt_name));
+}
+
+std::shared_ptr<types::Type> Parser::parse_data_definition(std::string& name) {
+    /*
+     * data Tree = Leaf | Node (int, Tree, Tree);
+     *             ^
+     *             we are already here
+     */
+    std::vector<types::Adt::Constructor> constructors;
+    do {
+        constructors.push_back(parse_adt_constructor());
+    } while (match(TOKEN_PIPE));
+    consume(TOKEN_SEMICOLON, "Expected ';' after constructors");
+    return std::make_shared<types::Adt>(name, constructors);
+}
+
+types::Adt::Constructor Parser::parse_adt_constructor() {
+    consume(TOKEN_IDENTIFIER, "Expected identifier at start of variant");
+    std::string constructor_name = std::string(previous);
+    known_adt_constructor_names.push_back(constructor_name);
+
+    if (match(TOKEN_LEFT_PAREN)) {
+        types::Adt::Constructor result = {.name = constructor_name};
+        do {
+            result.add_member(type());
+        } while (match(TOKEN_COMMA));
+        consume(TOKEN_RIGHT_PAREN,
+                "Expected ')' after last ADT constructor member");
+        return result;
+    } else {
+        return types::Adt::Constructor{.name = std::string(previous)};
+    }
+}
+
 std::shared_ptr<ExprStmt> Parser::expr_stmt() {
     auto expr = expression();
     consume(TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
@@ -426,17 +470,21 @@ std::shared_ptr<ExprStmt> Parser::expr_stmt() {
 }
 
 std::shared_ptr<Expression> Parser::expression() {
-    return parse_precedence(PREC_ASSIGNMENT);
+    if (match(TOKEN_MATCH)) {
+        return match();
+    } else {
+        return parse_precedence(PREC_ASSIGNMENT);
+    }
 }
+
+std::shared_ptr<Expression> Parser::match() {}
 
 std::shared_ptr<Expression> Parser::call() {
     consume(TOKEN_IDENTIFIER, "Expected function identifier.");
     Token fname = previous;
     std::string fname_str = fname;
 
-    // var can hold a function --> check both:
-    if (!fn_environment->has_variable(fname_str) &&
-        !environment->has_variable(fname_str)) {
+    if (!is_known_name(fname)) {
         error_at(previous, "Function name not found in environment");
     }
 
@@ -445,7 +493,7 @@ std::shared_ptr<Expression> Parser::call() {
     auto args = std::list<std::shared_ptr<Expression>>();
     while (current.type != TOKEN_ERROR && current.type != TOKEN_EOF &&
            current.type != TOKEN_RIGHT_PAREN) {
-            args.push_back(expression());
+        args.push_back(expression());
         if (!match(TOKEN_COMMA)) break;
     }
     consume(TOKEN_RIGHT_PAREN,
@@ -575,6 +623,14 @@ bool Parser::is_captured(const std::string& name) {
     return !environment->has_variable(name, current_fn_env_id.back());
 }
 
+bool Parser::is_known_name(const std::string& name) {
+    return fn_environment->has_variable(name) ||
+           environment->has_variable(name) ||
+           (std::find(known_adt_constructor_names.begin(),
+                      known_adt_constructor_names.end(),
+                      name) != known_adt_constructor_names.end());
+}
+
 void Parser::error_at(Token token, const char* message) {
     if (panic_mode) return;
     panic_mode = true;
@@ -620,5 +676,4 @@ std::shared_ptr<FnDecl> Parser::decl_builtin(
 
     return puts_decl;
 }
-
 }  // namespace carl

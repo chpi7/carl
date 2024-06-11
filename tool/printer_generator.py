@@ -81,6 +81,7 @@ def generate_list_attr(cls: Class, attr: ClassMember) -> str:
 def generate_ptr_attr(cls: Class, attr: ClassMember) -> str:
     # assume attr.typename of this form: @ptr<...>
     inner_type = attr.typename.removeprefix("@ptr<").removesuffix(">")
+    print("gen ptr attr for " + cls.name, attr.name)
     if inner_type not in AST_CLASSES:
         # for now, skip non ast classes
         return ""
@@ -120,7 +121,7 @@ def generate_attr(cls: Class, attr: ClassMember) -> str:
         return generate_ptr_attr(cls, attr)
 
 def generate_impl(cls: Class) -> str:
-    print_type = is_subclass(cls, "Expression", "FormalParam", "LetDecl", "FnDecl")
+    print_type = is_subclass(cls, "Expression", "FormalParam", "LetDecl", "FnDecl", "AdtStmt")
     cls_name_with_type = f"""os << "{cls.name} [" << {cls.name.lower()}->get_type()->str() << "]\\n";"""
     cls_name = f"""os << "{cls.name}" << "\\n";"""
     attrs = "\n".join(map(lambda m: generate_attr(cls, m), cls.members))

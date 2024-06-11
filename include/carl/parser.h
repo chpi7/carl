@@ -1,15 +1,14 @@
-#ifndef carl_parser_h
-#define carl_parser_h
+#pragma once
 
-#include <memory>
-#include <vector>
-#include <optional>
 #include <map>
+#include <memory>
+#include <optional>
+#include <vector>
 
 #include "carl/ast/ast.h"
 #include "carl/ast/types.h"
-#include "carl/scanner.h"
 #include "carl/name_environment.h"
+#include "carl/scanner.h"
 
 namespace carl {
 
@@ -49,8 +48,9 @@ class Parser {
     std::shared_ptr<Scanner> scanner;
     std::unique_ptr<Environment<Variable*>> environment;
     std::unique_ptr<Environment<FnDecl*>> fn_environment;
+    std::vector<std::string> known_adt_constructor_names;
     // whats the function we are currently in
-    std::vector<int> current_fn_env_id; 
+    std::vector<int> current_fn_env_id;
     std::vector<std::list<std::shared_ptr<Variable>>> captured_variables;
 
     Token current;
@@ -62,7 +62,7 @@ class Parser {
     Parser();
     void set_scanner(std::shared_ptr<Scanner> scanner);
 
-    ParseResult parse_r(std::string& src, bool add_builtins = true);
+    ParseResult parse_r(std::string& src, bool add_builtins = true, bool skip_type_checking = false);
     std::vector<std::shared_ptr<AstNode>> parse();
     std::vector<std::shared_ptr<AstNode>> parse(std::string& src);
     std::shared_ptr<AstNode> declaration();
@@ -75,9 +75,11 @@ class Parser {
     std::shared_ptr<ExprStmt> expr_stmt();
     std::shared_ptr<WhileStmt> while_stmt();
     std::shared_ptr<Block> block();
+    std::shared_ptr<AdtStmt> adt_stmt();
 
     std::shared_ptr<Expression> expression();
     std::shared_ptr<Expression> grouping();
+    std::shared_ptr<Expression> match();
     std::shared_ptr<Expression> call();
     // can be Assignment or Binary
     std::shared_ptr<Expression> binary();
@@ -89,6 +91,7 @@ class Parser {
 
    private:
     bool is_captured(const std::string& name);
+    bool is_known_name(const std::string& name);
     void error_at(Token token, const char* message);
     void consume(TokenType type, const char* message);
     void advance();
@@ -98,9 +101,12 @@ class Parser {
     bool peek_next(TokenType tokenType);
     std::shared_ptr<Expression> parse_precedence(Precedence precedence);
     const ParseRule* get_rule(TokenType tokenType) const;
-    std::shared_ptr<FnDecl> decl_builtin(const std::string& name,
-                      std::vector<std::shared_ptr<types::Type>> param_types,
-                      std::shared_ptr<types::Type> return_type);
+    std::shared_ptr<FnDecl> decl_builtin(
+        const std::string& name,
+        std::vector<std::shared_ptr<types::Type>> param_types,
+        std::shared_ptr<types::Type> return_type);
+    std::shared_ptr<types::Type> parse_data_definition(std::string& name);
+
+    types::Adt::Constructor parse_adt_constructor();
 };
 }  // namespace carl
-#endif

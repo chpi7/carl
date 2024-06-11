@@ -4,14 +4,13 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <vector>
 
 #include "llvm/IR/Type.h"
 
 namespace carl {
 namespace types {
 
-enum class BaseType { UNKNOWN, BOOL, STRING, INT, FLOAT, VOID, FN };
+enum class BaseType { UNKNOWN, BOOL, STRING, INT, FLOAT, VOID, FN, ADT };
 
 class Type {
    public:
@@ -61,9 +60,10 @@ class Bool : public Type {
 };
 
 class String : public Type {
-    private:
+   private:
     std::string llvm_type_name = std::string("__carl_string");
-    public:
+
+   public:
     BaseType get_base_type();
     std::string str() const;
     bool is_rt_heap_obj();
@@ -90,6 +90,36 @@ class Fn : public Type {
     const std::shared_ptr<Type> get_ret();
     std::string str() const;
 };
+
+class Adt : public Type {
+   public:
+    struct Constructor {
+        std::string name;
+        std::vector<std::shared_ptr<Type>> members;
+        void add_member(std::shared_ptr<Type>&& member);
+    };
+
+   private:
+    std::vector<Constructor> constructors;
+    std::string name;
+
+   public:
+    Adt(std::string name, std::vector<Constructor> constructors)
+        : name(name), constructors(constructors){};
+    BaseType get_base_type();
+    std::string str() const;
+};
+
+class RefByName : public Type {
+   private:
+    std::string name;
+
+   public:
+    RefByName(std::string name) : name(name){};
+    BaseType get_base_type();
+    std::string str() const;
+};
+
 }  // namespace types
 }  // namespace carl
 

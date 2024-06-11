@@ -1,5 +1,4 @@
-#ifndef carl_name_environment_h
-#define carl_name_environment_h
+#pragma once
 
 #include <memory>
 #include <map>
@@ -92,5 +91,3 @@ struct UseNewEnv {
     }
 };
 }  // namespace carl
-
-#endif
