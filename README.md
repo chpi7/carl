@@ -29,4 +29,16 @@ let add_five = add_three . add_two;
 let result = add_five(1) == 6;
 ```
 
+**WIP: Let-polymorphism, looks dynamically typed but is not**:
+```rust
+fn id(x) { return x; }
+fn add(a, b) { return a + b; }
+
+let hello = add("hello", " world");
+__assert(hello == "hello world");
+
+let sum = (id(id))(add(1, 2));
+__assert(sum == 3);
+```
+
 To check what is currently implemented throughout the full stack, check out [codegen tests](test/codegen2_test.cc).
